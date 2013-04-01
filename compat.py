@@ -1,0 +1,34 @@
+# -*- coding: utf-8 -*-
+import sys
+
+__all__ = ('reraise', 'execute')
+
+if sys.version_info[0] > 2:
+    import builtins
+    execute = getattr(builtins, "exec")
+    del builtins
+
+    def reraise(tp, value, tb=None):
+        """Re-raise exception
+        """
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
+else:
+    def execute(code, globs=None, locs=None):
+        """Execute code in a name space.
+        """
+        if globs is None:
+            frame = sys._getframe(1)
+            globs = frame.f_globals
+            if locs is None:
+                locs = frame.f_locals
+            del frame
+        elif locs is None:
+            locs = globs
+        exec("""exec code in globs, locs""")
+
+    exec("""def reraise(tp, value, tb=None):
+        raise tp, value, tb""")
+
+# vim: nu ft=python columns=120 :
