@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
+import pdb
+import traceback
 from .monad import Monad
-from ..compat import reraise
+from ..common import reraise
 
 __all__ = ('Result',)
 
@@ -13,17 +15,6 @@ class Result(Monad):
 
     def __init__(self, pair):
         self.pair = pair
-
-    @property
-    def error(self):
-        return self.pair[1]
-
-    @property
-    def value(self):
-        if self.pair[1] is None:
-            return self.pair[0]
-        else:
-            reraise(*self.pair[1])
 
     @classmethod
     def from_value(cls, result):
@@ -51,6 +42,28 @@ class Result(Monad):
             raise exc
         except Exception:
             return cls.from_current_error()
+
+    @property
+    def error(self):
+        return self.pair[1]
+
+    @property
+    def value(self):
+        if self.pair[1] is None:
+            return self.pair[0]
+        else:
+            reraise(*self.pair[1])
+
+    def trace(self, debug=False, file=None):
+        """Show traceback
+
+        Show traceback if any and optionally interrupt for debugging.
+        """
+        if self.pair[1] is None:
+            return self
+        traceback.print_exception(*self.pair[1])
+        if debug:
+            pdb.post_mortem(self.pair[1][2])
 
     @classmethod
     def unit(cls, val):

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from . import core, error
+from . import core, poll
 from .core import *
-from .error import *
+from .poll import *
 
-__all__ = (core.__all__ + error.__all__ + ('sleep', 'sleep_until',
+__all__ = (core.__all__ + poll.__all__ + ('sleep', 'sleep_until',
            'poll', 'schedule',))
 
 

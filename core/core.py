@@ -13,7 +13,7 @@ else:
     from thread import get_ident
 
 from .poll import Poller, POLL_ERROR, POLL_READ, POLL_WRITE, POLL_DISCONNECT
-from .error import BrokenPipeError, ConnectionError, BlockingErrorSet
+from ..common import BrokenPipeError, ConnectionError, CanceledError, BlockingErrorSet
 from ..monad import Result, async, async_block
 from ..state_machine import StateMachine
 
@@ -140,10 +140,11 @@ class Core(object):
                 if self.state.state != self.STATE_EXEC:
                     break
         finally:
-            if dispose:
-                self.dispose()
-            else:
-                self.state(self.STATE_IDLE)
+            if self.state.state != self.STATE_DISP:
+                if dispose:
+                    self.dispose()
+                else:
+                    self.state(self.STATE_IDLE)
 
     def stop(self):
         """Stop core execution
@@ -200,10 +201,12 @@ class Core(object):
         if not self.state(self.STATE_DISP):
             return
 
+        exc = exc or CanceledError('core has been disposed')
         files, self.files = self.files, {}
         for file in files.values():
             file.dispose(exc)
         self.timer.dispose(exc)
+        self.sched.dispose(exc)
 
     def __enter__(self):
         return self
@@ -252,7 +255,7 @@ class Timer(object):
             return CORE_TIMEOUT
 
     def dispose(self, exc=None):
-        error = Result.from_exception(exc or '???')
+        error = Result.from_exception(exc or CanceledError('timer has been disposed'))
         queue, self.queue = self.queue, []
         for when, _, ret in queue:
             ret(error)
@@ -324,7 +327,7 @@ class File(object):
             self.dispose(exc)
 
     def dispose(self, exc=None):
-        error = Result.from_exception(exc or '???')
+        error = Result.from_exception(exc or CanceledError('file has been disposed'))
         for ret in self.off(self.mask):
             ret(error)
 
@@ -371,7 +374,7 @@ class Scheduler(object):
         return 0 if self.rets else CORE_TIMEOUT
 
     def dispose(self, exc=None):
-        error = Result.from_exception(exc or '???')
+        error = Result.from_exception(exc or CanceledError('scheduler has been disposed'))
         with self.rets_lock:
             rets, self.rets = self.rets, []
         for ret in self.rets:

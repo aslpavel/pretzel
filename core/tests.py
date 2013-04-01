@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 from .core import File, Timer, CORE_TIMEOUT
-from .error import BrokenPipeError, ConnectionError
 from .poll import POLL_READ, POLL_WRITE, POLL_URGENT, POLL_DISCONNECT, EPOLLERR
+from ..common import BrokenPipeError, ConnectionError
 
 
 class FileTest(unittest.TestCase):
