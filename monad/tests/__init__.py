@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+__all__ = []
+
 
 def load_tests(loader, tests, pattern):
     """Load test protocol
