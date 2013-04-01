@@ -3,6 +3,7 @@ import sys
 
 __all__ = ('reraise', 'execute')
 
+
 if sys.version_info[0] > 2:
     import builtins
     execute = getattr(builtins, "exec")

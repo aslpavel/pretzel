@@ -86,8 +86,6 @@ class Monad(object):
 
         sequence :: Monad m => [m a] -> m [a]
         """
-        #def chain(mvals, mval):
-        #    return mval.bind(lambda val: mvals.bind(lambda vals: Monad.unit(vals + (val,))))
         def chain(mvals, mval):
             return mvals.bind(lambda vals: mval.bind(lambda val: Monad.unit(vals + (val,))))
         return reduce(chain, (monad.__monad__() for monad in monads), Monad.unit(tuple()))

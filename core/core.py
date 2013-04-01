@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+"""Core is an Asynchronous I/O and Timer execution loop
+"""
 import os
 import sys
 import errno
@@ -40,10 +41,14 @@ class Core(object):
     STATE_DISP = 2
     STATE_NAMES = ('idle', 'executing', 'disposed',)
     STATE_GRPAH = StateMachine.compile_graph({
-        STATE_IDLE: (STATE_EXEC, STATE_DISP),
+        STATE_IDLE: (STATE_IDLE, STATE_EXEC, STATE_DISP),
         STATE_EXEC: (STATE_IDLE, STATE_DISP),
         STATE_DISP: (STATE_DISP,),
     })
+
+    inst_lock = threading.RLock()
+    inst_local = threading.local()
+    inst_main = None
 
     def __init__(self, poller=None):
         self.state = StateMachine(self.STATE_GRPAH, self.STATE_NAMES)
@@ -54,6 +59,31 @@ class Core(object):
         self.timer = Timer()
         self.sched = Scheduler(self)
         self.waker = Waker(self)
+
+    @classmethod
+    def main(cls, inst=None):
+        """Main core instance
+        """
+        with cls.inst_lock:
+            if inst is None:
+                if cls.inst_main is None:
+                    cls.inst_main = Core()
+                inst = cls.inst_main
+            else:
+                cls.inst_main = inst
+        return inst
+
+    @classmethod
+    def local(cls, inst=None):
+        """Thread local instance
+        """
+        if inst is None:
+            inst = getattr(cls.inst_local, 'inst', None)
+            if inst is None:
+                return cls.local(cls.main())
+        else:
+            cls.inst_local.inst = inst
+        return inst
 
     def sleep(self, delay):
         """Sleep
@@ -86,8 +116,8 @@ class Core(object):
     def schedule(self):
         """Schedule continuation to be executed on this core
 
-        Interrupt current coroutine until next iteration circle. This function
-        can be called from different thread.
+        Scheduled continuation will be executed on next iteration circle. This
+        function can be called from different thread.
         """
         if self.thread_ident == get_ident():
             return self.timer.on(0)
@@ -99,7 +129,10 @@ class Core(object):
             self.waker()
 
     def __call__(self, dispose=False):
-        """Execute core
+        return self.start()
+
+    def start(self, dispose=False):
+        """Start core execution
         """
         self.state(self.STATE_EXEC)
         try:
@@ -111,6 +144,11 @@ class Core(object):
                 self.dispose()
             else:
                 self.state(self.STATE_IDLE)
+
+    def stop(self):
+        """Stop core execution
+        """
+        return self.state(self.STATE_IDLE)
 
     def iterator(self, block=True):
         """Core's iterator
@@ -124,11 +162,12 @@ class Core(object):
             # Thread identity is used by wake() to make sure call to waker is
             # really needed. And it also used to make sure core is iterating only
             # on one thread.
-            if self.thread_ident is None:
-                self.thread_ident = get_ident()
-                top_level = True
-            elif self.thread_ident != get_ident():
-                raise ValueError('core is already being run on a different thread')
+            with self.inst_lock:
+                if self.thread_ident is None:
+                    self.thread_ident = get_ident()
+                    top_level = True
+                elif self.thread_ident != get_ident():
+                    raise ValueError('core has already being run on a different thread')
 
             timer = self.timer
             files = self.files
