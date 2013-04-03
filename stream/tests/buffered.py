@@ -313,8 +313,6 @@ class ResultQueue(object):
 
     def __bool__(self):
         return bool(self.queue)
-
-    def __nonzero__(self):
-        return bool(self)
+    __nonzero__ = __bool__
 
 # vim: nu ft=python columns=120 :
