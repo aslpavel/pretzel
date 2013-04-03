@@ -52,12 +52,13 @@ class Core(object):
 
     def __init__(self, poller=None):
         self.state = StateMachine(self.STATE_GRPAH, self.STATE_NAMES)
-        self.thread_ident = None
 
+        self.files_queue = {}
+        self.time_queue = TimeQueue()
+        self.sched_queue = SchedQueue(self)
+
+        self.thread_ident = None
         self.poller = Poller.from_name(poller)
-        self.files = {}
-        self.timer = Timer()
-        self.sched = Scheduler(self)
         self.waker = Waker(self)
 
     @classmethod
@@ -90,14 +91,14 @@ class Core(object):
 
         Interrupt current coroutine for specified amount of time
         """
-        return self.timer.on(time() + delay)
+        return self.time_queue.on(time() + delay)
 
     def sleep_until(self, when):
         """Sleep until
 
         Interrupt current coroutine until specified time is reached
         """
-        return self.timer.on(when)
+        return self.time_queue.on(when)
 
     def poll(self, fd, mask):
         """Poll file descriptor
@@ -107,10 +108,10 @@ class Core(object):
         with BrokenPipeError, otherwise future is resolved with bitmap of the
         events happened on file descriptor or error if any.
         """
-        file = self.files.get(fd)
+        file = self.files_queue.get(fd)
         if file is None:
-            file = File(fd, self.poller)
-            self.files[fd] = file
+            file = FileQueue(fd, self.poller)
+            self.files_queue[fd] = file
         return file.on(mask)
 
     def schedule(self):
@@ -120,9 +121,9 @@ class Core(object):
         function can be called from different thread.
         """
         if self.thread_ident == get_ident():
-            return self.timer.on(0)
+            return self.time_queue.on(0)
         else:
-            return self.sched.on()
+            return self.sched_queue.on()
 
     def wake(self):
         if self.thread_ident != get_ident():
@@ -170,9 +171,9 @@ class Core(object):
                 elif self.thread_ident != get_ident():
                     raise ValueError('core has already being run on a different thread')
 
-            timer = self.timer
-            files = self.files
-            sched = self.sched
+            timer = self.time_queue
+            files = self.files_queue
+            sched = self.sched_queue
             poll = self.poller.poll
 
             events = tuple()
@@ -202,11 +203,11 @@ class Core(object):
             return
 
         exc = exc or CanceledError('core has been disposed')
-        files, self.files = self.files, {}
-        for file in files.values():
+        files_queue, self.files_queue = self.files_queue, {}
+        for file in files_queue.values():
             file.dispose(exc)
-        self.timer.dispose(exc)
-        self.sched.dispose(exc)
+        self.time_queue.dispose(exc)
+        self.sched_queue.dispose(exc)
 
     def __enter__(self):
         return self
@@ -223,8 +224,8 @@ class Core(object):
         return str(self)
 
 
-class Timer(object):
-    """Timer dispatch object
+class TimeQueue(object):
+    """Time queue
     """
     __slots__ = ('queue', 'uid',)
 
@@ -255,7 +256,7 @@ class Timer(object):
             return CORE_TIMEOUT
 
     def dispose(self, exc=None):
-        error = Result.from_exception(exc or CanceledError('timer has been disposed'))
+        error = Result.from_exception(exc or CanceledError('time queue has been disposed'))
         queue, self.queue = self.queue, []
         for when, _, ret in queue:
             ret(error)
@@ -268,8 +269,8 @@ class Timer(object):
         return False
 
 
-class File(object):
-    """File dispatch object
+class FileQueue(object):
+    """File queue
     """
     __slots__ = ('fd', 'poller', 'mask', 'handlers',)
 
@@ -327,7 +328,7 @@ class File(object):
             self.dispose(exc)
 
     def dispose(self, exc=None):
-        error = Result.from_exception(exc or CanceledError('file has been disposed'))
+        error = Result.from_exception(exc or CanceledError('file queue has been disposed'))
         for ret in self.off(self.mask):
             ret(error)
 
@@ -347,8 +348,8 @@ class File(object):
         return str(self)
 
 
-class Scheduler(object):
-    """Scheduler object
+class SchedQueue(object):
+    """Scheduler queue
 
     Schedules continuation to be executed on specified core
     """
@@ -374,7 +375,7 @@ class Scheduler(object):
         return 0 if self.rets else CORE_TIMEOUT
 
     def dispose(self, exc=None):
-        error = Result.from_exception(exc or CanceledError('scheduler has been disposed'))
+        error = Result.from_exception(exc or CanceledError('scheduler queue has been disposed'))
         with self.rets_lock:
             rets, self.rets = self.rets, []
         for ret in self.rets:
