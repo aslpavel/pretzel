@@ -20,9 +20,9 @@ def do(Monad):
     def do(block):
         if not inspect.isgeneratorfunction(block):
             @wraps(block)
-            def do_block(*args, **kw):
+            def do_block(*a, **kw):
                 try:
-                    return value(block(*args, **kw))
+                    return value(block(*a, **kw))
 
                 except _return as ret:
                     return value(ret.args[1]) if ret.args[0] == 0 else ret.args[1]

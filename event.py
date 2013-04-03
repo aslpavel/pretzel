@@ -57,6 +57,12 @@ class Event(object):
         self.off(handler)
         return self
 
+    def __len__(self):
+        return len(self.handlers)
+
+    def __bool__(self):
+        return bool(self.handlers)
+
     def __monad__(self):
         """Event is a continuation monad
         """

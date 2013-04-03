@@ -1,7 +1,95 @@
 # -*- coding: utf-8 -*-
 import os
+import errno
 import fcntl
-__all__ = ('fd_close_on_exec', 'fd_blocking',)
+from .stream import Stream
+from .buffered import BufferedStream
+from ..core import Core, POLL_READ, POLL_WRITE
+from ..monad import async, do_return
+from ..common import BrokenPipeError, BlockingErrorSet, PipeErrorSet
+
+__all__ = ('File', 'fd_close_on_exec', 'fd_blocking',)
+
+
+class File(Stream):
+    def __init__(self, fd, closefd=True, init=None, core=None):
+        Stream.__init__(self)
+
+        self.fd = fd if isinstance(fd, int) else fd.fileno()
+        self.closefd = closefd
+        self.core = core or Core.local()
+        self.blocking(False)
+        if init is None or init:
+            self.initing()
+
+    def fileno(self):
+        return self.fd
+
+    @async
+    def read(self, size):
+        with self.reading:
+            while True:
+                try:
+                    data = os.read(self.fd, size)
+                    if size and not data:
+                        raise BrokenPipeError(errno.EPIPE, 'broken pipe')
+                    do_return(data)
+                except OSError as error:
+                    if error.errno not in BlockingErrorSet:
+                        if error.errno in PipeErrorSet:
+                            raise BrokenPipeError(error.errno, error.strerror)
+                        raise
+                yield self.core.poll(self.fd, POLL_READ)
+
+    @async
+    def write(self, data):
+        with self.writing:
+            while True:
+                try:
+                    do_return(os.write(self.fd, data))
+                except OSError as error:
+                    if error.errno not in BlockingErrorSet:
+                        if error.errno in PipeErrorSet:
+                            raise BrokenPipeError(error.errno, error.strerror)
+                        raise
+                yield self.core.poll(self.fd, POLL_WRITE)
+
+    def dispose(self):
+        if Stream.dispose(self):
+            fd, self.fd = self.fd, -1
+            self.core.poll(fd, None)()  # resolve with BrokenPipeError
+            if self.closefd:
+                os.close(fd)
+            return True
+        return False
+
+    def detach(self):
+        if self.disposed:
+            raise ValueError('file is disposed')
+        self.closefd = False
+        return self.dispose()
+
+    def blocking(self, enable=None):
+        return fd_blocking(self.fd, enable)
+
+    def close_on_exec(self, enable=None):
+        return fd_close_on_exec(self.fd, enable)
+
+    def __str__(self):
+        flags = []
+        if self.fd > 0:
+            self.blocking() and flags.append('blocking')
+            self.close_on_exec() and flags.append('close_on_exec')
+        return ('<{} [fd:{} flags:{} state:{}] at {}>'.format(type(self).__name__,
+                self.fd, ','.join(flags), self.state.state_name(), id(self)))
+
+
+class BufferedFile(BufferedStream):
+    def __init__(self, fd, buffer_size=None, closefd=None, core=None):
+        BufferedStream.__init__(self, File(fd, closefd, True, core), buffer_size)
+
+    def detach(self):
+        return BufferedStream.detach(self).detach()
 
 
 def fd_close_on_exec(fd, enable=None):

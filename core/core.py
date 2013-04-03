@@ -339,8 +339,8 @@ class File(object):
         return False
 
     def __str__(self):
-        flags = ','.join(name for name, flag in ((POLL_READ, 'read'),
-                        (POLL_WRITE, 'write'), (POLL_ERROR, 'error')))
+        flags = ','.join(name for flag, name in ((POLL_READ, 'read'),
+                        (POLL_WRITE, 'write'), (POLL_ERROR, 'error')) if self.mask & flag)
         return '<{} [fd:{} flags:{}] at {}>'.format(type(self).__name__, self.fd, flags, id(self))
 
     def __repr__(self):

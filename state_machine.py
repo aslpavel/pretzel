@@ -24,12 +24,22 @@ class StateMachine(object):
             raise ValueError('invalid state transition {} -> {}'.
                              format(self.state_name(), self.state_name(state)))
 
+    def reset(self):
+        self.state = 0
+
     def state_name(self, state=None):
         state = self.state if state is None else state
         if self.names:
             return self.names[state]
         else:
             return str(state)
+
+    def __str__(self):
+        return '<{} [state:{}] at {}>'.format(type(self).__name__,
+                                              self.state_name(), id(self))
+
+    def __repr__(self):
+        return str(self)
 
     @classmethod
     def compile_graph(cls, graph_tree):
