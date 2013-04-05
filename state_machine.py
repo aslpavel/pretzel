@@ -35,11 +35,9 @@ class StateMachine(object):
             return str(state)
 
     def __str__(self):
-        return '<{} [state:{}] at {}>'.format(type(self).__name__,
-                                              self.state_name(), id(self))
-
-    def __repr__(self):
-        return str(self)
+        return '<{}[state:{}] at {}>'.format(type(self).__name__,
+                                             self.state_name(), id(self))
+    __repr__ = __str__
 
     @classmethod
     def compile_graph(cls, graph_tree):
