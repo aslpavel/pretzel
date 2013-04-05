@@ -3,6 +3,7 @@
 import os
 import sys
 import errno
+import signal
 import itertools
 import threading
 from time import time
@@ -56,6 +57,7 @@ class Core(object):
         self.files_queue = {}
         self.time_queue = TimeQueue()
         self.sched_queue = SchedQueue(self)
+        self.proc_queue = ProcQueue(self)
 
         self.thread_ident = None
         self.poller = Poller.from_name(poller)
@@ -124,6 +126,13 @@ class Core(object):
             return self.time_queue.on(0)
         else:
             return self.sched_queue.on()
+
+    def waitpid(self, pid):
+        """Wait pid
+
+        Schedule continuation to be executed when process with pid is terminated.
+        """
+        return self.proc_queue.on(pid)
 
     def wake(self):
         if self.thread_ident != get_ident():
@@ -198,6 +207,10 @@ class Core(object):
     def __iter__(self):
         return iter(self.iterator())
 
+    @property
+    def disposed(self):
+        return self.state.state == self.STATE_DISP
+
     def dispose(self, exc=None):
         if not self.state(self.STATE_DISP):
             return
@@ -208,6 +221,7 @@ class Core(object):
             file.dispose(exc)
         self.time_queue.dispose(exc)
         self.sched_queue.dispose(exc)
+        self.proc_queue.dispose(exc)
 
     def __enter__(self):
         return self
@@ -217,20 +231,20 @@ class Core(object):
         return False
 
     def __str__(self):
-        return '<{} [state:{}] at {}>'.format(type(self).__name__,
-                                              self.state.state_name(), id(self))
-
-    def __repr__(self):
-        return str(self)
+        return '<{}[state:{}] at {}>'.format(type(self).__name__,
+                                             self.state.state_name(), id(self))
+    __repr__ = __str__
 
 
 class TimeQueue(object):
     """Time queue
+
+    Schedule continuation to be executed when specified time is reached.
     """
     __slots__ = ('queue', 'uid',)
 
     def __init__(self):
-        self.uid = itertools.count()
+        self.uid = itertools.count()  # used to distinguish simultaneous continuations
         self.queue = []
 
     def on(self, when):
@@ -271,6 +285,9 @@ class TimeQueue(object):
 
 class FileQueue(object):
     """File queue
+
+    Schedule continuation to be executed when specified file descriptor
+    conditions are met.
     """
     __slots__ = ('fd', 'poller', 'mask', 'handlers',)
 
@@ -282,7 +299,7 @@ class FileQueue(object):
 
     def on(self, mask):
         @async_block
-        def register(ret):
+        def cont(ret):
             if mask is None:
                 self.dispose(BrokenPipeError(errno.EPIPE, 'detached from core'))
                 ret(None)
@@ -297,7 +314,7 @@ class FileQueue(object):
                     self.poller.register(self.fd, mask)
                 self.mask |= mask
                 self.handlers.append((mask, ret))
-        return register
+        return cont
 
     def off(self, mask):
         if not (mask & self.mask):
@@ -342,10 +359,8 @@ class FileQueue(object):
     def __str__(self):
         flags = ','.join(name for flag, name in ((POLL_READ, 'read'),
                         (POLL_WRITE, 'write'), (POLL_ERROR, 'error')) if self.mask & flag)
-        return '<{} [fd:{} flags:{}] at {}>'.format(type(self).__name__, self.fd, flags, id(self))
-
-    def __repr__(self):
-        return str(self)
+        return '<{}[fd:{} flags:{}] at {}>'.format(type(self).__name__, self.fd, flags, id(self))
+    __repr__ = __str__
 
 
 class SchedQueue(object):
@@ -359,11 +374,11 @@ class SchedQueue(object):
 
     def on(self):
         @async_block
-        def schedule(ret):
+        def cont(ret):
             with self.rets_lock:
                 self.rets.append(ret)
             self.core.wake()
-        return schedule
+        return cont
 
     def __call__(self):
         with self.rets_lock:
@@ -379,6 +394,71 @@ class SchedQueue(object):
         with self.rets_lock:
             rets, self.rets = self.rets, []
         for ret in self.rets:
+            ret(error)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, eo, tb):
+        self.dispose()
+        return False
+
+
+class ProcQueue(object):
+    """Process queue
+
+    Schedule continuation to be executed when process with specified pid
+    has been terminated.
+    """
+    current = [None]
+    current_lock = threading.RLock()
+
+    def __init__(self, core):
+        self.core = core
+        self.pids = {}
+
+    def init(self):
+        if self.current[0] == self:
+            return
+        elif self.current[0] is None:
+            with self.current_lock:
+                if self.current[0] is None:
+                    self.current[0] = self
+                    signal.signal(signal.SIGCHLD, lambda s, f:
+                                  self.core.schedule()(lambda _: self()))
+                    return
+        raise ValueError('process queue can only be used by single core')
+
+    def on(self, pid):
+        @async_block
+        def cont(ret):
+            res = os.waitpid(pid, os.WNOHANG)
+            if res[0] != 0:
+                ret(os.WEXITSTATUS(res[1]))
+            if self.pids.get(pid):
+                raise ValueError('pid {} has already being waited'.format(pid))
+            self.pids[pid] = ret
+        self.init()
+        return cont
+
+    def __call__(self):
+        for pid, ret in tuple(self.pids.items()):
+            try:
+                res = os.waitpid(pid, os.WNOHANG)
+                if res[0] != 0:
+                    self.pids.pop(pid, None)
+                    ret(os.WEXITSTATUS(res[1]))
+            except Exception:
+                self.pids.pop(pid, None)
+                ret(Result.from_current_error())
+
+    def dispose(self, exc=None):
+        if self.current[0] == self:
+            signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+            self.current[0] = None
+        error = Result.from_exception(exc or CanceledError('process queue has been disposed'))
+        pids, self.pids = self.pids, {}
+        for ret in self.pids.values():
             ret(error)
 
     def __enter__(self):

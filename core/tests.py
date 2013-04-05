@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
+import os
+import time
 import unittest
-from .core import File, Timer, CORE_TIMEOUT
+from . import waitpid
+from .core import FileQueue, TimeQueue, CORE_TIMEOUT
 from .poll import POLL_READ, POLL_WRITE, POLL_URGENT, POLL_DISCONNECT, EPOLLERR
 from ..common import BrokenPipeError, ConnectionError
+from ..tests import async_test
 
 
 class FileTest(unittest.TestCase):
     def test_dummy(self):
         polls, rets = [], []
         ret = lambda tag: lambda res: rets.append((tag, res))
-        file = File('fd', self.DummyPoller(lambda *a: polls.append(a)))
+        file = FileQueue('fd', self.DummyPoller(lambda *a: polls.append(a)))
 
         file.on(POLL_READ | POLL_WRITE)(ret('rw'))
         file.on(POLL_READ)(ret('r'))
@@ -81,7 +85,7 @@ class FileTest(unittest.TestCase):
             self.hook('unreg', fd)
 
 
-class TimerTest(unittest.TestCase):
+class TimeQueueTest(unittest.TestCase):
     def test(self):
         def res():
             ret = tuple(rets)
@@ -90,7 +94,7 @@ class TimerTest(unittest.TestCase):
         ret = lambda tag: lambda res: rets.append((tag, res.value))
         rets = []
 
-        timer = Timer()
+        timer = TimeQueue()
         timer.on(1)(ret('1'))
         timer.on(2)(ret('2'))
 
@@ -113,5 +117,15 @@ class TimerTest(unittest.TestCase):
         timer(3)
         self.assertEqual(res(), (('1:0', 1), ('1:1', 1), ('2', 2)))
 
+
+class ProcQueueTest(unittest.TestCase):
+    @async_test
+    def test(self):
+        pid = os.fork()
+        if pid:
+            self.assertEqual((yield waitpid(pid)), pid & 0xff)
+        else:
+            time.sleep(.3)
+            os.execvp('/bin/sh', ['/bin/sh', '-c', 'exit {}'.format(os.getpid() & 0xff)])
 
 # vim: nu ft=python columns=120 :

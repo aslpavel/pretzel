@@ -39,6 +39,14 @@ def schedule(core=None):
     return (core or Core.local()).schedule()
 
 
+def waitpid(pid, core=None):
+    """Wait pid
+
+    Schedule continuation to be executed when process with pid is terminated.
+    """
+    return (core or Core.local()).waitpid(pid)
+
+
 def load_tests(loader, tests, pattern):
     """Load test protocol
     """
