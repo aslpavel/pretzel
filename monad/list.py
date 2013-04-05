@@ -31,8 +31,6 @@ class List(Monad):
 
     def __str__(self):
         return '<{}>'.format(', '.join(repr(item) for item in self.items))
-
-    def __repr__(self):
-        return str(self)
+    __repr__ = __str__
 
 # vim: nu ft=python columns=120 :

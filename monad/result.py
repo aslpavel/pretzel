@@ -94,9 +94,7 @@ class Result(Monad):
     def __str__(self):
         val = ('val:{}'.format(self.pair[0]) if self.pair[1] is None else
                'err:{}'.format(repr(self.pair[1][1])))
-        return '<{} [{}]>'.format(type(self).__name__, val)
-
-    def __repr__(self):
-        return str(self)
+        return '<{}[{}]>'.format(type(self).__name__, val)
+    __repr__ = __str__
 
 # vim: nu ft=python columns=120 :

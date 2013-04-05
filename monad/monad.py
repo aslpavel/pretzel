@@ -90,6 +90,15 @@ class Monad(object):
             return mvals.bind(lambda vals: mval.bind(lambda val: Monad.unit(vals + (val,))))
         return reduce(chain, (monad.__monad__() for monad in monads), Monad.unit(tuple()))
 
+    def __and__(self, monad):
+        """Compose two monads into one
+
+        Equivalent to sequence((self, monad)).
+        (&) :: m a -> m b -> m (a, b)
+        """
+        return self.bind(lambda val: monad.__monad__().bind(
+                         lambda mval: self.unit((val, mval))))
+
     @classmethod
     def lift(Monad, monad):
         """Wrap monad's value inside primitive monad of this type

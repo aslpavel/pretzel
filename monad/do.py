@@ -38,10 +38,13 @@ def do(Monad):
                         return Monad.bind(monad, do_next)
 
                     except _return as ret:
+                        gen.close()
                         return value(ret.args[1]) if ret.args[0] == 0 else ret.args[1]
                     except StopIteration as ret:
+                        gen.close()
                         return value(ret.args[0] if ret.args else None)
                     except Exception:
+                        gen.close()
                         return error()
 
                 gen = block(*args, **kw)
