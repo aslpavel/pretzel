@@ -81,7 +81,7 @@ class Stream(object):
     def close(self):
         """Flush data and dispose stream
         """
-        return self.flush().bind(lambda _: self.disposed())
+        return self.flush().map(lambda _: self.dispose())
 
     @property
     def disposed(self):
@@ -98,11 +98,9 @@ class Stream(object):
         return False
 
     def __str__(self):
-        return '<{} [state:{}] at {}>'.format(type(self).__name__,
-                                              self.state.state_name(), id(self))
-
-    def __repr__(self):
-        return str(self)
+        return '<{}[state:{}] at {}>'.format(type(self).__name__,
+                                             self.state.state_name(), id(self))
+    __repr__ = __str__
 
 
 class StateFlagScope(object):
@@ -126,9 +124,7 @@ class StateFlagScope(object):
 
     def __str__(self):
         return str(bool(self))
-
-    def __repr__(self):
-        return str(self)
+    __repr__ = __str__
 
 
 class StateTransScope(object):
@@ -158,8 +154,6 @@ class StateTransScope(object):
 
     def __str__(self):
         return str(bool(self))
-
-    def __repr__(self):
-        return str(self)
+    __repr__ = __str__
 
 # vim: nu ft=python columns=120 :

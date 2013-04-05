@@ -66,8 +66,11 @@ class File(Stream):
     def detach(self):
         if self.disposed:
             raise ValueError('file is disposed')
-        self.closefd = False
-        return self.dispose()
+        try:
+            self.closefd = False
+            return self.fd
+        finally:
+            self.dispose()
 
     def blocking(self, enable=None):
         return fd_blocking(self.fd, enable)
@@ -80,8 +83,9 @@ class File(Stream):
         if self.fd > 0:
             self.blocking() and flags.append('blocking')
             self.close_on_exec() and flags.append('close_on_exec')
-        return ('<{} [fd:{} flags:{} state:{}] at {}>'.format(type(self).__name__,
+        return ('<{}[fd:{} flags:{} state:{}] at {}>'.format(type(self).__name__,
                 self.fd, ','.join(flags), self.state.state_name(), id(self)))
+    __repr__ = __str__
 
 
 class BufferedFile(BufferedStream):

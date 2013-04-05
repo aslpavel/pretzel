@@ -285,9 +285,7 @@ class Buffer(object):
     __nonzero__ = __bool__
 
     def __str__(self):
-        return '<Buffer [len:{}] at {}>'.format(len(self), id(self))
-
-    def __repr__(self):
-        return str(self)
+        return '<Buffer[len:{}] at {}>'.format(len(self), id(self))
+    __repr__ = __str__
 
 # vim: nu ft=python columns=120 :
