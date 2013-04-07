@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 from ..do import do_return
-from ..cont import async, async_block
+from ..cont import async, async_block, async_all, async_any
 from ..result import Result
 from ...event import Event
 
@@ -94,5 +94,32 @@ class ContTests(unittest.TestCase):
         hs[-1](Result.from_value('done value'))
         rets_ref.append(Result.from_value('done value'))
         self.assertEqual(rets, rets_ref)
+
+    def test_all(self):
+        rets = []
+        e0, e1 = Event(), Event()
+
+        async_all((e0, e1))(lambda val: rets.append(val))
+        self.assertEqual(len(e0), 1)
+        self.assertEqual(len(e1), 1)
+
+        e1('two')
+        e0('one')
+        self.assertFalse(e0)
+        self.assertFalse(e1)
+        self.assertEqual(rets.pop().value, ('one', 'two'))
+
+    def test_any(self):
+        rets = []
+        e0, e1 = Event(), Event()
+
+        async_any((e0, e1))(lambda val: rets.append(val))
+        self.assertEqual(len(e0), 1)
+        self.assertEqual(len(e1), 1)
+
+        e0('done')
+        self.assertFalse(e0)
+        self.assertTrue(e1)
+        self.assertEqual(rets.pop().value, 'done')
 
 # vim: nu ft=python columns=120 :

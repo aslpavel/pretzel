@@ -5,7 +5,7 @@ import sys
 import pickle
 import signal
 from .dispose import FuncDisp, CompDisp
-from .monad import Cont, async, do_return
+from .monad import Cont, async, async_all, do_return
 from .core import Core
 from .stream import Pipe
 from .common import BrokenPipeError
@@ -174,8 +174,7 @@ def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
                 proc.stdin.dispose()
             out = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
             err = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
-            out, err, status = yield Cont.sequence((out, err, proc.status))
-            do_return((out.value, err.value, status.value))
+            do_return((yield async_all((out, err, proc.status))))
     return process()
 
 # vim: nu ft=python columns=120 :

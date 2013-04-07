@@ -4,7 +4,8 @@ from .monad import Monad
 from .result import Result
 from functools import wraps
 
-__all__ = ('Cont', 'Future', 'callcc', 'async', 'async_block')
+__all__ = ('Cont', 'Future', 'callcc', 'async', 'async_block',
+           'async_any', 'async_all',)
 
 
 class Cont(Monad):
@@ -19,6 +20,17 @@ class Cont(Monad):
 
     def __call__(self, ret=lambda val: val):
         return self.run(ret)
+
+    def __or__(self, other):
+        def run(ret):
+            def done_ret(val):
+                if not done[0]:
+                    done[0] = True
+                    ret(val)
+            done = [False]
+            self.run(done_ret)
+            other.__monad__().run(done_ret)
+        return Cont(run)
 
     def __monad__(self):
         return self
@@ -66,6 +78,55 @@ def async_block(block):
         except Exception:
             ret(Result.from_current_error())
     return Cont(async_block)
+
+
+def async_any(conts):
+    """Any continuation
+
+    Resolved with the result of first continuation to be resolved.
+    """
+    conts = tuple(cont.__monad__() for cont in conts)
+    if not conts:
+        raise ValueError('continuation set is empty')
+
+    @async_block
+    def any_cont(ret):
+        def any_ret(val):
+            if not done[0]:
+                done[0] = True
+                ret(val)
+        done = [False]
+        for cont in conts:
+            cont(any_ret)
+    return any_cont
+
+
+def async_all(conts):
+    """All continuation
+
+    Resolved with the list of results of all continuations.
+    """
+    conts = tuple(cont.__monad__() for cont in conts)
+    if not conts:
+        raise ValueError('continuation set is empty')
+
+    @async_block
+    def all_cont(ret):
+        def all_ret(index, cont):
+            def all_ret(val):
+                if isinstance(val, Result):
+                    res[index] = val
+                else:
+                    res[index] = Result.from_value(val)
+                count[0] -= 1
+                if not count[0]:
+                    ret(Result.sequence(res))
+            cont(all_ret)
+        res = [None] * len(conts)
+        count = [len(conts)]
+        for index, cont in enumerate(conts):
+            all_ret(index, cont)
+    return all_cont
 
 
 class Future(object):
