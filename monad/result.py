@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys
 import pdb
 import traceback
@@ -96,5 +95,3 @@ class Result(Monad):
                'err:{}'.format(repr(self.pair[1][1])))
         return '<{}[{}]>'.format(type(self).__name__, val)
     __repr__ = __str__
-
-# vim: nu ft=python columns=120 :

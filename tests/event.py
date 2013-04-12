@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 from collections import deque
 from ..event import Event
@@ -69,5 +68,3 @@ class EventTests(unittest.TestCase):
 
         event(1)
         self.assertEqual(rets, [1])
-
-# vim: nu ft=python columns=120 :

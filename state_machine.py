@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import array
 
 __all__ = ('StateMachine',)
@@ -61,6 +60,3 @@ class StateMachine(object):
                                'H' if max_state <= 15 else
                                'I' if max_state <= 31 else 'Q',
                                (graph.get(src, 0) for src in range(max_state + 1)))
-
-
-# vim: nu ft=python columns=120 :

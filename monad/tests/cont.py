@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 from ..do import do_return
 from ..cont import async, async_block, async_all, async_any
@@ -122,4 +121,5 @@ class ContTests(unittest.TestCase):
         self.assertTrue(e1)
         self.assertEqual(rets.pop().value, 'done')
 
-# vim: nu ft=python columns=120 :
+        e1('done_next')
+        self.assertFalse(e1)

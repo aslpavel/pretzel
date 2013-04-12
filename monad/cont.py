@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .do import do
 from .monad import Monad
 from .result import Result
@@ -170,5 +169,3 @@ class Future(object):
         return ('<{}[comp:{} res:{}] at {}>'.format(type(self).__name__,
                 self.completed, self.result, id(self)))
     __repr__ = __str__
-
-# vim: nu ft=python columns=120 :

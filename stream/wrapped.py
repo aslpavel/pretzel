@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .stream import Stream
 from ..monad import async, do_return
 
@@ -48,5 +47,3 @@ class WrappedStream(Stream):
         if not self.dispose():
             raise ValueError('stream is disposed')
         return base
-
-# vim: nu ft=python columns=120 :

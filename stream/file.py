@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import errno
 import fcntl
@@ -121,5 +120,3 @@ def fd_option(fd, get_flag, set_flag, option_flag, enable=None):
         options &= ~option_flag
     fcntl.fcntl(fd, set_flag, options)
     return enable
-
-# vim: nu ft=python columns=120 :

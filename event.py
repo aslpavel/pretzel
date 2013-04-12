@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .monad import Cont
 
 __all__ = ('Event',)
@@ -64,8 +63,6 @@ class Event(object):
         return bool(self.handlers)
 
     def __monad__(self):
-        """Event is a continuation monad
+        """Event as a continuation monad
         """
         return Cont(lambda ret: self.on_once(ret))
-
-# vim: nu ft=python columns=120 :

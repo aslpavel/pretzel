@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 from .file import BufferedFile
 
@@ -67,5 +66,3 @@ class Pipe (object):
 
     def __rerp__(self):
         return str(self)
-
-# vim: nu ft=python columns=120 :

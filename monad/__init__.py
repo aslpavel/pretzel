@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from . import monad, result, cont, list
 from . import do as _do
 from .monad import *
@@ -22,5 +21,3 @@ def load_tests(loader, tests, pattern):
         suite.addTests(loader.loadTestsFromModule(test))
 
     return suite
-
-# vim: nu ft=python columns=120 :

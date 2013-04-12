@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import struct
 from functools import wraps
 from collections import deque
@@ -287,5 +286,3 @@ class Buffer(object):
     def __str__(self):
         return '<Buffer[len:{}] at {}>'.format(len(self), id(self))
     __repr__ = __str__
-
-# vim: nu ft=python columns=120 :

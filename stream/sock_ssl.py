@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import socket
 import errno
 try:
@@ -115,5 +114,3 @@ class BufferedSocketSSL(BufferedStream):
             sock, addr = yield self.base.accept()
             do_return((BufferedSocketSSL(sock.Socket, self.buffer_size,
                        sock.ssl_options, True, sock.core), addr))
-
-# vim: nu ft=python columns=120 :

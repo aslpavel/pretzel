@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import textwrap
 import unittest
 
@@ -56,5 +55,3 @@ class ProcessTest(unittest.TestCase):
         procs = yield Cont.sequence(process_call(['uname']) for _ in range(20))
         for proc in procs:
             proc.value
-
-# vim: nu ft=python columns=120 :

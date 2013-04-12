@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 import operator
 import itertools
@@ -58,5 +57,3 @@ class CompDispTest(unittest.TestCase):
             d.add(d3)
             self.assertEqual(ctx, [0, 0, 0, 0])
         self.assertEqual(ctx, [4, 2, 3, 1])
-
-# vim: nu ft=python columns=120 :

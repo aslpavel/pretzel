@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import io
 import os
 import sys
@@ -176,5 +175,3 @@ def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
             err = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
             do_return((yield async_all((out, err, proc.status))))
     return process()
-
-# vim: nu ft=python columns=120 :

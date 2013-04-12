@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from collections import defaultdict
 from ..monad import async
 from ..state_machine import StateMachine
@@ -81,7 +80,7 @@ class Stream(object):
     def close(self):
         """Flush data and dispose stream
         """
-        return self.flush().map(lambda _: self.dispose())
+        return self.flush().map_val(lambda _: self.dispose())
 
     @property
     def disposed(self):
@@ -155,5 +154,3 @@ class StateTransScope(object):
     def __str__(self):
         return str(bool(self))
     __repr__ = __str__
-
-# vim: nu ft=python columns=120 :

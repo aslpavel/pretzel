@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import io
 import re
 import struct
@@ -314,5 +313,3 @@ class ResultQueue(object):
     def __bool__(self):
         return bool(self.queue)
     __nonzero__ = __bool__
-
-# vim: nu ft=python columns=120 :

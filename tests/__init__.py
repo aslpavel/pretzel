@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import functools
 from ..core import Core
 from ..monad import async
@@ -36,5 +35,3 @@ def load_tests(loader, tests, pattern):
         suite.addTests(loader.loadTestsFromModule(test))
 
     return suite
-
-# vim: nu ft=python columns=120 :

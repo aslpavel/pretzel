@@ -522,5 +522,3 @@ class Waker(object):
     def __exit__(self, et, eo, tb):
         self.dispose()
         return False
-
-# vim: nu ft=python columns=120 :

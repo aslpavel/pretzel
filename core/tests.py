@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import time
 import unittest
@@ -127,5 +126,3 @@ class ProcQueueTest(unittest.TestCase):
         else:
             time.sleep(.3)
             os.execvp('/bin/sh', ['/bin/sh', '-c', 'exit {}'.format(os.getpid() & 0xff)])
-
-# vim: nu ft=python columns=120 :

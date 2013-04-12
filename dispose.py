@@ -113,5 +113,3 @@ class CompDisp(Disposable):
         return '<{}[disp:{} len:{}] at {}>'.format(type(self).__name__,
                                                    self.disposed, len(self), id(self))
     __repr__ = __str__
-
-# vim: nu ft=python columns=120 :

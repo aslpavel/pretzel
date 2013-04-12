@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import socket
 import errno
 
@@ -117,6 +116,3 @@ class BufferedSocket (BufferedStream):
         with self.reading:
             sock, addr = yield self.base.accept()
             do_return((BufferedSocket(sock.sock, self.buffer_size, True, sock.core), addr))
-
-
-# vim: nu ft=python columns=120 :

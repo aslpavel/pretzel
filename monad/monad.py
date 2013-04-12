@@ -1,4 +1,3 @@
-
 from functools import wraps, reduce
 
 __all__ = ('Monad',)

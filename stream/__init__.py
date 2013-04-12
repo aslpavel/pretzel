@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from . import stream, file, sock, wrapped, buffered, pipe
 
 from .stream import *
@@ -23,5 +22,3 @@ def load_tests(loader, tests, pattern):
         suite.addTests(loader.loadTestsFromModule(test))
 
     return suite
-
-# vim: nu ft=python columns=120 :

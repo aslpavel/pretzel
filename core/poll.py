@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import errno
 import select
 
@@ -160,5 +159,3 @@ class SelectPoller(Poller):
 
 class KQueuePoller (SelectPoller):
     pass
-
-# vim: nu ft=python columns=120 :

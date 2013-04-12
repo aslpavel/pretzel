@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import inspect
 from functools import wraps
 from .result import Result
@@ -71,5 +70,3 @@ class _return(BaseException):
     Use separate result class instead of StopIteration because otherwise it will
     be handled in standard exception closure.
     """
-
-# vim: nu ft=python columns=120 :
