@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 from functools import wraps, reduce
 
 __all__ = ('Monad',)
@@ -60,7 +60,7 @@ class Monad(object):
     def __rshift__(self, monad_then):
         return self.then(monad_then)
 
-    def map(self, func):
+    def map_val(self, func):
         """Functors map operation
 
         map :: (Monad m) => m a -> (a -> b) -> m b
@@ -77,6 +77,39 @@ class Monad(object):
         join :: (Monad m) => m (m a) -> m a
         """
         return self.bind(lambda m: m.__monad__())
+
+    @classmethod
+    def map(Monad, mapper, vals):
+        """Map with monadic function (mapM)
+
+        map :: (Monad m) => (a -> m b) -> [a] -> m [b]
+        """
+        return Monad.sequence(mapper(val) for val in vals)
+
+    @classmethod
+    def filter(Monad, pred, vals):
+        """Filter with monadic predicate (filterM)
+
+        filter :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
+        """
+        def chain(mvals, val):
+            return mvals.bind(lambda vals: pred(val).__monad__().bind(
+                              lambda add: Monad.unit(vals + (val,) if add else vals)))
+        return reduce(chain, vals, Monad.unit(tuple()))
+
+    @classmethod
+    def fold(Monad, folder, acc, vals):
+        """Fold with monadic function (foldM)
+
+        fold :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
+        """
+        def fold(acc, vals):
+            if not vals:
+                return Monad.unit(acc)
+            val, vals = vals[0], vals[1:]
+            return folder(acc, val).__monad__().bind(lambda acc: fold(acc, vals))
+        vals = tuple(vals)
+        return fold(acc, vals)
 
     @classmethod
     def sequence(Monad, monads):
@@ -129,5 +162,3 @@ class Monad(object):
         ap :: m (a -> b) -> m a -> m b
         """
         return lambda ma: mfunc.bind(lambda func: ma.bind(lambda a: Monad.unit(func(a))))
-
-# vim: nu ft=python columns=120 :
