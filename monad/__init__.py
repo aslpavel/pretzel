@@ -1,3 +1,5 @@
+"""Different kinds of monads and do block notation
+"""
 from . import monad, result, cont, list
 from . import do as _do
 from .monad import *

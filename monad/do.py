@@ -1,3 +1,5 @@
+"""Create Haskell style do blocks from generator function
+"""
 import inspect
 from functools import wraps
 from .result import Result

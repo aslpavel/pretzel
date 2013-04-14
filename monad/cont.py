@@ -1,3 +1,5 @@
+"""Continuation monad implementation
+"""
 from .do import do
 from .monad import Monad
 from .result import Result

@@ -1,3 +1,5 @@
+"""Base monad type with implementation of common monadic functions.
+"""
 from functools import wraps, reduce
 
 __all__ = ('Monad',)

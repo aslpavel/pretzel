@@ -1,3 +1,5 @@
+"""Result monad (Haskell's Either monad)
+"""
 import sys
 import pdb
 import traceback
@@ -8,7 +10,7 @@ __all__ = ('Result',)
 
 
 class Result(Monad):
-    """Result monad (Haskell's Error monad)
+    """Result monad (Haskell's Either monad)
     """
     __slots__ = ('pair',)
 

@@ -1,10 +1,12 @@
+"""List monad implementation
+"""
 from .monad import Monad
 
 __all__ = ('List',)
 
 
 class List(Monad):
-    """List
+    """List monad
     """
     __slots__ = ('items',)
 
