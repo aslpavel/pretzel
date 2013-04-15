@@ -1,8 +1,10 @@
+import io
 import sys
 import errno
 
-__all__ = ('reraise', 'execute', 'ConnectionError', 'BrokenPipeError',
-           'CanceledError', 'BlockingErrorSet', 'PipeErrorSet',)
+__all__ = ('reraise', 'execute', 'string_type', 'ConnectionError',
+           'BrokenPipeError', 'CanceledError', 'BlockingErrorSet',
+           'PipeErrorSet', 'PY2', 'PY3')
 
 
 class CanceledError(Exception):
@@ -31,6 +33,11 @@ if sys.version_info[0] > 2:
         if value.__traceback__ is not tb:
             raise value.with_traceback(tb)
         raise value
+
+    string_type = io.StringIO
+    PY2 = False
+    PY3 = True
+
 else:
     def execute(code, globs=None, locs=None):
         """Execute code in a name space.
@@ -48,6 +55,9 @@ else:
     exec("""def reraise(tp, value, tb=None):
         raise tp, value, tb""")
 
+    string_type = io.BytesIO
+    PY2 = True
+    PY3 = False
 
 BlockingErrorSet = {errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS}
 PipeErrorSet = {errno.EPIPE,  errno.ESHUTDOWN}
