@@ -36,7 +36,7 @@ def do(Monad):
                     val, err = result.pair if isinstance(result, Result) else (result, None)
                     try:
                         monad = (gen.send(val) if err is None else gen.throw(*err)).__monad__()
-                        return Monad.bind(monad, do_next)
+                        return monad.bind(do_next)
 
                     except _return as ret:
                         gen.close()
