@@ -64,7 +64,7 @@ class Result(Monad):
         """
         if self.pair[1] is None:
             return self
-        traceback.print_exception(*self.pair[1])
+        result_excepthook(*self.pair[1], file=file)
         if debug:
             pdb.post_mortem(self.pair[1][2])
 

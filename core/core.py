@@ -369,6 +369,7 @@ class SchedQueue(object):
     Schedules continuation to be executed on specified core
     """
     def __init__(self, core):
+        self.core = core
         self.rets = []
         self.rets_lock = threading.RLock()
 
@@ -383,7 +384,7 @@ class SchedQueue(object):
     def __call__(self):
         with self.rets_lock:
             rets, self.rets = self.rets, []
-        for ret in self.rets:
+        for ret in rets:
             ret(self.core)
 
     def timeout(self):
