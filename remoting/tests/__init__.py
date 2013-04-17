@@ -6,10 +6,10 @@ def load_tests(loader, tests, pattern):
     """Load test protocol
     """
     from unittest import TestSuite
-    from . import tests, monad, core, stream, remoting
+    from . import hub, expr, proxy, conn
 
     suite = TestSuite()
-    for test in (tests, monad, core, stream, remoting):
+    for test in (hub, expr, proxy, conn):
         suite.addTests(loader.loadTestsFromModule(test))
 
     return suite
