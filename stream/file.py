@@ -7,7 +7,7 @@ from ..core import Core, POLL_READ, POLL_WRITE
 from ..monad import async, do_return
 from ..common import BrokenPipeError, BlockingErrorSet, PipeErrorSet
 
-__all__ = ('File', 'fd_close_on_exec', 'fd_blocking',)
+__all__ = ('File', 'BufferedFile', 'fd_close_on_exec', 'fd_blocking',)
 
 
 class File(Stream):

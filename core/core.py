@@ -496,6 +496,8 @@ class Waker(object):
                         if error.errno not in BlockingErrorSet:
                             break
                     yield self.core.poll(self.reader, POLL_READ)
+            except (CanceledError, BrokenPipeError):
+                pass
             finally:
                 self.dispose()
         consumer()()

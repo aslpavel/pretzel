@@ -2,6 +2,8 @@
 """
 from .monad import Monad
 
+__all__ = ('Identity',)
+
 
 class Identity(Monad):
     """Identity monad
@@ -14,5 +16,6 @@ class Identity(Monad):
     def bind(self, func):
         return Identity(func(self.value))
 
-    def unit(self, val):
-        return Identity(val)
+    @classmethod
+    def unit(cls, val):
+        return cls(val)

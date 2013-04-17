@@ -1,15 +1,16 @@
 """Different kinds of monads and do block notation
 """
-from . import monad, result, cont, list
+from . import monad, result, cont, list, ident
 from . import do as _do
 from .monad import *
 from .result import *
 from .do import *
 from .cont import *
 from .list import *
+from .ident import *
 
 __all__ = (monad.__all__ + result.__all__ + _do.__all__ + cont.__all__ +
-           list.__all__)
+           list.__all__ + ident.__all__)
 
 
 def load_tests(loader, tests, pattern):

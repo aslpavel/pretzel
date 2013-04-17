@@ -62,11 +62,11 @@ class Result(Monad):
 
         Show traceback if any and optionally interrupt for debugging.
         """
-        if self.pair[1] is None:
-            return self
-        result_excepthook(*self.pair[1], file=file)
-        if debug:
-            pdb.post_mortem(self.pair[1][2])
+        if self.pair[1] is not None:
+            result_excepthook(*self.pair[1], file=file)
+            if debug:
+                pdb.post_mortem(self.pair[1][2])
+        return self
 
     @classmethod
     def unit(cls, val):

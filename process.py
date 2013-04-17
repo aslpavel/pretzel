@@ -7,7 +7,7 @@ from .dispose import FuncDisp, CompDisp
 from .monad import Cont, async, async_all, do_return
 from .core import Core
 from .stream import Pipe
-from .common import BrokenPipeError
+from .common import BrokenPipeError, CanceledError
 
 __all__ = ('Process', 'PIPE', 'DEVNULL', 'STDIN', 'STDOUT', 'STDERR', 'process_call')
 
@@ -122,6 +122,8 @@ class Process(object):
             try:
                 if self.kill_delay > 0:
                     yield self.core.sleep(self.kill_delay)
+            except CanceledError:
+                pass
             finally:
                 if not self.status.completed and self.kill_delay >= 0:
                     os.kill(self.pid, signal.SIGTERM)

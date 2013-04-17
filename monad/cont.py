@@ -19,7 +19,7 @@ class Cont(Monad):
     def __init__(self, run):
         self.run = run
 
-    def __call__(self, ret=lambda val: val):
+    def __call__(self, ret=lambda val: isinstance(val, Result) and val.trace()):
         return self.run(ret)
 
     def __or__(self, other):
