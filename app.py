@@ -18,5 +18,5 @@ def app(main):
             if not core.disposed:
                 core()
         assert app_future.completed
-        app_future.result
+        app_future.result.value  # raises error if test function has failed
     return app_main
