@@ -112,7 +112,7 @@ class Result(Monad):
         return '<{}[{}]>'.format(type(self).__name__, val)
     __repr__ = __str__
 
-tb_fmt = """
+tb_fmt = """\
 `-------------------------------------------------------------------------------
 Location : {host}/{pid}
 Error    : {{name}}: {{message}}
