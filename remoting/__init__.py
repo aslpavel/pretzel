@@ -21,3 +21,10 @@ def load_tests(loader, tests, pattern):
         suite.addTests(loader.loadTestsFromModule(test))
 
     return suite
+
+
+def load_bench(runner):
+    """Load benchmarks protocol
+    """
+    from . import bench
+    bench.load_bench(runner)

@@ -1,3 +1,5 @@
+"""Common function and types
+"""
 import io
 import sys
 import errno

@@ -12,7 +12,7 @@ def app(main):
     """
     @functools.wraps(main)
     def app_main(*a, **kw):
-        with Core.local() as core:
+        with Core.local(Core()) as core:
             app_future = async(main)(*a, **kw).future()
             app_future(lambda _: core.dispose())
             if not core.disposed:

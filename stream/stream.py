@@ -80,7 +80,10 @@ class Stream(object):
     def close(self):
         """Flush data and dispose stream
         """
-        return self.flush().map_val(lambda _: self.dispose())
+        def dispose(val):
+            self.dispose()
+            return val
+        return self.flush().map_val(dispose)
 
     @property
     def disposed(self):
