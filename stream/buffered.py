@@ -120,8 +120,7 @@ class BufferedStream(WrappedStream):
         Just enqueues data to write buffer (buffer's size limit would not be
         checked), flush need to be called manually.
         """
-        with self.writing:  # state check
-            self.write_buffer.enqueue(data)
+        self.write_buffer.enqueue(data)
         return len(data)
 
     @async
