@@ -4,6 +4,7 @@ import os
 import sys
 import pdb
 import socket
+import textwrap
 import traceback
 from .monad import Monad
 from ..common import reraise, string_type, PY2
@@ -95,29 +96,29 @@ class Result(Monad):
         return hash(self.pair[0] if self.pair[1] is None else self.pair[1][1])
 
     def __reduce__(self):
-        value, error = self.pair
-        if error is None:
-            return _from_value, (value,)
+        val, err = self.pair
+        if err is None:
+            return _from_value, (val,)
         else:
-            tb = (tb_fmt.format(name=error[0].__name__, message=str(error[1]),
-                                tb=''.join(traceback.format_exception(*error))))
-            tb += getattr(error[1], '_saved_traceback', '')
-            exc = error[1]
+            tb = (self.tb_fmt.format(name=err[0].__name__, message=str(err[1]),
+                                     tb=''.join(traceback.format_exception(*err))))
+            tb += getattr(err[1], '_saved_traceback', '')
+            exc = err[1]
             exc._saved_traceback = tb
             return _from_exc, (exc,)
+
+    tb_fmt = textwrap.dedent("""\
+        `-------------------------------------------------------------------------------
+        Location : {host}/{pid}
+        Error    : {{name}}: {{message}}
+
+        {{tb}}""".format(host=socket.gethostname(), pid=os.getpid()))
 
     def __str__(self):
         val = ('val:{}'.format(self.pair[0]) if self.pair[1] is None else
                'err:{}'.format(repr(self.pair[1][1])))
         return '<{}[{}]>'.format(type(self).__name__, val)
     __repr__ = __str__
-
-tb_fmt = """\
-`-------------------------------------------------------------------------------
-Location : {host}/{pid}
-Error    : {{name}}: {{message}}
-
-{{tb}}""".format(host=socket.gethostname(), pid=os.getpid())
 
 
 def result_excepthook(et, eo, tb, file=None):

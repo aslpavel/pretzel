@@ -1,3 +1,5 @@
+"""Asynchronous application trampoline decorator
+"""
 import functools
 from .core import Core
 from .monad import do_return, async, async_any, async_all, async_block
@@ -8,7 +10,7 @@ __all__ = ('app', 'do_return', 'async', 'async_any', 'async_all', 'async_block',
 def app(main):
     """Application decorator
 
-    Create asynchronous application with provide main function.
+    Create main coroutine and initialize asynchronous context.
     """
     @functools.wraps(main)
     def app_main(*a, **kw):

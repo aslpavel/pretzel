@@ -5,31 +5,37 @@ from .monad import Monad
 __all__ = ('List',)
 
 
-class List(Monad):
+class List(tuple, Monad):
     """List monad
     """
-    __slots__ = ('items',)
+    __slots__ = tuple()
 
-    def __init__(self, items):
-        self.items = tuple(items)
+    def __new__(cls, *vals):
+        return tuple.__new__(cls, vals)
 
-    def __iter__(self):
-        return iter(self.items)
+    def __init__(cls, *vals):
+        pass
+
+    @classmethod
+    def from_iter(cls, iter):
+        return cls(*iter)
 
     @staticmethod
     def unit(val):
-        return List((val,))
+        return List(val)
 
     def bind(self, func):
-        return List(fval for mval in self for fval in func(mval).__monad__())
+        return List.from_iter(fval
+                              for mval in self
+                              for fval in func(mval).__monad__())
 
     @staticmethod
     def zero():
-        return List(tuple())
+        return List()
 
     def plus(self, monad):
-        return List(self.items + monad.__monad__().items)
+        return List.from_iter(self + monad.__monad__())
 
     def __str__(self):
-        return '<{}>'.format(', '.join(repr(item) for item in self.items))
+        return '<{}>'.format(', '.join(repr(val) for val in self))
     __repr__ = __str__
