@@ -29,6 +29,10 @@ class List(tuple, Monad):
                               for mval in self
                               for fval in func(mval).__monad__())
 
+    @property
+    def value(self):
+        return tuple(self)
+
     @staticmethod
     def zero():
         return List()

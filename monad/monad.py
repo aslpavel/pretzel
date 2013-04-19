@@ -31,6 +31,13 @@ class Monad(object):
         """
         raise NotImplementedError()
 
+    @property
+    def value(self):
+        """Get embedded value inside greenlet do block
+        """
+        from .do_green import bind_green
+        return bind_green(self)
+
     def __irshift__(self, func):
         return self.bind(func)
 

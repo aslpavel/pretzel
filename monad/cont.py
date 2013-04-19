@@ -1,11 +1,12 @@
 """Continuation monad implementation
 """
 from .do import do
+from .do_green import do_green
 from .monad import Monad
 from .result import Result
 from functools import wraps
 
-__all__ = ('Cont', 'Future', 'callcc', 'async', 'async_block',
+__all__ = ('Cont', 'Future', 'callcc', 'async', 'async_green', 'async_block',
            'async_any', 'async_all',)
 
 
@@ -62,6 +63,16 @@ def async(block):
     is not possible with "do" block.
     """
     do_block = do(Cont)(block)
+    return wraps(block)(lambda *a, **kw: Cont(lambda ret: do_block(*a, **kw).run(ret)))
+
+
+def async_green(block):
+    """Better "do_green" block for continuation monad
+
+    It is also possible to run returned continuation multiple times, which
+    is not possible with "do_green" block.
+    """
+    do_block = do_green(Cont)(block)
     return wraps(block)(lambda *a, **kw: Cont(lambda ret: do_block(*a, **kw).run(ret)))
 
 
