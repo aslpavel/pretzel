@@ -189,7 +189,7 @@ class Connection(object):
 
     def __str__(self):
         return ("<{} [state:{} addr:{}] at {}>".format(type(self).__name__,
-                self.state.state_name(), self.sender.dst, id(self)))
+                self.state.state_name(), self.sender.addr, id(self)))
 
     def __repr__(self):
         return str(self)

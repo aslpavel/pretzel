@@ -11,11 +11,11 @@ __all__ = ('File', 'BufferedFile', 'fd_close_on_exec', 'fd_blocking',)
 
 
 class File(Stream):
-    def __init__(self, fd, closefd=True, init=None, core=None):
+    def __init__(self, fd, closefd=None, init=None, core=None):
         Stream.__init__(self)
 
         self.fd = fd if isinstance(fd, int) else fd.fileno()
-        self.closefd = closefd
+        self.closefd = closefd is None or closefd
         self.core = core or Core.local()
         self.blocking(False)
         if init is None or init:

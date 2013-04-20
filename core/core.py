@@ -120,10 +120,10 @@ class Core(object):
         """Schedule continuation to be executed on this core
 
         Scheduled continuation will be executed on next iteration circle. This
-        function can be called from different thread.
+        function can be called from different thread. Returns this core object.
         """
         if self.thread_ident == get_ident():
-            return self.time_queue.on(0)
+            return self.time_queue.on(0).then_val(self)
         else:
             return self.sched_queue.on()
 

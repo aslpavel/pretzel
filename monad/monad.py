@@ -62,11 +62,14 @@ class Monad(object):
     def __add__(self, monad):
         return self.plus(monad)
 
-    def then(self, monad_then):
-        return self.bind(lambda _: monad_then)
+    def then(self, monad):
+        return self.bind(lambda _: monad)
 
-    def __rshift__(self, monad_then):
-        return self.then(monad_then)
+    def __rshift__(self, monad):
+        return self.then(monad)
+
+    def then_val(self, val):
+        return self.then(self.unit(val))
 
     def map_val(self, func):
         """Functors map operation
