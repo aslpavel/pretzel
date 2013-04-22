@@ -47,9 +47,13 @@ class ShellConnection(StreamConnection):
         Target is pickle-able and call-able which will be called upon successful
         connection with connection this as its only argument.
         """
+        def preexec():
+            os.chdir('/')
+            os.setsid()
+
         self.process = (self.disp.add(Process(self.command, stdin=PIPE,
-                        stdout=PIPE, kill_delay=-1, buffer_size=self.buffer_size,
-                        core=self.core)))
+                        stdout=PIPE, preexec=preexec, kill_delay=-1,
+                        buffer_size=self.buffer_size, core=self.core)))
 
         # send payload
         payload = (BootImporter.from_modules().bootstrap(

@@ -2,6 +2,7 @@
 
 Connection with forked and exec-ed process via two pipes.
 """
+import os
 import sys
 
 from .stream import StreamConnection
@@ -41,6 +42,8 @@ class ForkConnection(StreamConnection):
         def preexec():
             in_pipe.detach_reader()
             out_pipe.detach_writer()
+            os.chdir('/')
+            os.setsid()
 
         self.process = self.disp.add(Process(self.command,
                                      stdin=PIPE, preexec=preexec, kill_delay=-1,
