@@ -79,7 +79,7 @@ class SocketSSL(Socket):
                         event = POLL_WRITE
                     else:
                         raise
-                yield self.core.poll(self.fd, event, cancel)
+                yield self.core.poll(self.fd, event)
 
     @async
     def accept(self):
@@ -98,7 +98,7 @@ class SocketSSL(Socket):
                 except socket.error as error:
                     if error.errno not in BlockingErrorSet:
                         raise
-                yield self.core.poll(self.fd, POLL_READ, cancel)
+                yield self.core.poll(self.fd, POLL_READ)
 
 
 class BufferedSocketSSL(BufferedStream):

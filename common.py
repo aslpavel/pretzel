@@ -61,5 +61,6 @@ else:
     PY2 = True
     PY3 = False
 
-BlockingErrorSet = {errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS}
+BlockingErrorSet = {errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK,
+                    errno.EINPROGRESS, errno.EINTR}
 PipeErrorSet = {errno.EPIPE,  errno.ESHUTDOWN}
