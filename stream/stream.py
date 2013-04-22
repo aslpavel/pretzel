@@ -28,7 +28,7 @@ class Stream(object):
         STATE_IDLE: (STATE_READ, STATE_WRITE, STATE_DISPOSED),
         STATE_DISPOSED: (STATE_DISPOSED,),
     })
-    STATE_NAMES = defaultdict(lambda: 'unknown')
+    STATE_NAMES = defaultdict(lambda: 'invalid')
     STATE_NAMES.update({
         STATE_NONE: 'none',
         STATE_READ: 'read',
@@ -147,7 +147,7 @@ class StateTransScope(object):
         return self
 
     def __exit__(self, et, eo, tb):
-        self.state(self.succ if et is None else self.fail)
+        self.state(self.fail if issubclass(et, Exception) else self.succ)
         return False
 
     def __bool__(self):
