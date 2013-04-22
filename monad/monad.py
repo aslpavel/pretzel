@@ -1,5 +1,6 @@
 """Base monad type with implementation of common monadic functions.
 """
+from .proxy import Proxy
 from functools import wraps, reduce
 
 __all__ = ('Monad',)
@@ -37,6 +38,12 @@ class Monad(object):
         """
         from .do_green import bind_green
         return bind_green(self)
+
+    @property
+    def proxy(self):
+        """Put this monad inside proxy monad
+        """
+        return Proxy(self)
 
     def __irshift__(self, func):
         return self.bind(func)
