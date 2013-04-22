@@ -42,7 +42,8 @@ class Cont(Monad):
         return Cont(lambda ret: ret(val))
 
     def bind(self, func):
-        return Cont(lambda ret: self.run(lambda val: func(val).__monad__().run(ret)))
+        return Cont(lambda ret: self.run(
+                    lambda val: func(val).__monad__().run(ret)))
 
     def future(self):
         return Future(self)
@@ -53,7 +54,8 @@ def callcc(func):
 
     callcc :: ((a -> Cont r b) -> Cont r a) -> Cont r a
     """
-    return Cont(lambda ret: func(lambda val: Cont(lambda _: ret(val))).__monad__().run(ret))
+    return Cont(lambda ret: func(lambda val: Cont(
+                                 lambda _: ret(val))).__monad__().run(ret))
 
 
 def async(block):
@@ -63,7 +65,8 @@ def async(block):
     is not possible with "do" block.
     """
     do_block = do(Cont)(block)
-    return wraps(block)(lambda *a, **kw: Cont(lambda ret: do_block(*a, **kw).run(ret)))
+    return wraps(block)(lambda *a, **kw: Cont(
+                        lambda ret: do_block(*a, **kw).run(ret)))
 
 
 def async_green(block):
@@ -73,7 +76,8 @@ def async_green(block):
     is not possible with "do_green" block.
     """
     do_block = do_green(Cont)(block)
-    return wraps(block)(lambda *a, **kw: Cont(lambda ret: do_block(*a, **kw).run(ret)))
+    return wraps(block)(lambda *a, **kw: Cont(
+                        lambda ret: do_block(*a, **kw).run(ret)))
 
 
 def async_block(block):

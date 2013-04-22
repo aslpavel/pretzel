@@ -12,7 +12,12 @@ __all__ = ('do_green', 'bind_green',)
 
 if greenlet is None:
     def do_green(Monad):
-        raise NotImplementedError('failed to load greenelt module')
+        def do(block):
+            @wraps(block)
+            def do_block(*args, **kw):
+                raise NotImplementedError('failed to load greenelt module')
+            return do_block
+        return do
 
     def bind_green(monad):
         raise NotImplementedError('failed to load greenlet monad')
