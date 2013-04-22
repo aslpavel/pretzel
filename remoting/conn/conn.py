@@ -157,11 +157,12 @@ class Connection(object):
             except InterruptError:
                 yield self.recv_ev  # wait for pending import
             except Exception:
-                err = Result.from_current_error()
-                if src is not None:
-                    src.send(err)
-                else:
-                    err.trace()  # nowhere to send, just show trace
+                if not self.disposed:
+                    err = Result.from_current_error()
+                    if src is not None:
+                        src.send(err)
+                    else:
+                        err.trace()  # nowhere to send, just show trace
                 break
 
     def __monad__(self):

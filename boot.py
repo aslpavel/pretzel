@@ -12,7 +12,6 @@ import json
 import struct
 import pickle
 import inspect
-import pkgutil
 import binascii
 import textwrap
 import importlib
@@ -80,12 +79,14 @@ class BootImporter(object):
         if modname in self.loaders:
             return  # skip already imported packages
 
-        loader = pkgutil.get_loader(modname)
-        if getattr(loader, '__tag__', None) == self.__tag__:
-            # package loader is a BootImporter
-            self.loaders.update((name, loader) for name, loader in
-                                loader.loaders.items() if name.startswith(modname))
-            return
+        loader = getattr(module, '__loader__', None)
+        for importer in sys.meta_path:
+            if modname in getattr(importer, 'loaders', {}):
+                # package was loaded with BootImporter
+                for name, loader in importer.loaders.items():
+                    if name.startswith(modname):
+                        self.loaders[name] = loader
+                return
 
         # find package file
         filename = inspect.getsourcefile(module)
