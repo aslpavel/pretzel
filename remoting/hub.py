@@ -2,7 +2,7 @@
 """
 import threading
 import itertools
-from ..monad import Cont
+from ..monad import Cont, async_block
 
 __all__ = ('Hub', 'Sender', 'Receiver', 'Pipe',)
 
@@ -108,7 +108,8 @@ class Sender(object):
         return self.hub.send(msg, self.addr, src)
 
     def __call__(self, msg):
-        def run(ret):
+        @async_block
+        def sender_cont(ret):
             addr = self.hub.addr()
             self.hub.recv_once(addr, lambda msg, dst, src: ret(msg))
             try:
@@ -116,7 +117,7 @@ class Sender(object):
             except Exception:
                 self.hub.unrecv(addr)
                 raise
-        return Cont(run)
+        return sender_cont
 
     def __eq__(self, other):
         return (self.hub, self.addr) == (other.hub, other.addr)

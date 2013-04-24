@@ -38,16 +38,19 @@ class HubTest(unittest.TestCase):
         # call
         recv(res)
         send('3')(res)
-        with self.assertRaises(ValueError):
-            send('4')(res)
         self.assertEqual(len(Hub.local()), 1)  # handler will be cleaned up
         msg, dst, src = res.pop()
         self.assertEqual(msg, '3')
         self.assertEqual(dst, recv.addr)
         self.assertTrue(isinstance(src, Sender))
         self.assertFalse(res)
+
+        with self.assertRaises(ValueError):
+            send('4')(res)  # send on address without a receiver
+            res.pop()[0].value
+
         src.send('5')
-        self.assertEqual(res.pop(), ('5',))
+        self.assertEqual(res.pop()[0].value, '5')
         self.assertFalse(res)
 
         self.assertEqual(len(Hub.local()), 0)
