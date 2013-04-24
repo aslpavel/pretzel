@@ -40,6 +40,10 @@ class List(tuple, Monad):
     def plus(self, monad):
         return List.from_iter(self + monad.__monad__())
 
+    def __reduce__(self):
+        return List, tuple(self)
+
     def __str__(self):
-        return '<{}>'.format(', '.join(repr(val) for val in self))
+        return '[{}]'.format(', '.join(repr(val) for val in self))
+
     __repr__ = __str__
