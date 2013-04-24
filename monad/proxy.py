@@ -18,9 +18,9 @@ class Proxy(object):
     def __monad__(self):
         return self.__monad
 
-    def __map(self, operator):
+    def __map(self, func):
         monad = self.__monad
-        return Proxy(monad.bind(lambda val: monad.unit(operator(val))))
+        return type(self)(monad.bind(lambda val: monad.unit(func(val))))
 
     def __call__(self, *a, **kw):
         return self.__map(lambda val: val(*a, **kw))
