@@ -30,7 +30,6 @@ class ShellConnection(StreamConnection):
     """
     def __init__(self, command=None, escape=None, py_exec=None,
                  buffer_size=None, hub=None, core=None):
-
         StreamConnection.__init__(self, hub, core)
 
         self.buffer_size = buffer_size

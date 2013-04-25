@@ -14,8 +14,14 @@ class Identity(Monad):
         self.value = value
 
     def bind(self, func):
-        return Identity(func(self.value))
+        return func(self.value)
 
     @classmethod
     def unit(cls, val):
         return cls(val)
+
+    def __str__(self):
+        return 'Identity({})'.format(self.value)
+
+    def __repr__(self):
+        return str(self)

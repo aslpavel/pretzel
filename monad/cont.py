@@ -48,6 +48,11 @@ class Cont(Monad):
     def future(self):
         return Future(self)
 
+    def __str__(self):
+        return 'Cont({})'.format(self.run)
+
+    __repr__ = __str__
+
 
 def callcc(func):
     """Call with current continuation
