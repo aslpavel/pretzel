@@ -50,9 +50,9 @@ class ShellConnection(StreamConnection):
             os.chdir('/')
             os.setsid()
 
-        self.process = (self.disp.add(Process(self.command, stdin=PIPE,
-                        stdout=PIPE, preexec=preexec, kill_delay=-1,
-                        buffer_size=self.buffer_size, core=self.core)))
+        self.process = yield (self.disp.add(Process(self.command, stdin=PIPE,
+                              stdout=PIPE, preexec=preexec, kill_delay=-1,
+                              buffer_size=self.buffer_size, core=self.core)))
 
         # send payload
         payload = (BootImporter.from_modules().bootstrap(

@@ -63,6 +63,11 @@ class Event(object):
         return bool(self.handlers)
 
     def __monad__(self):
-        """Event as a continuation monad
+        """Continuation for nearest event
         """
         return Cont(lambda ret: self.on_once(ret))
+
+    def future(self):
+        """Future for nearest event
+        """
+        return self.__monad__().future()

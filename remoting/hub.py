@@ -4,7 +4,7 @@ import threading
 import itertools
 from ..monad import Cont, async_block
 
-__all__ = ('Hub', 'Sender', 'Receiver', 'Pipe',)
+__all__ = ('Hub', 'Sender', 'Receiver', 'pair',)
 
 
 class Hub(object):
@@ -170,7 +170,7 @@ class Receiver(object):
         return str(self)
 
 
-def Pipe(addr=None, hub=None):
+def pair(addr=None, hub=None):
     """Create receiver-sender pair
     """
     hub = hub or Hub.local()

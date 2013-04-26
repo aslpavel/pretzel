@@ -4,7 +4,7 @@ import os
 import sys
 import inspect
 import pkgutil
-from .hub import Pipe
+from .hub import pair
 from .expr import SetItemExpr, GetAttrExpr, LoadArgExpr
 from ..core import Core
 from ..monad import Result, async, do_return
@@ -54,7 +54,7 @@ class Importer(object):
                 send(Result.from_current_error())
             return True
 
-        recv, send = Pipe(hub=hub)
+        recv, send = pair(hub=hub)
         recv(importer_handler)
         return Importer(send)
 

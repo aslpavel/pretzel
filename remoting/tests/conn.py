@@ -2,7 +2,7 @@
 import os
 import unittest
 from .proxy import Remote
-from ..hub import Pipe
+from ..hub import pair
 from ..conn import ForkConnection
 from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
@@ -50,7 +50,7 @@ class ConnectionTest(unittest.TestCase):
                     self.assertTrue(isinstance(value_proxy, Proxy))
 
         # process exit status
-        self.assertEqual((yield conn.process), 0)
+        self.assertEqual((yield conn.process.status), 0)
         self.assertFalse(conn.hub.handlers)
 
     @async_test
@@ -74,7 +74,7 @@ class ConnectionTest(unittest.TestCase):
 
     @async_test
     def test_sender_roundtrip(self):
-        r, s = Pipe()
+        r, s = pair()
         with (yield ForkConnection()) as conn:
             self.assertEqual(tuple((yield conn(s)).addr), tuple(s.addr))
 

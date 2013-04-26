@@ -20,21 +20,22 @@ class Pipe (object):
             if fds[1] is not None:
                 self.writer = BufferedFile(fds[1], buffer_size, False, core)
 
-    def detach_reader(self, fd=None, blocking=None):
+    def detach_reader(self, fd=None, blocking=None, close_on_exec=None):
         """Detach read and close write descriptors
         """
-        return self._detach(self.reader, fd, blocking)
+        return self._detach(self.reader, fd, blocking, close_on_exec)
 
-    def detach_writer(self, fd=None, blocking=None):
+    def detach_writer(self, fd=None, blocking=None, close_on_exec=None):
         """Detach write and close read descriptors
         """
-        return self._detach(self.writer, fd, blocking)
+        return self._detach(self.writer, fd, blocking, close_on_exec)
 
-    def _detach(self, stream, fd=None, blocking=None, cancel=None):
+    def _detach(self, stream, fd=None, blocking=None, close_on_exec=None):
         if stream is None:
             raise ValueError('pipe is disposed')
 
         stream.blocking(blocking is None or blocking)
+        stream.close_on_exec(close_on_exec)
         stream_fd = stream.detach()
         self.dispose()
 

@@ -188,6 +188,8 @@ class Future(object):
     __nonzero__ = __bool__
 
     def __str__(self):
-        return ('<{}[comp:{} res:{}] at {}>'.format(type(self).__name__,
-                self.completed, self.result, id(self)))
-    __repr__ = __str__
+        return ('{}(done:{}, value:{})'.format(type(self).__name__,
+                self.completed, self.result))
+
+    def __repr__(self):
+        return str(self)

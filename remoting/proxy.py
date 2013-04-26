@@ -1,6 +1,6 @@
 """Send-able lazy proxy object
 """
-from .hub import Pipe
+from .hub import pair
 from .expr import (LoadArgExpr, LoadConstExpr, CallExpr, GetAttrExpr,
                    GetItemExpr, BindExpr)
 
@@ -71,6 +71,6 @@ def proxify(target, dispose=None, hub=None):
         code(target)(lambda val: val.trace() if src is None else src.send(val))
         return True
 
-    recv, send = Pipe(hub=hub)
+    recv, send = pair(hub=hub)
     recv(proxy_handler)
     return Proxy(send, LoadArgExpr(0))

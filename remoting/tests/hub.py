@@ -1,6 +1,6 @@
 import unittest
 import collections
-from ..hub import Hub, Address, Sender, Pipe
+from ..hub import Hub, Address, Sender, pair
 
 
 class HubTest(unittest.TestCase):
@@ -15,7 +15,7 @@ class HubTest(unittest.TestCase):
 
     def test_sender_receiver(self):
         res = ResultQueue()
-        recv, send = Pipe()
+        recv, send = pair()
 
         with self.assertRaises(ValueError):
             send.send('no-recv')  # no receiver
@@ -56,7 +56,7 @@ class HubTest(unittest.TestCase):
         self.assertEqual(len(Hub.local()), 0)
 
     def test_faulty_handler(self):
-        recv, send = Pipe()
+        recv, send = pair()
 
         def faulty(msg, dst, src):
             if msg == '0':
@@ -72,7 +72,7 @@ class HubTest(unittest.TestCase):
 
     def test_reentrancy(self):
         res = ResultQueue()
-        recv, send = Pipe()
+        recv, send = pair()
 
         def handler(msg, dst, src):
             res(msg)

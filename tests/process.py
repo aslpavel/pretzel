@@ -28,27 +28,16 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_cleanup(self):
-        with Process(['cat'], stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
+        with (yield Process(['cat'], stdin=PIPE, stdout=PIPE, stderr=PIPE)) as proc:
             self.assertTrue(proc.stdin.close_on_exec())
             self.assertTrue(proc.stdout.close_on_exec())
             self.assertTrue(proc.stderr.close_on_exec())
-        yield proc
-        self.assertEqual(proc.stdin, None)
-        self.assertEqual(proc.stdout, None)
-        self.assertEqual(proc.stderr, None)
+        yield proc.status
 
     @async_test
     def test_bad_exec(self):
         with self.assertRaises(OSError):
             print((yield process_call(['does_not_exists'])))
-
-        '''
-        # wait for full process termination (SIGCHLD)
-        process_waiter = ProcessWaiter.Instance ()
-        for _ in Core.Instance ():
-            if not process_waiter.conts:
-                break
-        '''
 
     @async_test
     def test_stress(self):

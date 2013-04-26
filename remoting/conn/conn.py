@@ -4,7 +4,7 @@ import io
 import sys
 
 from pickle import Pickler, Unpickler
-from ..hub import Hub, Pipe, Sender
+from ..hub import Hub, Sender, pair
 from ..proxy import Proxy
 from ..expr import LoadConstExpr, LoadArgExpr
 from ...common import reraise
@@ -37,7 +37,7 @@ class Connection(object):
         self.core = core or Core.local()
         self.module_map = {}
 
-        self.receiver, self.sender = Pipe(hub=self.hub)
+        self.receiver, self.sender = pair(hub=self.hub)
         self.disp = CompDisp()
         self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
         self.recv_ev = Event()
