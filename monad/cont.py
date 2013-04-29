@@ -93,11 +93,15 @@ def async_block(block):
     resolved with result monad containing this error.
     """
     def async_block(ret):
+        def async_ret(val=None):
+            try:
+                ret(val if isinstance(val, Result) else Result.from_value(val))
+            except Exception:
+                Result.from_current_error().trace()
         try:
-            block(lambda val=None: ret(val if isinstance(val, Result) else
-                                       Result.from_value(val)))
+            block(async_ret)
         except Exception:
-            ret(Result.from_current_error())
+            async_ret(Result.from_current_error())
     return Cont(async_block)
 
 

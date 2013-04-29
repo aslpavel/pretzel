@@ -31,7 +31,7 @@ def shell():
     stdin = BufferedFile(0, closefd=False)
     getline = singleton(lambda: stdin.read_until_sub()
                         .map_val(lambda res: res.bind(
-                                 lambda line: line.strip().decode())))
+                                 lambda line: line.rstrip().decode())))
 
     # interrupt signal handling
     def bind_sigint(monad):
