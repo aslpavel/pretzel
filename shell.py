@@ -58,6 +58,7 @@ def shell():
         from pretzel.core import *
         from pretzel.remoting import *
         from pretzel.process import *
+        from pretzel.task import *
         """).split('\n'):
             shell.runsource(line.rstrip())
     shell.interact(textwrap.dedent("""\
