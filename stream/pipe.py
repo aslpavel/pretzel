@@ -62,8 +62,7 @@ class Pipe (object):
         return False
 
     def __str__(self):
-        return '<Pipe [reader:{} writer:{}] at {}>'.format(self.reader,
-                                                           self.writer, id(self))
+        return 'Pipe(reader:{}, writer:{})'.format(self.reader, self.writer)
 
     def __rerp__(self):
         return str(self)

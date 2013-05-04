@@ -1,5 +1,6 @@
 """Continuation monad implementation
 """
+import types
 from .do import do
 from .do_green import do_green
 from .monad import Monad
@@ -49,9 +50,12 @@ class Cont(Monad):
         return Future(self)
 
     def __str__(self):
-        return 'Cont({})'.format(self.run)
+        return ('Cont(run:{})'.format(
+                getattr(self.run, '__qualname__', self.run.__name__)
+                if isinstance(self.run, types.FunctionType) else self.run))
 
-    __repr__ = __str__
+    def __repr__(self):
+        return str(self)
 
 
 def callcc(func):

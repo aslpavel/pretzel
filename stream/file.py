@@ -82,9 +82,11 @@ class File(Stream):
         if self.fd > 0:
             self.blocking() and flags.append('blocking')
             self.close_on_exec() and flags.append('close_on_exec')
-        return ('<{}[fd:{} flags:{} state:{}] at {}>'.format(type(self).__name__,
-                self.fd, ','.join(flags), self.state.state_name(), id(self)))
-    __repr__ = __str__
+        return ('{}(fd:{}, flags:{}, state:{})'.format(type(self).__name__,
+                self.fd, ','.join(flags), self.state.state_name()))
+
+    def __repr__(self):
+        return str(self)
 
 
 class BufferedFile(BufferedStream):

@@ -30,11 +30,11 @@ class Stream(object):
     })
     STATE_NAMES = defaultdict(lambda: 'invalid')
     STATE_NAMES.update({
-        STATE_NONE: 'none',
+        STATE_NONE: 'not-inited',
         STATE_READ: 'read',
         STATE_WRITE: 'write',
         STATE_READ_WRITE: 'read-write',
-        STATE_INIT: 'init',
+        STATE_INIT: 'initing',
         STATE_IDLE: 'idle',
         STATE_DISPOSED: 'disposed'
     })
@@ -100,9 +100,10 @@ class Stream(object):
         return False
 
     def __str__(self):
-        return '<{}[state:{}] at {}>'.format(type(self).__name__,
-                                             self.state.state_name(), id(self))
-    __repr__ = __str__
+        return '{}(state:{})'.format(type(self).__name__, self.state.state_name())
+
+    def __repr__(self):
+        return str(self)
 
 
 class StateFlagScope(object):

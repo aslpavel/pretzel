@@ -51,15 +51,12 @@ def shell():
         'core': Core.local(),
     })
     shell.raw_input = input_async
+    imports = ['from . import {}'.format(name) for name in
+              ['core', 'monad', 'remoting', 'stream', 'process', 'task', 'event']]
     for line in textwrap.dedent("""\
         from __future__ import print_function
-        from pretzel.monad import *
-        from pretzel.event import *
-        from pretzel.core import *
-        from pretzel.remoting import *
-        from pretzel.process import *
-        from pretzel.task import *
-        """).split('\n'):
+        __package__ = 'pretzel'
+        """).split('\n') + imports:
             shell.runsource(line.rstrip())
     shell.interact(textwrap.dedent("""\
         Welcome to asynchronous pretzel shell!
