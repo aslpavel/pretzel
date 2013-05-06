@@ -1,5 +1,6 @@
 """Micro virtual machine, compiler and abstract syntax tree for it
 """
+import types
 from ..monad import Cont, Result
 from ..common import string_type
 
@@ -116,7 +117,10 @@ class LoadConstExpr(Expr):
         gen.emit(OP_LDCONST, gen.const(self.const))
 
     def __str__(self):
-        return repr(self.const)
+        if isinstance(self.const, types.FunctionType):
+            return getattr(self.const, '__qualname__', self.const.__name__)
+        else:
+            return repr(self.const)
 
 
 class CallExpr(Expr):

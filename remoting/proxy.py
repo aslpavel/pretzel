@@ -17,8 +17,8 @@ class Proxy(object):
         self._expr = expr
         self._code = None
 
-    def __call__(self, *args):
-        return Proxy(self._sender, CallExpr(self._expr, *args))
+    def __call__(self, *args, **kwargs):
+        return Proxy(self._sender, CallExpr(self._expr, *args, **kwargs))
 
     def __getattr__(self, name):
         return Proxy(self._sender, GetAttrExpr(self._expr, name))
@@ -41,7 +41,7 @@ class Proxy(object):
         return type(self), (self._sender, self._expr)
 
     def __str__(self):
-        return ('<{}[addr:{} expr:{}]>'.format(type(self).__name__,
+        return ('{}(addr:{}, expr:{})'.format(type(self).__name__,
                 self._sender.addr if self._sender else None, self._expr))
 
     def __repr__(self):
