@@ -14,8 +14,10 @@ class ExprTest(unittest.TestCase):
         self.assertEqual(run_expr(LoadConstExpr('constant')), 'constant')
 
     def test_call(self):
-        fn = lambda *a: a
-        self.assertEqual(run_expr(CallExpr(fn, 'arg')), ('arg',))
+        fn = lambda *a, **kw: (a, kw)
+        self.assertEqual(run_expr(CallExpr(fn, 'arg')), fn('arg'))
+        self.assertEqual(run_expr(CallExpr(fn, 0, 1, 2, one=1, two=2)),
+                         fn(0, 1, 2, one=1, two=2))
 
     def test_attr(self):
         class A(object):

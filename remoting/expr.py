@@ -120,21 +120,31 @@ class LoadConstExpr(Expr):
 
 
 class CallExpr(Expr):
-    __slots__ = ('fn', 'args',)
+    __slots__ = ('fn', 'args', 'kwargs',)
 
-    def __init__(self, fn, *args):
+    def __init__(self, fn, *args, **kwargs):
+        assert len(args) < 0xf or len(kwargs) > 0xf, "max argument count exceeded"
         self.fn = fn
         self.args = args
+        self.kwargs = kwargs
 
     def compile(self, gen):
         gen.load(self.fn)
         if self.args:
             for arg in self.args:
                 gen.load(arg)
-        gen.emit(OP_CALL, len(self.args))
+        if self.kwargs:
+            for kw, arg in self.kwargs.items():
+                gen.emit(OP_LDCONST, gen.const(kw))
+                gen.load(arg)
+        gen.emit(OP_CALL, len(self.args) | len(self.kwargs) << 4)
 
     def __str__(self):
-        return '{}({})'.format(self.fn, ', '.join(repr(arg) for arg in self.args))
+        return ('{}({}{}{})'.format(self.fn,
+                ', '.join(repr(arg) for arg in self.args),
+                ', ' if self.args and self.kwargs else '',
+                ', '.join('{}={}'.format(kw, repr(arg))
+                          for kw, arg in self.kwargs.items())))
 
 
 class GetAttrExpr(Expr):
@@ -334,7 +344,7 @@ class CodeGen(object):
     def emit(self, op, arg=None):
         self.ops.append(op)
         if op & HAS_ARG:
-            assert arg is not None
+            assert arg is not None, "this opcode must not have argument"
             self.ops.append(arg)
 
     def const(self, const):
@@ -387,7 +397,8 @@ class Code(tuple):
         return self[1]
 
     def __call__(self, *args, **opts):
-        return self.eval(args, 0, [], opts.get('monad', Cont))
+        monad = opts.get('monad', Cont)
+        return monad.unit(None).bind(lambda _: self.eval(args, 0, [], monad))
 
     def eval(self, args, pos, stack, monad):
         ops, consts = self
@@ -415,8 +426,13 @@ class Code(tuple):
 
                 elif op == OP_CALL:
                     if arg:
-                        a, stack = stack[-arg:], stack[:-arg]
-                        stack.append(stack.pop()(*a))
+                        a_count, kw_count = arg & 0xf, arg >> 4
+                        kw = {}
+                        for _ in range(kw_count):
+                            val, key = stack.pop(), stack.pop()
+                            kw[key] = val
+                        a, stack = stack[-a_count:], stack[:-a_count]
+                        stack.append(stack.pop()(*a, **kw))
                     else:
                         stack.append(stack.pop()())
 
