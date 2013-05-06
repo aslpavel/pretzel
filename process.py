@@ -206,7 +206,7 @@ def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
             yield proc
             if input:
                 proc.stdin.write_schedule(input)
-                proc.stdin.close()()
+                proc.stdin.flush_and_dispose()()
             else:
                 proc.stdin.dispose()
             out = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)

@@ -60,7 +60,7 @@ class ForkConnection(StreamConnection):
         payload = (BootImporter.from_modules().bootstrap
                   (fork_conn_init, in_fd, out_fd, self.buffer_size).encode())
         self.process.stdin.write_schedule(payload)
-        yield self.process.stdin.close()
+        yield self.process.stdin.flush_and_dispose()
 
         out_pipe.reader.close_on_exec(True)
         in_pipe.writer.close_on_exec(True)

@@ -77,13 +77,12 @@ class Stream(object):
         Must hook continuation to the current flush if any or start new one.
         """
 
-    def close(self):
+    @async
+    def flush_and_dispose(self):
         """Flush data and dispose stream
         """
-        def dispose(val):
-            self.dispose()
-            return val
-        return self.flush().map_val(dispose)
+        yield self.flush()
+        self.dispose()
 
     @property
     def disposed(self):
