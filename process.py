@@ -17,14 +17,9 @@ __all__ = ('Process', 'PIPE', 'DEVNULL', 'STDIN', 'STDOUT', 'STDERR', 'process_c
 
 PIPE = -1
 DEVNULL = -2
-try:
-    STDIN = sys.stdin.fileno()
-    STDOUT = sys.stdout.fileno()
-    STDERR = sys.stderr.fileno()
-except Exception:
-    STDIN = 0
-    STDOUT = 1
-    STDERR = 2
+STDIN = sys.__stdin__.fileno()
+STDOUT = sys.__stdout__.fileno()
+STDERR = sys.__stderr__.fileno()
 
 
 class Process(object):
