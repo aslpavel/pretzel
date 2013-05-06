@@ -213,7 +213,7 @@ class Core(object):
 
     def dispose(self, exc=None):
         if not self.state(self.STATE_DISP):
-            return
+            return False
 
         exc = exc or CanceledError('core has been disposed')
         files_queue, self.files_queue = self.files_queue, {}
@@ -222,6 +222,7 @@ class Core(object):
         self.time_queue.dispose(exc)
         self.sched_queue.dispose(exc)
         self.proc_queue.dispose(exc)
+        return True
 
     def __enter__(self):
         return self

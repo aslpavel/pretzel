@@ -52,10 +52,12 @@ def shell():
     })
     shell.raw_input = input_async
     imports = ['from . import {}'.format(name) for name in
-              ['core', 'monad', 'remoting', 'stream', 'process', 'task', 'event']]
+              ['monad', 'remoting', 'stream', 'process', 'task', 'event']]
     for line in textwrap.dedent("""\
         from __future__ import print_function
+        __name__ = 'pretzel'
         __package__ = 'pretzel'
+        from .core import *
         """).split('\n') + imports:
             shell.runsource(line.rstrip())
     shell.interact(textwrap.dedent("""\

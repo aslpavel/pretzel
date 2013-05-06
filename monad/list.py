@@ -25,9 +25,9 @@ class List(tuple, Monad):
         return List(val)
 
     def bind(self, func):
-        return List.from_iter(fval
+        return List.from_iter(tuple(fval
                               for mval in self
-                              for fval in func(mval).__monad__())
+                              for fval in func(mval).__monad__()))
 
     @property
     def value(self):

@@ -117,7 +117,7 @@ class LoadConstExpr(Expr):
         gen.emit(OP_LDCONST, gen.const(self.const))
 
     def __str__(self):
-        if isinstance(self.const, types.FunctionType):
+        if isinstance(self.const, (types.FunctionType, types.BuiltinFunctionType)):
             return getattr(self.const, '__qualname__', self.const.__name__)
         else:
             return repr(self.const)

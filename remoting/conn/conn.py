@@ -2,7 +2,6 @@
 """
 import io
 import sys
-
 from pickle import Pickler, Unpickler
 from ..hub import Hub, Sender, pair
 from ..proxy import Proxy
@@ -176,10 +175,12 @@ class Connection(object):
         return self.state.state == self.STATE_DISP
 
     def dispose(self):
-        if self.state(self.STATE_DISP):
-            self.receiver.dispose()
-            self.do_disconnect()
-            self.disp.dispose()
+        if not self.state(self.STATE_DISP):
+            return False
+        self.receiver.dispose()
+        self.do_disconnect()
+        self.disp.dispose()
+        return True
 
     def __enter__(self):
         return self
@@ -189,8 +190,8 @@ class Connection(object):
         return False
 
     def __str__(self):
-        return ("<{} [state:{} addr:{}] at {}>".format(type(self).__name__,
-                self.state.state_name(), self.sender.addr, id(self)))
+        return ("{}(state:{}, addr:{})".format(type(self).__name__,
+                self.state.state_name(), self.sender.addr))
 
     def __repr__(self):
         return str(self)
