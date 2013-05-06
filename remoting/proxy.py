@@ -53,7 +53,7 @@ class Proxy(object):
     def __exit__(self, et, eo, tb):
         sender, self._sender = self._sender, None
         if sender is not None:
-            sender.send(None)
+            sender.try_send(None)
         return False
 
 

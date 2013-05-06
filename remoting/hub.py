@@ -45,11 +45,17 @@ class Hub(object):
         return inst
 
     def send(self, msg, dst, src):
+        if not self.try_send(msg, dst, src):
+            raise ValueError('no receiver for address: {}'.format(dst))
+
+    def try_send(self, msg, dst, src):
         handler = self.handlers.get(dst, None)
         if handler is None:
-            raise ValueError('no receiver for address: {}'.format(dst))
-        if not handler(msg, dst, src):
-            self.handlers.pop(dst)
+            return False
+        else:
+            if not handler(msg, dst, src):
+                self.handlers.pop(dst)
+            return True
 
     def recv(self, dst, handler):
         if self.handlers.setdefault(dst, handler) != handler:
@@ -106,6 +112,9 @@ class Sender(object):
 
     def send(self, msg, src=None):
         return self.hub.send(msg, self.addr, src)
+
+    def try_send(self, msg, src=None):
+        return self.hub.try_send(msg, self.addr, src)
 
     def __call__(self, msg):
         @async_block
