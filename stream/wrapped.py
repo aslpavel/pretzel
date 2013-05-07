@@ -53,3 +53,7 @@ class WrappedStream(Stream):
         if not self.dispose():
             raise ValueError('stream is disposed')
         return base
+
+    def __str__(self):
+        return ('{}(state:{}, base:{})'.format(
+                type(self).__name__, self.state.state_name(), self.base))

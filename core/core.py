@@ -232,9 +232,10 @@ class Core(object):
         return False
 
     def __str__(self):
-        return '<{}[state:{}] at {}>'.format(type(self).__name__,
-                                             self.state.state_name(), id(self))
-    __repr__ = __str__
+        return '{}(state:{})'.format(type(self).__name__, self.state.state_name())
+
+    def __repr__(self):
+        return str(self)
 
 
 class TimeQueue(object):
@@ -360,8 +361,10 @@ class FileQueue(object):
     def __str__(self):
         flags = ','.join(name for flag, name in ((POLL_READ, 'read'),
                         (POLL_WRITE, 'write'), (POLL_ERROR, 'error')) if self.mask & flag)
-        return '<{}[fd:{} flags:{}] at {}>'.format(type(self).__name__, self.fd, flags, id(self))
-    __repr__ = __str__
+        return '{}(fd:{}, flags:{})'.format(type(self).__name__, self.fd, flags)
+
+    def __repr__(self):
+        return str(self)
 
 
 class SchedQueue(object):

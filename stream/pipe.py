@@ -4,7 +4,7 @@ from .file import BufferedFile
 __all__ = ('Pipe',)
 
 
-class Pipe (object):
+class Pipe(object):
     """Asynchronous pipe wrapper
     """
     def __init__(self, fds=None, buffer_size=None, core=None):
@@ -64,5 +64,5 @@ class Pipe (object):
     def __str__(self):
         return 'Pipe(reader:{}, writer:{})'.format(self.reader, self.writer)
 
-    def __rerp__(self):
+    def __repr__(self):
         return str(self)
