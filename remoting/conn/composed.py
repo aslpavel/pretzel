@@ -1,10 +1,10 @@
 """Connection mesh
 
-Create ssh connection tree and work with same way as with single
+Create composed ssh connection and work with it the same way as with single
 ssh connection.
 
 Example:
-    conns = yield MeshConnection(['localhost'] * 9, 2)
+    conns = yield ComposedConnection(['localhost'] * 9, mesh='tree:3')
     pids = list((yield conns(os.getpid)())))
     print(pids)  # [3269, 3277, 3285, 3270, 3278, 3290, 3271, 3276, 3282]
 """
@@ -13,26 +13,37 @@ import random
 from .ssh import SSHConnection
 from ...monad import List, Proxy, async, async_all, do_return
 
-__all__ = ('MeshConnection',)
+__all__ = ('ComposedConnection',)
 
 
 @async
-def MeshConnection(hosts, factor, **conn_opts):
-    """Create ssh connection tree from list of hosts.
+def ComposedConnection(hosts, mesh='flat', **conn_opts):
+    """Create composed ssh connection from list of hosts.
+
+    hosts -- list of hosts
+    mesh  -- for of connection mesh. Available option 'flat' - direct
+             connections, 'tree:factor' - mesh has a form of tree with factor
+             children.
     """
-    @async
-    def connect(host, conn):
-        if host is None:
-            do_return(None)  # to level connection
-        if conn is None:
-            conn = yield SSHConnection(host, **conn_opts)
-            conn = yield conn(conn)  # convert to proxy object (guarantees semantic)
-        else:
-            conn = yield ~conn(SSHConnection)(host, **conn_opts)
-        do_return(conn)
-    tree = Tree.from_list(hosts, factor)
-    conns = yield tree(connect, None)
-    do_return(ContList(conns[1:]))  # strip None from beginning
+    if mesh == 'flat':
+        do_return((yield ContList(SSHConnection(host, **conn_opts) for host in hosts)))
+
+    elif mesh.startswith('tree:'):
+        tree = Tree.from_list(hosts, int(mesh[len('tree:'):]))
+
+        @async
+        def connect(host, conn):
+            if host is None:
+                do_return(None)  # to level connection
+            if conn is None:
+                conn = yield SSHConnection(host, **conn_opts)
+                conn = yield conn(conn)  # convert to proxy object (guarantees semantic)
+            else:
+                conn = yield ~conn(SSHConnection)(host, **conn_opts)
+            do_return(conn)
+        conns = yield tree(connect, None)
+
+        do_return(ContList(conns[1:]))  # strip None from beginning
 
 
 class ContList(Proxy):
