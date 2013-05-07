@@ -1,3 +1,5 @@
+"""Base asynchronous stream type
+"""
 from collections import defaultdict
 from ..monad import async
 from ..state_machine import StateMachine

@@ -1,9 +1,11 @@
+"""SSL Socket Stream
+"""
 import socket
 import errno
 try:
     import ssl
 except ImportError:
-    ssl = None # no SSL support
+    ssl = None  # no SSL support
 
 from .sock import Socket
 from .buffered import BufferedStream
@@ -15,7 +17,7 @@ __all__ = ('SocketSSL', 'BufferedSocketSSL')
 
 
 class SocketSSL(Socket):
-    """Asynchronous SSL Socket
+    """SSL Socket Stream
 
     If socket has already been connected it must be wrapped with
     ssl.wrap_socket, otherwise it will be wrapped when AsyncSSLSocket.Connect

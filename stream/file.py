@@ -1,3 +1,7 @@
+"""File stream
+
+File stream is stream created from file descriptor.
+"""
 import os
 import errno
 import fcntl
@@ -11,6 +15,10 @@ __all__ = ('File', 'BufferedFile', 'fd_close_on_exec', 'fd_blocking',)
 
 
 class File(Stream):
+    """File stream
+
+    File stream is stream created from file descriptor.
+    """
     def __init__(self, fd, closefd=None, init=None, core=None):
         Stream.__init__(self)
 
@@ -98,13 +106,13 @@ class BufferedFile(BufferedStream):
 
 
 def fd_close_on_exec(fd, enable=None):
-    """Set or get file descriptor blocking
+    """Set or get file descriptors close_on_exec flag
     """
     return fd_option(fd, fcntl.F_GETFD, fcntl.F_SETFD, fcntl.FD_CLOEXEC, enable)
 
 
 def fd_blocking(fd, enable=None):
-    """Set or get file descriptor close_on_exec
+    """Set or get file descriptors blocking flag
     """
     return not fd_option(fd, fcntl.F_GETFL, fcntl.F_SETFL, os.O_NONBLOCK,
                          None if enable is None else not enable)

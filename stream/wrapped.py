@@ -1,3 +1,5 @@
+"""Wrapped stream
+"""
 from .stream import Stream
 from ..monad import async, do_return
 
@@ -5,6 +7,10 @@ __all__ = ('WrappedStream',)
 
 
 class WrappedStream(Stream):
+    """Wrapped stream
+
+    Stream wrapped around base stream.
+    """
     def __init__(self, base):
         Stream.__init__(self)
         self.initing()

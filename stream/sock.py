@@ -1,3 +1,7 @@
+"""Socket stream
+
+Wraps python socket object and provides stream interface.
+"""
 import socket
 import errno
 
@@ -11,6 +15,8 @@ __all__ = ('Socket', 'BufferedSocket',)
 
 
 class Socket(File):
+    """Socket stream
+    """
     def __init__(self, sock, init=None, core=None):
         self.sock = sock  # used by blocking method
         File.__init__(self, sock.fileno(), closefd=False, init=bool(init), core=core)

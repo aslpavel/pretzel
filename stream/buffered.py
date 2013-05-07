@@ -1,3 +1,8 @@
+"""Buffered stream
+
+Buffered stream is wrapped stream. Implements additional methods which leverage
+buffered nature of the stream.
+"""
 import struct
 from functools import wraps
 from collections import deque
