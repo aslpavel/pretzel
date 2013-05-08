@@ -48,7 +48,7 @@ class ForkConnection(StreamConnection):
         self.process = self.disp.add(Process(self.command,
                                      stdin=PIPE, preexec=preexec, kill_delay=-1,
                                      buffer_size=self.buffer_size, core=self.core))
-        yield self.process
+        yield self.process  # exec-ed
 
         # close remote side of pipes
         in_fd = in_pipe.reader.fileno()

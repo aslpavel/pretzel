@@ -135,7 +135,7 @@ class Sender(object):
         return hash(self.addr)
 
     def __str__(self):
-        return '<Sender[addr:{}]>'.format(self.addr)
+        return 'Sender(addr:{})'.format(self.addr)
 
     def __repr__(self):
         return str(self)
@@ -173,7 +173,8 @@ class Receiver(object):
         return False
 
     def __str__(self):
-        return '<Receiver[addr:{}, handler:{}]>'.format(self.addr, self.hub.handlers.get(self.addr))
+        return ('Receiver(addr:{}, handler:{})'.format(self.addr,
+                getattr(self.hub.handlers.get(self.addr), '__name__')))
 
     def __repr__(self):
         return str(self)

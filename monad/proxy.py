@@ -118,7 +118,8 @@ class Proxy(object):
         return self.__map(lambda val: val.__enter__())
 
     def __exit__(self, et, eo, tb):
-        return self.__map(lambda val: val.__exit__(et, eo, tb))
+        self.__map(lambda val: val.__exit__(et, eo, tb))
+        return False
 
     ## representation
     def __str__(self):
