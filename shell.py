@@ -5,12 +5,12 @@ import code
 import signal
 import textwrap
 import functools
-from pretzel.event import Event
-from pretzel.core import Core, schedule
-from pretzel.stream import BufferedFile
-from pretzel.monad import Cont
-from pretzel.common import BrokenPipeError
-from pretzel.app import app_run, async_green, bind_green
+from .event import Event
+from .core import Core, schedule
+from .stream import BufferedFile
+from .monad import Cont
+from .common import BrokenPipeError
+from .app import app_run, async_green, bind_green
 
 __all__ = ('shell',)
 
@@ -53,12 +53,13 @@ def shell():
     shell.raw_input = input_async
     imports = ['from . import {}'.format(name) for name in
               ['monad', 'remoting', 'stream', 'process', 'task', 'event']]
+    package = globals().get('__package__', 'pretzel')
     for line in textwrap.dedent("""\
         from __future__ import print_function
-        __name__ = 'pretzel'
-        __package__ = 'pretzel'
+        __name__ = '{package}'
+        __package__ = '{package}'
         from .core import *
-        """).split('\n') + imports:
+        """.format(package=package)).split('\n') + imports:
             shell.runsource(line.rstrip())
     shell.interact(textwrap.dedent("""\
         Welcome to asynchronous pretzel shell!
