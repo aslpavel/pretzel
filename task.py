@@ -139,8 +139,9 @@ class ThreadPool(object):
         return False
 
     def __str__(self):
-        return ('ThreadPool(size:{}, threads:{}, idle:{})'.format(
-                self.size, len(self.threads), self.thread_idle))
+        return ('ThreadPool(size:{}, threads:{}, idle:{}, tasks:{})'.format(
+                self.size, len(self.threads), self.thread_idle,
+                len(self.thread_queue) + len(self.threads) - self.thread_idle))
 
     def __repr__(self):
         return str(self)

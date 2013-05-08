@@ -1,4 +1,4 @@
-"""Core is an Asynchronous I/O and Timer execution loop
+"""Core is an asynchronous execution loop
 """
 import os
 import sys

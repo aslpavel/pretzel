@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import unittest
 from .proxy import Remote
@@ -77,5 +76,3 @@ class ConnectionTest(unittest.TestCase):
         r, s = pair()
         with (yield ForkConnection()) as conn:
             self.assertEqual(tuple((yield conn(s)).addr), tuple(s.addr))
-
-# vim: nu ft=python columns=120 :
