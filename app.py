@@ -36,4 +36,4 @@ def app_run(cont):
         if not core.disposed:
             core()
     assert app_future.completed
-    return app_future.result.value
+    return app_future.value

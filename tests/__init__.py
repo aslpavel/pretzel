@@ -27,7 +27,7 @@ def async_test(test):
             Core.local(core_prev)
             Hub.local(Hub())
         assert test_future.completed
-        test_future.result.value  # raises error if test function has failed
+        test_future.value
     return test_async
 
 

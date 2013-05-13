@@ -121,7 +121,7 @@ class Importer(object):
             loader = self.sender(name).future()
             for _ in Core.local():
                 if loader.completed:
-                    loader = loader.result.value
+                    loader = loader.value
                     break
             self.loaders[name] = loader
         if loader is None:

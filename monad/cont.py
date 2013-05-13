@@ -161,22 +161,28 @@ def async_all(conts):
 class Future(object):
     """Future object containing future result of computation
     """
-    __slots__ = ('result', 'handlers',)
+    __slots__ = ('res', 'rets',)
 
     def __init__(self, cont):
-        self.result = None
-        self.handlers = []
+        self.res = None
+        self.rets = []
 
         def ret(res):
-            self.result = res
-            handlers, self.handlers = self.handlers, None
-            for ret in handlers:
+            self.res = res
+            rets, self.rets = self.rets, None
+            for ret in rets:
                 ret(res)
         cont.__monad__()(ret)
 
+    @property
+    def value(self):
+        if self.rets is None:
+            return self.res.value if isinstance(self.res, Result) else self.res
+        else:
+            return Cont(self).value
+
     def __call__(self, ret):
-        return (ret(self.result) if self.handlers is None else
-                self.handlers.append(ret))
+        return ret(self.res) if self.rets is None else self.rets.append(ret)
 
     def __monad__(self):
         return Cont(self)
@@ -189,15 +195,15 @@ class Future(object):
 
     @property
     def completed(self):
-        return self.handlers is None
+        return self.rets is None
 
     def __bool__(self):
-        return self.handlers is None
+        return self.rets is None
+
     __nonzero__ = __bool__
 
     def __str__(self):
-        return ('{}(done:{}, value:{})'.format(type(self).__name__,
-                self.completed, self.result))
+        return ('Future(done:{}, value:{})'.format(self.completed, self.res))
 
     def __repr__(self):
         return str(self)

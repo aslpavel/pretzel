@@ -56,7 +56,7 @@ class ExprTest(unittest.TestCase):
 
         self.assertFalse(ev_future.completed)
         ev('result')
-        self.assertEqual(ev_future.result.value, len('result'))
+        self.assertEqual(ev_future.value, len('result'))
 
     def test_if(self):
         max_code = IfExpr(CmpExpr('>', LoadArgExpr(0), LoadArgExpr(1)),
