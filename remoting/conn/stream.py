@@ -51,5 +51,3 @@ class StreamConnection (Connection):
         self.out_stream.write_bytes(msg)
         self.out_stream.flush()()
         return True
-
-# vim: nu ft=python columns=120 :

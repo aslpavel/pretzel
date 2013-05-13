@@ -88,5 +88,3 @@ def fork_conn_init(in_fd, out_fd, buffer_size):
         # execute core
         if not core.disposed:
             core()
-
-# vim: nu ft=python columns=120 :

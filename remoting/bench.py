@@ -98,5 +98,3 @@ def load_bench(runner):
     for bench in ((FuncBench(), FuncAsyncBench(),
                    MethodBench(), MethodAsyncBench(),)):
         runner.add(bench)
-
-# vim: nu ft=python columns=120 :
