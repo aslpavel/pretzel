@@ -71,3 +71,9 @@ class Event(object):
         """Future for nearest event
         """
         return self.__monad__().future()
+
+    def __str__(self):
+        return 'Event(len:{})'.format(len(self))
+
+    def __repr__(self):
+        return str(self)
