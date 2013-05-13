@@ -175,7 +175,7 @@ class Receiver(object):
 
     def __str__(self):
         return ('Receiver(addr:{}, handler:{})'.format(self.addr,
-                getattr(self.hub.handlers.get(self.addr), '__name__')))
+                getattr(self.hub.handlers.get(self.addr), '__name__', None)))
 
     def __repr__(self):
         return str(self)
