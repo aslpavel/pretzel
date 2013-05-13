@@ -129,7 +129,8 @@ class Sender(object):
         return sender_cont
 
     def __eq__(self, other):
-        return (self.hub, self.addr) == (other.hub, other.addr)
+        return (isinstance(other, type(self)) and
+                (self.hub, self.addr) == (other.hub, other.addr))
 
     def __hash__(self):
         return hash(self.addr)
