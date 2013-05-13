@@ -2,7 +2,7 @@ import pickle
 import unittest
 from ..closure import Closure
 
-GLOBAL = 'test value'
+__all__ = ('ClosureTest',)
 
 
 class ClsoureTest(unittest.TestCase):
@@ -18,3 +18,5 @@ class ClsoureTest(unittest.TestCase):
         # reference closure
         cl = reload(Closure((lambda a: lambda b: a + b)('closure')))
         self.assertEqual(cl(':arg'), 'closure:arg')
+
+GLOBAL = 'test value'

@@ -3,8 +3,10 @@ from collections import deque
 from ..event import Event
 from ..monad import Cont
 
+__all__ = ('EvetTest',)
 
-class EventTests(unittest.TestCase):
+
+class EventTest(unittest.TestCase):
     def test(self):
         def handler(tag, ret):
             def handler(val):

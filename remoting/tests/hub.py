@@ -2,6 +2,8 @@ import unittest
 import collections
 from ..hub import Hub, Address, Sender, pair
 
+__all__ = ('HubTest',)
+
 
 class HubTest(unittest.TestCase):
     def test_addr(self):

@@ -4,6 +4,8 @@ from ..expr import *
 from ...event import Event
 from ...monad import Identity
 
+__all__ = ('ExprTest',)
+
 
 class ExprTest(unittest.TestCase):
     def test_load_arg(self):

@@ -3,6 +3,8 @@ import operator
 import itertools
 from ..dispose import FuncDisp, CompDisp
 
+__all__ = ('FuncDispTest', 'CompDispTest',)
+
 
 class FuncDispTest(unittest.TestCase):
     def test(self):

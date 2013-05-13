@@ -6,6 +6,8 @@ from ...monad import async, do_return
 from ...core import schedule
 from ...tests import async_test
 
+__all__ = ('ProxyTest',)
+
 
 class ProxyTest(unittest.TestCase):
     @async_test

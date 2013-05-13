@@ -4,8 +4,10 @@ from . import async_test
 from ..monad import async_all
 from ..task import ThreadPool, task
 
+__all__ = ('TaskTest',)
 
-class TaskTests(unittest.TestCase):
+
+class TaskTest(unittest.TestCase):
     @async_test
     def test(self):
         """This test may fail if system is really busy

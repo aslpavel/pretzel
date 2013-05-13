@@ -7,6 +7,8 @@ from .poll import POLL_READ, POLL_WRITE, POLL_URGENT, POLL_DISCONNECT, EPOLLERR
 from ..common import BrokenPipeError, ConnectionError
 from ..tests import async_test
 
+__all__ = ('FileTest', 'TimeQueueTest', 'ProcQueueTest',)
+
 
 class FileTest(unittest.TestCase):
     def test_dummy(self):

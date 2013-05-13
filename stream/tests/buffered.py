@@ -10,6 +10,8 @@ from ...monad import Result, async, do_return
 from ...event import Event
 from ...common import BrokenPipeError
 
+__all__ = ('BufferTest', 'BufferedStreamTest',)
+
 
 class BufferTest (unittest.TestCase):
     def test(self):

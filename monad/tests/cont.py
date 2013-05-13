@@ -4,8 +4,10 @@ from ..cont import async, async_block, async_all, async_any
 from ..result import Result
 from ...event import Event
 
+__all__ = ('ContTest',)
 
-class ContTests(unittest.TestCase):
+
+class ContTest(unittest.TestCase):
     """Continuation monad unit tests
     """
     def test_normal(self):

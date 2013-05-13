@@ -1,6 +1,8 @@
 import unittest
 from ..list import List
 
+__all__ = ('MonadTest',)
+
 
 class MonadTest(unittest.TestCase):
     def test_sequence(self):

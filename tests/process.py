@@ -5,6 +5,8 @@ from ..process import Process, PIPE, process_call
 from ..monad import Cont
 from . import async_test
 
+__all__ = ('ProcessTest',)
+
 
 class ProcessTest(unittest.TestCase):
     @async_test
