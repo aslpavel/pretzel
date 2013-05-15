@@ -15,7 +15,6 @@ def do(Monad):
     bound function multiple times inside bind implementation (e.g. List monad).
     """
     unit = Monad.unit
-    bind = Monad.bind
     error = lambda: unit(Result.from_current_error())
     value = lambda val: unit(Result.from_value(val))
 
@@ -38,7 +37,7 @@ def do(Monad):
                     try:
                         monad = (gen.send(val) if err is None else
                                  gen.throw(*err)).__monad__()
-                        return bind(monad, do_next)
+                        return monad.bind(do_next)
                     except _return as ret:
                         gen.close()
                         return value(ret.args[1]) if ret.args[0] == 0 else ret.args[1]
