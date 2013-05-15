@@ -7,6 +7,7 @@ import io
 import os
 import sys
 import zlib
+import socket
 import struct
 import binascii
 import textwrap
@@ -30,7 +31,7 @@ class ShellConnection(StreamConnection):
     """
     def __init__(self, command=None, escape=None, py_exec=None,
                  buffer_size=None, hub=None, core=None):
-        StreamConnection.__init__(self, hub, core)
+        StreamConnection.__init__(self, hub=hub, core=core)
 
         self.buffer_size = buffer_size
         self.py_exec = py_exec or sys.executable
@@ -67,6 +68,10 @@ class ShellConnection(StreamConnection):
         # install importer
         self.disp.add((yield Importer.create_remote(self)))
 
+        # update flags
+        self.flags['pid'] = yield self(os.getpid)()
+        self.flags['host'] = yield self(socket.gethostname)()
+
 
 def shell_conn_init(buffer_size):
     """Shell connection initialization function
@@ -81,6 +86,8 @@ def shell_conn_init(buffer_size):
     with Core.local() as core:
         # initialize connection
         conn = StreamConnection(core=core)
+        conn.flags['pid'] = os.getpid()
+        conn.flags['host'] = socket.gethostname()
         conn.disp.add(core)
 
         # connect

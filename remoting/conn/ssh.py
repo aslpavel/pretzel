@@ -27,4 +27,6 @@ class SSHConnection(ShellConnection):
         command.extend(('-i', self.identity_file) if self.identity_file else [])
         command.extend(('-p', self.port) if self.port else [])
 
-        ShellConnection.__init__(self, command, True, py_exec, buffer_size, hub, core)
+        ShellConnection.__init__(self, command=command, escape=True,
+                                 py_exec=py_exec, buffer_size=buffer_size,
+                                 hub=hub, core=core)

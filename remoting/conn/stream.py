@@ -11,7 +11,7 @@ class StreamConnection (Connection):
     """Stream based connected
     """
     def __init__(self, hub=None, core=None):
-        Connection.__init__(self, hub, core)
+        Connection.__init__(self, hub=hub, core=core)
         self.in_stream = None
         self.out_stream = None
 

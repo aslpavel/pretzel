@@ -4,7 +4,6 @@ Connection with forked and exec-ed process via two pipes.
 """
 import os
 import sys
-
 from .stream import StreamConnection
 from ..importer import Importer
 from ...process import Process, PIPE
@@ -22,7 +21,7 @@ class ForkConnection(StreamConnection):
     Connection with forked and exec-ed process via two pipes.
     """
     def __init__(self, command=None, buffer_size=None, hub=None, core=None):
-        StreamConnection.__init__(self, hub, core)
+        StreamConnection.__init__(self, hub=hub, core=core)
         self.buffer_size = buffer_size
         self.command = [sys.executable, '-'] if command is None else command
         self.process = None
@@ -69,6 +68,9 @@ class ForkConnection(StreamConnection):
         # install importer
         self.disp.add((yield Importer.create_remote(self)))
 
+        # update name
+        self.flags['pid'] = self.process.pid
+
 
 def fork_conn_init(in_fd, out_fd, buffer_size):
     """Fork connection initialization function
@@ -76,6 +78,7 @@ def fork_conn_init(in_fd, out_fd, buffer_size):
     with Core.local() as core:
         # initialize connection
         conn = StreamConnection(core=core)
+        conn.flags['pid'] = os.getpid()
         conn.disp.add(core)
 
         # connect

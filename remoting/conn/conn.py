@@ -36,6 +36,7 @@ class Connection(object):
     def __init__(self, hub=None, core=None):
         self.hub = hub or Hub.local()
         self.core = core or Core.local()
+        self.flags = {}
         self.module_map = {}
 
         self.receiver, self.sender = pair(hub=self.hub)
@@ -202,8 +203,9 @@ class Connection(object):
         return False
 
     def __str__(self):
-        return ("{}(state:{}, addr:{})".format(type(self).__name__,
-                self.state.state_name(), self.sender.addr))
+        flags = ''.join('{}:{}, '.format(key, val) for key, val in self.flags.items())
+        return ("{}({}state:{}, addr:{})".format(type(self).__name__,
+                flags, self.state.state_name(), self.sender.addr))
 
     def __repr__(self):
         return str(self)
