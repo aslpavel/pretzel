@@ -74,6 +74,12 @@ class Hub(object):
     def __len__(self):
         return len(self.handlers)
 
+    def __str__(self):
+        return 'Hub(len:{})'.format(len(self))
+
+    def __repr__(self):
+        return str(self)
+
 
 class Address(tuple):
     """Hub address
