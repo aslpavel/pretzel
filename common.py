@@ -4,7 +4,7 @@ import io
 import sys
 import errno
 
-__all__ = ('reraise', 'execute', 'string_type', 'ConnectionError',
+__all__ = ('reraise', 'execute', 'StringIO', 'ConnectionError',
            'BrokenPipeError', 'CanceledError', 'BlockingErrorSet',
            'PipeErrorSet', 'PY2', 'PY3')
 
@@ -36,7 +36,7 @@ if sys.version_info[0] > 2:
             raise value.with_traceback(tb)
         raise value
 
-    string_type = io.StringIO
+    StringIO = io.StringIO
     PY2 = False
     PY3 = True
 
@@ -57,7 +57,7 @@ else:
     exec("""def reraise(tp, value, tb=None):
         raise tp, value, tb""")
 
-    string_type = io.BytesIO
+    StringIO = io.BytesIO
     PY2 = True
     PY3 = False
 

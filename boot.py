@@ -130,7 +130,7 @@ class BootImporter(object):
         if init and inspect.getmodule(init).__name__ not in self.loaders:
             raise ValueError('initialization function must reside in added modules')
 
-        source = string_type()
+        source = StringIO()
         source.write(textwrap.dedent("""\
             {}
             _bootstrap.BootImporter.from_bytes({}).install()
@@ -335,7 +335,7 @@ if sys.version_info[0] > 2:
             raise value.with_traceback(tb)
         raise value
 
-    string_type = io.StringIO
+    StringIO = io.StringIO
     PY2 = False
     PY3 = True
 
@@ -356,7 +356,7 @@ else:
     exec("""def reraise(tp, value, tb=None):
         raise tp, value, tb""")
 
-    string_type = io.BytesIO
+    StringIO = io.BytesIO
     PY2 = True
     PY3 = False
 

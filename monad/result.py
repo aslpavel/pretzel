@@ -7,7 +7,7 @@ import socket
 import textwrap
 import traceback
 from .monad import Monad
-from ..common import reraise, string_type, PY2
+from ..common import reraise, StringIO, PY2
 
 __all__ = ('Result', 'result_excepthook',)
 
@@ -127,7 +127,7 @@ def result_excepthook(et, eo, tb, file=None):
 
     Correctly shows embedded traceback if any.
     """
-    stream = file or string_type()
+    stream = file or StringIO()
 
     tb = ''.join(traceback.format_exception(et, eo, tb))
     stream.write(tb.encode('utf-8') if PY2 else tb)

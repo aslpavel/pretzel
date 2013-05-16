@@ -2,7 +2,7 @@
 """
 import types
 from ..monad import Cont, Result
-from ..common import string_type
+from ..common import StringIO
 
 __all__ = ('Expr', 'LoadArgExpr', 'LoadConstExpr', 'CallExpr',
            'GetAttrExpr', 'SetAttrExpr', 'GetItemExpr', 'SetItemExpr',
@@ -516,8 +516,8 @@ class Code(tuple):
 
     def __str__(self):
         ops, consts = self
-        stream = string_type()
-        stream.write('<Code [size:{} consts:{}]\n'.format(len(ops),
+        stream = StringIO()
+        stream.write('Code(size:{}, consts:{}, opcodes:\n'.format(len(ops),
                      len(consts) if consts else 0))
 
         pos = 0
@@ -540,7 +540,7 @@ class Code(tuple):
                 pos = pos + 1
 
         stream.seek(stream.tell() - 1)
-        stream.write('>')
+        stream.write(')')
         return stream.getvalue()
 
     def __repr__(self):
