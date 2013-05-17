@@ -73,11 +73,14 @@ class Process(object):
         self.state(self.STATE_FORK)
         core = self.core
         try:
-            def pipe(file, file_default, readable):
+            def pipe(file, fd_fallback, readable):
                 """Create pipe from file
                 """
                 if file is None:
-                    fd = file_default
+                    if fd_fallback < 0:  # DEVNULL
+                        fd = devnull_get()
+                    else:
+                        fd = fd_fallback
                 elif file == PIPE:
                     fd = None
                 elif file == DEVNULL:

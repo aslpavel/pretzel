@@ -55,5 +55,4 @@ class WrappedStream(Stream):
         return base
 
     def __str__(self):
-        return ('{}(state:{}, base:{})'.format(
-                type(self).__name__, self.state.state_name(), self.base))
+        return ('{}({})'.format(type(self).__name__, self.base))
