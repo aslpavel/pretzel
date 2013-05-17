@@ -223,6 +223,9 @@ class ConnectionProxy(Proxy):
     def __call__(self, target):
         return Proxy(self._sender, LoadConstExpr(target))
 
+    def __reduce__(self):
+        return ConnectionProxy, (self._sender, self._expr, self._flags)
+
     def __str__(self):
         flags = ''.join('{}:{}, '.format(key, val) for key, val in self._flags.items())
         return '{}({}addr:{})'.format(type(self).__name__, flags,

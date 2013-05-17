@@ -56,17 +56,15 @@ class ConnectionTest(unittest.TestCase):
     def test_nested(self):
         """Nested connection test
         """
+        pids = set()
         with (yield ForkConnection()) as c0:
-            c0_pid = yield c0(os.getpid)()
-            self.assertTrue(isinstance(c0_pid, int))
+            pids.add((yield c0(os.getpid)()))
             with (yield ~c0(ForkConnection)()) as c1:
-                c1_pid = yield c1(os.getpid)()
-                self.assertTrue(isinstance(c1_pid, int))
+                pids.add((yield c1(os.getpid)()))
                 self.assertTrue(isinstance(c1, ConnectionProxy))
-
-        self.assertNotEqual(c0_pid, c1_pid)
-        self.assertNotEqual(os.getpid(), c0_pid)
-        self.assertNotEqual(os.getpid(), c1_pid)
+                with (yield ~c1(ForkConnection)()) as c2:
+                    pids.add((yield c2(os.getpid)()))
+        self.assertEqual(len(pids), 3)
 
         yield schedule()  # make sure we are not in handler
         self.assertFalse(c0.hub.handlers)
