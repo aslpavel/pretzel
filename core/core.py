@@ -52,6 +52,7 @@ class Core(object):
     inst_main = None
 
     def __init__(self, poller=None):
+        self.tick = 0
         self.state = StateMachine(self.STATE_GRPAH, self.STATE_NAMES)
 
         self.files_queue = {}
@@ -200,6 +201,7 @@ class Core(object):
 
                 events = (poll(0) if not block else
                           poll(min(timer.timeout(time()), sched.timeout())))
+                self.tick += 1
         finally:
             if top_level:
                 self.thread_ident = None
@@ -232,7 +234,8 @@ class Core(object):
         return False
 
     def __str__(self):
-        return '{}(state:{})'.format(type(self).__name__, self.state.state_name())
+        return '{}(state:{}, tick:{})'.format(type(self).__name__,
+                                              self.state.state_name(), self.tick)
 
     def __repr__(self):
         return str(self)
