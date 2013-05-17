@@ -70,6 +70,7 @@ class ForkConnection(StreamConnection):
 
         # update name
         self.flags['pid'] = self.process.pid
+        self.flags['type'] = 'fork'
 
 
 def fork_conn_init(in_fd, out_fd, buffer_size):
@@ -79,6 +80,7 @@ def fork_conn_init(in_fd, out_fd, buffer_size):
         # initialize connection
         conn = StreamConnection(core=core)
         conn.flags['pid'] = os.getpid()
+        conn.flags['type'] = 'fork'
         conn.disp.add(core)
 
         # connect

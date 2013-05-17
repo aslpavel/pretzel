@@ -181,7 +181,7 @@ class Connection(object):
         return self.connect()
 
     def __reduce__(self):
-        return ConnectionProxy, (self.sender, LoadArgExpr(0))
+        return ConnectionProxy, (self.sender, LoadArgExpr(0), self.flags)
 
     @property
     def disposed(self):
@@ -204,7 +204,7 @@ class Connection(object):
 
     def __str__(self):
         flags = ''.join('{}:{}, '.format(key, val) for key, val in self.flags.items())
-        return ("{}({}state:{}, addr:{})".format(type(self).__name__,
+        return ('{}({}state:{}, addr:{})'.format(type(self).__name__,
                 flags, self.state.state_name(), self.sender.addr))
 
     def __repr__(self):
@@ -212,8 +212,21 @@ class Connection(object):
 
 
 class ConnectionProxy(Proxy):
+    """Connection proxy object
+    """
+    __slots__ = Proxy.__slots__ + ('_flags',)
+
+    def __init__(self, sender, expr, flags):
+        Proxy.__init__(self, sender, expr)
+        self._flags = flags
+
     def __call__(self, target):
         return Proxy(self._sender, LoadConstExpr(target))
+
+    def __str__(self):
+        flags = ''.join('{}:{}, '.format(key, val) for key, val in self._flags.items())
+        return '{}({}addr:{})'.format(type(self).__name__, flags,
+                                      self._sender.addr if self._sender else None)
 
 
 class InterruptError (BaseException):
