@@ -258,8 +258,8 @@ class BootLoader(object):
         return compile(self.source, self.filename, 'exec')
 
     def __str__(self):
-        return ('<{}[name:{} package:{}] from {}>'.format(
-                type(self).__name__, self.name, self.pkg, self.filename))
+        return '{}(name:{}, package:{})'.format(type(self).__name__,
+                                                self.name, self.pkg)
 
     def __repr__(self):
         return str(self)
