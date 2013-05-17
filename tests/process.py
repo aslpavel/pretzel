@@ -1,7 +1,7 @@
 import textwrap
 import unittest
 
-from ..process import Process, PIPE, process_call
+from ..process import Process, PIPE, DEVNULL, process_call
 from ..monad import Cont
 from . import async_test
 
@@ -46,3 +46,8 @@ class ProcessTest(unittest.TestCase):
         procs = yield Cont.sequence(process_call(['uname']) for _ in range(20))
         for proc in procs:
             proc.value
+
+    @async_test
+    def test_devnull(self):
+        self.assertEqual((yield process_call(['cat'], stdin=DEVNULL)),
+                         (b'', b'', 0))
