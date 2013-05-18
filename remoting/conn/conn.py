@@ -3,11 +3,9 @@
 import io
 import sys
 from pickle import Pickler, Unpickler
-from types import FunctionType
 from ..hub import Hub, Sender, pair
 from ..proxy import Proxy
 from ..expr import LoadConstExpr, LoadArgExpr
-from ..closure import Closure
 from ...common import reraise
 from ...event import Event
 from ...core import Core
@@ -47,7 +45,6 @@ class Connection(object):
         ## marshaling
         PACK_ROUTE = 1
         PACK_UNROUTE = 2
-        PACK_CLOSURE = 3
 
         class pickler_type(Pickler):
             def persistent_id(this, target):
@@ -61,13 +58,7 @@ class Connection(object):
                     else:
                         # Sender must be routed
                         return PACK_ROUTE, target.addr
-                elif isinstance(target, FunctionType):
-                    module = sys.modules.get(target.__module__)
-                    if not module:
-                        return None
-                    if target.__name__ in module.__dict__:
-                        return None  # modules to level function
-                    return PACK_CLOSURE, Closure(target)
+                return None
 
         self.pickler_type = pickler_type
 
@@ -78,8 +69,6 @@ class Connection(object):
                     return Sender(self.hub, args.route(self.sender.addr))
                 elif pack == PACK_UNROUTE:
                     return Sender(self.hub, args if args else self.sender.addr)
-                elif pack == PACK_CLOSURE:
-                    return args
                 else:
                     raise ValueError('Unknown pack type: {}'.format(pack))
 
