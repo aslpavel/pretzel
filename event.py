@@ -77,3 +77,66 @@ class Event(object):
 
     def __repr__(self):
         return str(self)
+
+    def __reduce__(self):
+        return ReducedEvent, (self.reduce().sender,)
+
+    def reduce(self):
+        """Create reduced event
+
+        Fire-able and send-able over remote connection but not subscribe-able.
+        """
+        from .remoting import pair
+
+        def fire_event(msg, dst, src):
+            op, event = msg
+            if op == EVENT_FIRE:
+                self(event)
+                return True
+            elif op == EVENT_DISPOSE:
+                return False
+            else:
+                raise ValueError('unknown reduced event operation')
+        recv, send = pair()
+        recv(fire_event)
+        return ReducedEvent(send)
+
+
+class ReducedEvent(object):
+    """Reduced event
+
+    Can be called and send over remote connection but cannot be subscribed to.
+    """
+    __slots__ = ('sender',)
+
+    def __init__(self, sender):
+        self.sender = sender
+
+    def __call__(self, event):
+        if self.sender is None:
+            raise ValueError('reduced event is disposed')
+        if not self.sender.try_send((EVENT_FIRE, event)):
+            self.dispose()
+            raise ValueError('reduced event is disposed')
+
+    def dispose(self):
+        sender, self.sender = self.sender, None
+        if sender:
+            sender.try_send((EVENT_DISPOSE, None))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, eo, tb):
+        self.dispose()
+        return False
+
+    def __str__(self):
+        return 'ReducedEvent(addr:{})'.format(self.sender.addr
+                                              if self.sender else None)
+
+    def __repr__(self):
+        return str(self)
+
+EVENT_FIRE = 0
+EVENT_DISPOSE = 1
