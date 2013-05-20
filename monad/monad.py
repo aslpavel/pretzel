@@ -34,7 +34,9 @@ class Monad(object):
 
     @property
     def value(self):
-        """Get embedded value inside greenlet do block
+        """Get embedded monad value
+
+        This monad independent version works only inside do_green block.
         """
         from .do_green import bind_green
         return bind_green(self)

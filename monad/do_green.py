@@ -31,7 +31,6 @@ else:
         bound function multiple times inside bind implementation (e.g. List monad).
         """
         unit = Monad.unit
-        bind = Monad.bind
 
         def do(block):
             @wraps(block)
@@ -46,7 +45,7 @@ else:
                         if coro.dead:
                             return unit(Result.from_value(result))
                         else:
-                            return bind(result.__monad__(), do_next)
+                            return result.__monad__().bind(do_next)
                     except Exception:
                         return unit(Result.from_current_error())
                 coro = _do_greenlet(lambda _: block(*args, **kw))
