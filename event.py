@@ -101,6 +101,19 @@ class Event(object):
         recv(fire_event)
         return ReducedEvent(send)
 
+    def dispose(self):
+        """Does nothing
+
+        Compatibility with reduced event interface.
+        """
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, eo, tb):
+        self.dispose()
+        return False
+
 
 class ReducedEvent(object):
     """Reduced event
