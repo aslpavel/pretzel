@@ -30,10 +30,10 @@ class ShellConnection(StreamConnection):
     is untouched.
     """
     def __init__(self, command=None, escape=None, py_exec=None,
-                 buffer_size=None, hub=None, core=None):
+                 bufsize=None, hub=None, core=None):
         StreamConnection.__init__(self, hub=hub, core=core)
 
-        self.buffer_size = buffer_size
+        self.bufsize = bufsize
         self.py_exec = py_exec or sys.executable
         self.command = command or []
         self.command.extend((self.py_exec, '-c', '\'{}\''.format(shell_tramp)
@@ -53,11 +53,11 @@ class ShellConnection(StreamConnection):
 
         self.process = yield (self.disp.add(Process(self.command, stdin=PIPE,
                               stdout=PIPE, preexec=preexec, kill_delay=-1,
-                              buffer_size=self.buffer_size, core=self.core)))
+                              bufsize=self.bufsize, core=self.core)))
 
         # send payload
         payload = (BootImporter.from_modules().bootstrap(
-                   shell_conn_init, self.buffer_size).encode('utf-8'))
+                   shell_conn_init, self.bufsize).encode('utf-8'))
         self.process.stdin.write_schedule(struct.pack('>I', len(payload)))
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush()
@@ -73,7 +73,7 @@ class ShellConnection(StreamConnection):
         self.flags['host'] = yield self(socket.gethostname)()
 
 
-def shell_conn_init(buffer_size):
+def shell_conn_init(bufsize):
     """Shell connection initialization function
     """
     # Make sure standard output and input won't be used. As it is now used
@@ -91,9 +91,9 @@ def shell_conn_init(buffer_size):
         conn.disp.add(core)
 
         # connect
-        in_stream = BufferedFile(0, buffer_size=buffer_size, core=core)
+        in_stream = BufferedFile(0, bufsize=bufsize, core=core)
         in_stream.close_on_exec(True)
-        out_stream = BufferedFile(1, buffer_size=buffer_size, core=core)
+        out_stream = BufferedFile(1, bufsize=bufsize, core=core)
         out_stream.close_on_exec(True)
         conn.connect((in_stream, out_stream))()
 

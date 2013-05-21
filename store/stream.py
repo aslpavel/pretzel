@@ -9,21 +9,21 @@ class StoreStream(object):
     """Stream object with Store back-end.
     """
     default_compress = 9
-    default_chunk_size = 1 << 16
+    default_bufsize = 1 << 16
 
-    def __init__(self, store, header, buffer_size=None, compress=None):
+    def __init__(self, store, header, bufsize=None, compress=None):
         self.store = store
         self.header = header
 
         header = self.header()
         if not header:
-            self.chunk_size = buffer_size or self.default_chunk_size
+            self.bufsize = bufsize or self.default_bufsize
             self.chunks = []
             self.size = 0
             self.compress = self.default_compress if compress is None else compress
         else:
             header = json.loads(header.decode())
-            self.chunk_size = header['chunk_size']
+            self.bufsize = header['bufsize']
             self.chunks = header['chunks']
             self.size = header['size']
             self.compress = header['compress']
@@ -31,7 +31,7 @@ class StoreStream(object):
         self.seek_pos = None
         self.chunk_index = None
         self.chunk_dirty = False
-        self.chunk_zero = b'\x00' * self.chunk_size
+        self.chunk_zero = b'\x00' * self.bufsize
         self.chunk_switch(0)
 
     def chunk_switch(self, index=None):
@@ -54,14 +54,14 @@ class StoreStream(object):
         if self.chunk_index < len(self.chunks):
             self.chunk_desc = self.chunks[self.chunk_index]
             self.chunk = Chunk(
-                self.chunk_size,
+                self.bufsize,
                 self.chunk_zero if self.chunk_desc is None else
                 self.store.load(self.chunk_desc) if not self.compress else
                 zlib.decompress(self.store.load(self.chunk_desc)))
         else:
             self.chunks.extend((None,) * (self.chunk_index - len(self.chunks)))
             self.chunk_desc = None
-            self.chunk = Chunk(self.chunk_size)
+            self.chunk = Chunk(self.bufsize)
 
     def write(self, data):
         """Write data to stream
@@ -78,7 +78,7 @@ class StoreStream(object):
                 break
             self.chunk_switch()
 
-        self.size = max(self.size, self.chunk_index * self.chunk_size + self.chunk.tell())
+        self.size = max(self.size, self.chunk_index * self.bufsize + self.chunk.tell())
         return len(data)
 
     def read(self, size=None):
@@ -113,7 +113,7 @@ class StoreStream(object):
         if whence == 0:    # SEEK_SET
             self.seek_pos = pos
         elif whence == 1:  # SEEK_CUR
-            self.seek_pos = self.chunk_index * self.chunk_size + self.chunk.tell() + pos
+            self.seek_pos = self.chunk_index * self.bufsize + self.chunk.tell() + pos
         elif whence == 2:  # SEEK_END
             self.seek_pos = self.size + pos
         else:
@@ -126,7 +126,7 @@ class StoreStream(object):
         seek_pos, self.seek_pos = self.seek_pos, None
         if seek_pos is None:
             return
-        index, offset = divmod(seek_pos, self.chunk_size)
+        index, offset = divmod(seek_pos, self.bufsize)
         self.chunk_switch(index)
         self.chunk.seek(offset)
 
@@ -134,7 +134,7 @@ class StoreStream(object):
         """Tell current position inside stream
         """
         if self.seek_pos is None:
-            return self.chunk_index * self.chunk_size + self.chunk.tell()
+            return self.chunk_index * self.bufsize + self.chunk.tell()
         else:
             return self.seek_pos
 
@@ -165,7 +165,7 @@ class StoreStream(object):
                 self.chunks.append(chunk_desc)
 
         header = json.dumps({
-            'chunk_size': self.chunk_size,
+            'bufsize': self.bufsize,
             'chunks': self.chunks,
             'size': self.size,
             'compress': self.compress,

@@ -95,7 +95,7 @@ class SocketSSL(Socket):
                     else:
                         client = ssl.wrap_socket(client, server_side=True,
                                                  **self.ssl_options)
-                    do_return((SocketSSL(client, self.buffer_size, self.ssl_options,
+                    do_return((SocketSSL(client, self.bufsize, self.ssl_options,
                                self.core), addr))
                 except socket.error as error:
                     if error.errno not in BlockingErrorSet:
@@ -104,8 +104,8 @@ class SocketSSL(Socket):
 
 
 class BufferedSocketSSL(BufferedStream):
-    def __init__(self, sock, buffer_size=None, ssl_options=None, init=None, core=None):
-        BufferedStream.__init__(self, SocketSSL(sock, ssl_options, init, core), buffer_size)
+    def __init__(self, sock, bufsize=None, ssl_options=None, init=None, core=None):
+        BufferedStream.__init__(self, SocketSSL(sock, ssl_options, init, core), bufsize)
 
     def detach(self):
         return BufferedStream.detach(self).detach()
@@ -114,5 +114,5 @@ class BufferedSocketSSL(BufferedStream):
     def accept(self):
         with self.reading:
             sock, addr = yield self.base.accept()
-            do_return((BufferedSocketSSL(sock.Socket, self.buffer_size,
+            do_return((BufferedSocketSSL(sock.Socket, self.bufsize,
                        sock.ssl_options, True, sock.core), addr))

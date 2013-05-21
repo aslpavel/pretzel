@@ -8,7 +8,7 @@ __all__ = ('StoreStreamTest',)
 class StoreStreamTest(unittest.TestCase):
     def testCheck(self):
         store = StreamStore(io.BytesIO())
-        stream = store.create_stream(b'test', buffer_size=8)
+        stream = store.create_stream(b'test', bufsize=8)
 
         # read outside of data
         self.assertEqual(stream.seek(10), 10)

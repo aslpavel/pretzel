@@ -17,13 +17,13 @@ __all__ = ('BufferedStream',)
 class BufferedStream(WrappedStream):
     """Buffered stream
     """
-    default_buffer_size = 1 << 16
+    default_bufsize = 1 << 16
     size_struct = struct.Struct('>I')
 
-    def __init__(self, base, buffer_size=None):
+    def __init__(self, base, bufsize=None):
         WrappedStream.__init__(self, base)
 
-        self.buffer_size = buffer_size or self.default_buffer_size
+        self.bufsize = bufsize or self.default_bufsize
         self.read_buffer = Buffer()
         self.write_buffer = Buffer()
 
@@ -33,7 +33,7 @@ class BufferedStream(WrappedStream):
             """
             with self.writing:
                 while self.write_buffer:
-                    block = self.write_buffer.slice(self.buffer_size)
+                    block = self.write_buffer.slice(self.bufsize)
                     self.write_buffer.dequeue((yield self.base.write(block)), False)
                 yield self.base.flush()
         self.flush = singleton(flush)
@@ -44,7 +44,7 @@ class BufferedStream(WrappedStream):
             do_return(b'')
         with self.reading:
             if not self.read_buffer:
-                self.read_buffer.enqueue((yield self.base.read(self.buffer_size)))
+                self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(size))
 
     @async
@@ -55,7 +55,7 @@ class BufferedStream(WrappedStream):
             do_return(b'')
         with self.reading:
             while len(self.read_buffer) < size:
-                self.read_buffer.enqueue((yield self.base.read(self.buffer_size)))
+                self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(size))
 
     @async
@@ -65,7 +65,7 @@ class BufferedStream(WrappedStream):
         with self.reading:
             try:
                 while True:
-                    self.read_buffer.enqueue((yield self.base.read(self.buffer_size)))
+                    self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             except BrokenPipeError:
                 pass
             do_return(self.read_buffer.dequeue())
@@ -85,7 +85,7 @@ class BufferedStream(WrappedStream):
                 if find_offset >= 0:
                     break
                 offset = max(0, len(data) - len(sub))
-                self.read_buffer.enqueue((yield self.base.read(self.buffer_size)))
+                self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(offset + find_offset + len(sub)))
 
     @async
@@ -100,7 +100,7 @@ class BufferedStream(WrappedStream):
                 match = regex.search(data)
                 if match:
                     break
-                self.read_buffer.enqueue((yield self.base.read(self.buffer_size)))
+                self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return((self.read_buffer.dequeue(match.end()), match))
 
     @async
@@ -113,9 +113,9 @@ class BufferedStream(WrappedStream):
         """
         with self.writing:  # state check
             self.write_buffer.enqueue(data)
-        if len(self.write_buffer) > 2 * self.buffer_size:
+        if len(self.write_buffer) > 2 * self.bufsize:
             yield self.flush()
-        elif len(self.write_buffer) > self.buffer_size:
+        elif len(self.write_buffer) > self.bufsize:
             self.flush()()
         do_return(len(data))
 

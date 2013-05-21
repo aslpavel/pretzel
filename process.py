@@ -42,7 +42,7 @@ class Process(object):
 
     def __init__(self, command, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
-                 buffer_size=None, kill_delay=None, core=None):
+                 bufsize=None, kill_delay=None, core=None):
 
         self.core = core or Core.local()
         self.disp = CompDisp()
@@ -59,7 +59,7 @@ class Process(object):
             'command': ['/bin/sh', '-c', ' '.join(command)] if shell else command,
             'kill_delay': kill_delay or self.KILL_DELAY,
             'check': check is None or check,
-            'buffer': buffer_size,
+            'buffer': bufsize,
             'preexec': preexec,
             'status': Event(),
         }
@@ -189,7 +189,7 @@ class Process(object):
 
 def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
-                 buffer_size=None, kill_delay=None, core=None):
+                 bufsize=None, kill_delay=None, core=None):
     """Asynchronously run command
 
     Asynchronously returns standard output, standard error and return code tuple.
@@ -204,7 +204,7 @@ def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
     def process():
         with Process(command=command, stdin=stdin, stdout=stdout, stderr=stderr,
                      preexec=preexec, shell=shell, environ=environ, check=check,
-                     buffer_size=buffer_size, kill_delay=kill_delay, core=core) as proc:
+                     bufsize=bufsize, kill_delay=kill_delay, core=core) as proc:
             yield proc
             if input:
                 proc.stdin.write_schedule(input)

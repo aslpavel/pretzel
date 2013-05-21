@@ -98,8 +98,8 @@ class File(Stream):
 
 
 class BufferedFile(BufferedStream):
-    def __init__(self, fd, buffer_size=None, closefd=None, core=None):
-        BufferedStream.__init__(self, File(fd, closefd, True, core), buffer_size)
+    def __init__(self, fd, bufsize=None, closefd=None, core=None):
+        BufferedStream.__init__(self, File(fd, closefd, True, core), bufsize)
 
     def detach(self):
         return BufferedStream.detach(self).detach()

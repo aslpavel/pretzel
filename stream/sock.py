@@ -111,8 +111,8 @@ class Socket(File):
 
 
 class BufferedSocket (BufferedStream):
-    def __init__(self, sock, buffer_size=None, init=None, core=None):
-        BufferedStream.__init__(self, Socket(sock, init=init, core=core), buffer_size)
+    def __init__(self, sock, bufsize=None, init=None, core=None):
+        BufferedStream.__init__(self, Socket(sock, init=init, core=core), bufsize)
 
     def detach(self):
         return BufferedStream.detach(self).detach()
@@ -121,4 +121,4 @@ class BufferedSocket (BufferedStream):
     def accept(self):
         with self.reading:
             sock, addr = yield self.base.accept()
-            do_return((BufferedSocket(sock.sock, self.buffer_size, True, sock.core), addr))
+            do_return((BufferedSocket(sock.sock, self.bufsize, True, sock.core), addr))

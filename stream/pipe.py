@@ -7,18 +7,18 @@ __all__ = ('Pipe',)
 class Pipe(object):
     """Asynchronous pipe wrapper
     """
-    def __init__(self, fds=None, buffer_size=None, core=None):
+    def __init__(self, fds=None, bufsize=None, core=None):
         if fds is None:
             reader_fd, writer_fd = os.pipe()
-            self.reader = BufferedFile(reader_fd, buffer_size, True, core)
-            self.writer = BufferedFile(writer_fd, buffer_size, True, core)
+            self.reader = BufferedFile(reader_fd, bufsize, True, core)
+            self.writer = BufferedFile(writer_fd, bufsize, True, core)
         else:
             self.reader = None
             if fds[0] is not None:
-                self.reader = BufferedFile(fds[0], buffer_size, False, core)
+                self.reader = BufferedFile(fds[0], bufsize, False, core)
             self.writer = None
             if fds[1] is not None:
-                self.writer = BufferedFile(fds[1], buffer_size, False, core)
+                self.writer = BufferedFile(fds[1], bufsize, False, core)
 
     def detach_reader(self, fd=None, blocking=None, close_on_exec=None):
         """Detach read and close write descriptors

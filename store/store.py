@@ -217,12 +217,12 @@ class Store(object):
         self.disps.add(mapping)
         return mapping
 
-    def create_stream(self, name, buffer_size=None, compress=None):
+    def create_stream(self, name, bufsize=None, compress=None):
         """Create stream object with store back-end.
         """
         from .stream import StoreStream
         cell = self.create_cell('__stream:{}'.format(name))
-        stream = StoreStream(self, cell, buffer_size, compress)
+        stream = StoreStream(self, cell, bufsize, compress)
         self.disps.add(stream)
         return stream
 

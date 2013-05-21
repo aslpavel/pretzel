@@ -20,9 +20,9 @@ class ForkConnection(StreamConnection):
 
     Connection with forked and exec-ed process via two pipes.
     """
-    def __init__(self, command=None, buffer_size=None, hub=None, core=None):
+    def __init__(self, command=None, bufsize=None, hub=None, core=None):
         StreamConnection.__init__(self, hub=hub, core=core)
-        self.buffer_size = buffer_size
+        self.bufsize = bufsize
         self.command = [sys.executable, '-'] if command is None else command
         self.process = None
 
@@ -34,8 +34,8 @@ class ForkConnection(StreamConnection):
         connection with connection this as its only argument.
         """
         # pipes
-        in_pipe = self.disp.add(Pipe(buffer_size=self.buffer_size, core=self.core))
-        out_pipe = self.disp.add(Pipe(buffer_size=self.buffer_size, core=self.core))
+        in_pipe = self.disp.add(Pipe(bufsize=self.bufsize, core=self.core))
+        out_pipe = self.disp.add(Pipe(bufsize=self.bufsize, core=self.core))
 
         # process
         def preexec():
@@ -46,7 +46,7 @@ class ForkConnection(StreamConnection):
 
         self.process = self.disp.add(Process(self.command,
                                      stdin=PIPE, preexec=preexec, kill_delay=-1,
-                                     buffer_size=self.buffer_size, core=self.core))
+                                     bufsize=self.bufsize, core=self.core))
         yield self.process  # exec-ed
 
         # close remote side of pipes
@@ -57,7 +57,7 @@ class ForkConnection(StreamConnection):
 
         # send payload
         payload = (BootImporter.from_modules().bootstrap
-                  (fork_conn_init, in_fd, out_fd, self.buffer_size).encode())
+                  (fork_conn_init, in_fd, out_fd, self.bufsize).encode())
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush_and_dispose()
 
@@ -73,7 +73,7 @@ class ForkConnection(StreamConnection):
         self.flags['type'] = 'fork'
 
 
-def fork_conn_init(in_fd, out_fd, buffer_size):
+def fork_conn_init(in_fd, out_fd, bufsize):
     """Fork connection initialization function
     """
     with Core.local() as core:
@@ -84,9 +84,9 @@ def fork_conn_init(in_fd, out_fd, buffer_size):
         conn.disp.add(core)
 
         # connect
-        in_stream = BufferedFile(in_fd, buffer_size=buffer_size, core=core)
+        in_stream = BufferedFile(in_fd, bufsize=bufsize, core=core)
         in_stream.close_on_exec(True)
-        out_stream = BufferedFile(out_fd, buffer_size=buffer_size, core=core)
+        out_stream = BufferedFile(out_fd, bufsize=bufsize, core=core)
         out_stream.close_on_exec(True)
         conn.connect((in_stream, out_stream))()
 
