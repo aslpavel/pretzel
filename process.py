@@ -215,6 +215,7 @@ class ProcessPipe(object):
         self.bufsize = bufsize
         self.parent_pid = os.getpid()
         self.parent_fd, self.child_fd = os.pipe() if reader else reversed(os.pipe())
+        fd_close_on_exec(self.parent_fd, True)
 
     def __call__(self, fd=None):
         """Detach appropriate object
@@ -228,7 +229,6 @@ class ProcessPipe(object):
             assert fd is None, 'fd option must not be used in parent process'
             os.close(self.child_fd)
             stream = BufferedFile(self.parent_fd, bufsize=self.bufsize, core=self.core)
-            stream.close_on_exec(True)
             return stream
         else:
             os.close(self.parent_fd)
