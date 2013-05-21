@@ -3,8 +3,9 @@
 from .hub import pair
 from .expr import (LoadArgExpr, LoadConstExpr, CallExpr, GetAttrExpr,
                    GetItemExpr, BindExpr)
+from ..monad import async, do_return
 
-__all__ = ('Proxy', 'proxify')
+__all__ = ('Proxy', 'proxify', 'proxify_func',)
 
 
 class Proxy(object):
@@ -74,3 +75,56 @@ def proxify(target, dispose=None, hub=None):
     recv, send = pair(hub=hub)
     recv(proxy_handler)
     return Proxy(send, LoadArgExpr(0))
+
+
+class FuncProxy(object):
+    """Function object proxy
+    """
+    __slots__ = ('sender',)
+
+    def __init__(self, sender):
+        self.sender = sender
+
+    def __call__(self, *args, **kwargs):
+        if self.sender is None:
+            raise RuntimeError('function proxy has been disposed')
+        return self.sender((args, kwargs))
+
+    def dispose(self):
+        sender, self.sender = self.sender, None
+        if sender is not None:
+            sender.try_send(None)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, eo, tb):
+        self.dispose()
+        return False
+
+    def __str__(self):
+        return '{}(addr:{})'.format(type(self).__name__,
+                                    self.sender.addr if self.sender else None)
+
+    def __repr__(self):
+        return str(self)
+
+
+def proxify_func(func, hub=None):
+    """Proxify asynchronous function
+    """
+    @async
+    def func_caller(msg):
+        args, kwargs = msg
+        do_return((yield func(*args, **kwargs)))
+
+    def func_handler(msg, dst, src):
+        if msg is None:
+            return False
+        else:
+            func_caller(msg)(lambda val: val.trace() if src is None else src.send(val))
+            return True
+
+    recv, send = pair(hub=hub)
+    recv(func_handler)
+    return FuncProxy(send)
