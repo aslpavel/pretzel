@@ -14,7 +14,8 @@ from .stream import BufferedFile, fd_close_on_exec
 from .common import BrokenPipeError
 from .state_machine import StateMachine
 
-__all__ = ('Process', 'ProcessPipe', 'PIPE', 'DEVNULL', 'process_call',)
+__all__ = ('Process', 'ProcessError', 'ProcessPipe', 'PIPE', 'DEVNULL',
+           'process_call',)
 
 
 def devnull_fd():
@@ -42,6 +43,11 @@ DEVNULL_FD = None
 STDIN_FD = sys.__stdin__.fileno() if sys.__stdin__ else devnull_fd()
 STDOUT_FD = sys.__stdout__.fileno() if sys.__stdout__ else devnull_fd()
 STDERR_FD = sys.__stderr__.fileno() if sys.__stderr__ else devnull_fd()
+
+
+class ProcessError(Exception):
+    """Process specific error
+    """
 
 
 class Process(object):
@@ -141,6 +147,7 @@ class Process(object):
                 self.stderr = stderr()
 
                 status = self.core.waitpid(self.pid).future()  # no zombies
+                status(self.dispose)
                 try:
                     error_data = yield self.disp.add(status_pipe()).read_until_eof()
                     if error_data:
@@ -167,7 +174,6 @@ class Process(object):
                     getattr(os, '_exit', lambda _: os.kill(os.getpid(), signal.SIGKILL))(255)
 
             self.state(self.STATE_RUN)
-            status(self.dispose)
             do_return(self)
         except Exception:
             self.dispose(Result.from_current_error())
@@ -188,7 +194,11 @@ class Process(object):
                 (self.core.sleep(self.opts.kill_delay)(lambda _:
                  not self.status.completed and os.kill(self.pid, signal.SIGTERM)))
         else:
-            self.opts.status(status)
+            def check_status(status):
+                if self.opts.check and status != 0:
+                    raise ProcessError('non-zero exit status: {}'.format(status))
+                return status
+            self.opts.status(status.bind(check_status))
 
     def __enter__(self):
         return self

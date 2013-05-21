@@ -234,6 +234,7 @@ class ShellStream(object):
 
     def write(self, data):
         self.output(data)
+        return len(data)
 
     def flush(self):
         pass

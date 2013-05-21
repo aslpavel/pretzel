@@ -1,7 +1,7 @@
 import textwrap
 import unittest
 
-from ..process import Process, PIPE, DEVNULL, process_call
+from ..process import Process, ProcessError, PIPE, DEVNULL, process_call
 from ..monad import Cont
 from . import async_test
 
@@ -30,7 +30,7 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_cleanup(self):
-        with (yield Process(['cat'], stdin=PIPE, stdout=PIPE, stderr=PIPE)) as proc:
+        with (yield Process(['cat'], stdin=PIPE, stdout=PIPE, stderr=PIPE, check=False)) as proc:
             self.assertTrue(proc.stdin.close_on_exec())
             self.assertTrue(proc.stdout.close_on_exec())
             self.assertTrue(proc.stderr.close_on_exec())
@@ -51,3 +51,10 @@ class ProcessTest(unittest.TestCase):
     def test_devnull(self):
         self.assertEqual((yield process_call(['cat'], stdin=DEVNULL)),
                          (b'', b'', 0))
+
+    @async_test
+    def test_check(self):
+        out, err, code = yield process_call(['false'], check=False)
+        self.assertNotEqual(code, 0)
+        with self.assertRaises(ProcessError):
+            yield process_call(['false'], check=True)
