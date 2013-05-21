@@ -1,4 +1,6 @@
 """Asynchronous pretzel shell
+
+Requires greenlet module to be installed.
 """
 import os
 import sys
