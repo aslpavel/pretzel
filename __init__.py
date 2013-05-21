@@ -1,5 +1,9 @@
+"""Asynchronous application framework
+"""
 import sys
-sys.setrecursionlimit(1 << 16)
+# Increase of recursion limit is desirable as in case of long sequence of
+# instantly resolved monads do_block may exhaust it.
+sys.setrecursionlimit(8192)
 
 __all__ = []
 
