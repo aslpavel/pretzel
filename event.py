@@ -81,7 +81,7 @@ class Event(object):
     def __reduce__(self):
         return ReducedEvent, (self.reduce().sender,)
 
-    def reduce(self):
+    def reduce(self, hub=None):
         """Create reduced event
 
         Fire-able and send-able over remote connection but not subscribe-able.
@@ -97,7 +97,7 @@ class Event(object):
                 return False
             else:
                 raise ValueError('unknown reduced event operation')
-        recv, send = pair()
+        recv, send = pair(hub=hub)
         recv(fire_event)
         return ReducedEvent(send)
 
@@ -126,11 +126,11 @@ class ReducedEvent(object):
         self.sender = sender
 
     def __call__(self, event):
-        if self.sender is None:
-            raise ValueError('reduced event is disposed')
-        if not self.sender.try_send((EVENT_FIRE, event)):
+        if self.sender is not None:
+            if self.sender.try_send((EVENT_FIRE, event)):
+                return
             self.dispose()
-            raise ValueError('reduced event is disposed')
+        raise ValueError('reduced event is disposed')
 
     def dispose(self):
         sender, self.sender = self.sender, None
