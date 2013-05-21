@@ -6,9 +6,9 @@ import os
 import sys
 from .stream import StreamConnection
 from ..importer import Importer
-from ...process import Process, PIPE
+from ...process import Process, ProcessPipe, PIPE
 from ...monad import async
-from ...stream import BufferedFile, Pipe
+from ...stream import BufferedFile
 from ...core import Core
 from ...boot import BootImporter
 
@@ -34,13 +34,13 @@ class ForkConnection(StreamConnection):
         connection with connection this as its only argument.
         """
         # pipes
-        in_pipe = self.disp.add(Pipe(bufsize=self.bufsize, core=self.core))
-        out_pipe = self.disp.add(Pipe(bufsize=self.bufsize, core=self.core))
+        reader = self.disp.add(ProcessPipe(True, bufsize=self.bufsize, core=self.core))
+        writer = self.disp.add(ProcessPipe(False, bufsize=self.bufsize, core=self.core))
 
         # process
         def preexec():
-            in_pipe.detach_reader()
-            out_pipe.detach_writer()
+            reader()
+            writer()
             os.chdir('/')
             os.setsid()
 
@@ -49,21 +49,15 @@ class ForkConnection(StreamConnection):
                                      bufsize=self.bufsize, core=self.core))
         yield self.process  # exec-ed
 
-        # close remote side of pipes
-        in_fd = in_pipe.reader.fileno()
-        in_pipe.reader.dispose()
-        out_fd = out_pipe.writer.fileno()
-        out_pipe.writer.dispose()
-
         # send payload
         payload = (BootImporter.from_modules().bootstrap
-                  (fork_conn_init, in_fd, out_fd, self.bufsize).encode())
+                  (fork_conn_init, writer.child_fd, reader.child_fd, self.bufsize).encode())
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush_and_dispose()
 
-        out_pipe.reader.close_on_exec(True)
-        in_pipe.writer.close_on_exec(True)
-        yield StreamConnection.do_connect(self, (out_pipe.reader, in_pipe.writer))
+        reader_stream = self.disp.add(reader())
+        writer_stream = self.disp.add(writer())
+        yield StreamConnection.do_connect(self, (reader_stream, writer_stream))
 
         # install importer
         self.disp.add((yield Importer.create_remote(self)))
@@ -73,7 +67,7 @@ class ForkConnection(StreamConnection):
         self.flags['type'] = 'fork'
 
 
-def fork_conn_init(in_fd, out_fd, bufsize):
+def fork_conn_init(reader_fd, writer_fd, bufsize):
     """Fork connection initialization function
     """
     with Core.local() as core:
@@ -84,11 +78,11 @@ def fork_conn_init(in_fd, out_fd, bufsize):
         conn.disp.add(core)
 
         # connect
-        in_stream = BufferedFile(in_fd, bufsize=bufsize, core=core)
-        in_stream.close_on_exec(True)
-        out_stream = BufferedFile(out_fd, bufsize=bufsize, core=core)
-        out_stream.close_on_exec(True)
-        conn.connect((in_stream, out_stream))()
+        reader = BufferedFile(reader_fd, bufsize=bufsize, core=core)
+        reader.close_on_exec(True)
+        writer = BufferedFile(writer_fd, bufsize=bufsize, core=core)
+        writer.close_on_exec(True)
+        conn.connect((reader, writer))()
 
         # execute core
         if not core.disposed:

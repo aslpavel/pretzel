@@ -12,8 +12,8 @@ class StreamConnection (Connection):
     """
     def __init__(self, hub=None, core=None):
         Connection.__init__(self, hub=hub, core=core)
-        self.in_stream = None
-        self.out_stream = None
+        self.reader = None
+        self.writer = None
 
     @async
     def do_connect(self, target):
@@ -24,30 +24,30 @@ class StreamConnection (Connection):
         @async
         def recv_coro():
             try:
-                if self.in_stream.disposed:
+                if self.reader.disposed:
                     return
                 # Begin read next message before dispatching current one, as
                 # connection may be closed during dispatching and input stream
                 # became disposed.
-                msg_next = self.in_stream.read_bytes().future()
+                msg_next = self.reader.read_bytes().future()
                 while True:
-                    msg, msg_next = (yield msg_next), self.in_stream.read_bytes().future()
+                    msg, msg_next = (yield msg_next), self.reader.read_bytes().future()
                     self.do_recv(msg)(lambda val: (not self.disposed) and val.trace())
             except (CanceledError, BrokenPipeError):
                 pass
             finally:
                 self.dispose()
 
-        self.in_stream, self.out_stream = target
+        self.reader, self.writer = target
         recv_coro()()
 
     def do_disconnect(self):
-        if self.in_stream is not None:
-            self.in_stream.dispose()
-        if self.out_stream is not None:
-            self.out_stream.dispose()
+        if self.reader is not None:
+            self.reader.dispose()
+        if self.writer is not None:
+            self.writer.dispose()
 
     def do_send(self, msg):
-        self.out_stream.write_bytes(msg)
-        self.out_stream.flush()()
+        self.writer.write_bytes(msg)
+        self.writer.flush()()
         return True
