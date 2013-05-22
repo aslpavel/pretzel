@@ -1,6 +1,7 @@
 from .monad import Cont
+from collections import deque
 
-__all__ = ('Event',)
+__all__ = ('Event', 'QueueEvent',)
 
 
 class Event(object):
@@ -73,7 +74,7 @@ class Event(object):
         return self.__monad__().future()
 
     def __str__(self):
-        return 'Event(len:{})'.format(len(self))
+        return 'Event(handlers:{})'.format(len(self))
 
     def __repr__(self):
         return str(self)
@@ -113,6 +114,37 @@ class Event(object):
     def __exit__(self, et, eo, tb):
         self.dispose()
         return False
+
+
+class EventQueue(Event):
+    """Event queue
+
+    Event object which queues event to be handled later if no handler is set.
+    """
+    __slots__ = Event.__slots__ + ('queue',)
+
+    def __init__(self):
+        Event.__init__(self)
+        self.queue = deque()
+
+    def __call__(self, event):
+        if self:
+            Event.__call__(self, event)
+        else:
+            self.queue.append(event)
+
+    def on(self, handler):
+        Event.on(self, handler)
+        while self:
+            if not self.queue:
+                return
+            Event.__call__(self, self.queue.popleft())
+
+    def __len__(self):
+        return len(self.queue)
+
+    def __str__(self):
+        return 'EventQueue(len:{}, handlers:{})'.format(len(self.queue), len(self.handlers))
 
 
 class ReducedEvent(object):

@@ -288,6 +288,15 @@ class TimeQueue(object):
         self.dispose()
         return False
 
+    def __len__(self):
+        return len(self.queue)
+
+    def __str__(self):
+        return 'TimeQueue(len:{})'.format(len(self))
+
+    def __repr__(self):
+        return str(self)
+
 
 class FileQueue(object):
     """File queue
@@ -412,6 +421,15 @@ class SchedQueue(object):
         self.dispose()
         return False
 
+    def __len__(self):
+        return len(self.rets)
+
+    def __str__(self):
+        return 'SchedQueue(len:{})'.format(len(self))
+
+    def __repr__(self):
+        return str(self)
+
 
 class ProcQueue(object):
     """Process queue
@@ -476,6 +494,15 @@ class ProcQueue(object):
     def __exit__(self, et, eo, tb):
         self.dispose()
         return False
+
+    def __len__(self):
+        return len(self.pids)
+
+    def __str__(self):
+        return 'ProcQueue(len:{})'.format(len(self))
+
+    def __repr__(self):
+        return str(self)
 
 
 class Waker(object):

@@ -1,9 +1,9 @@
 import unittest
 from collections import deque
-from ..event import Event
+from ..event import Event, EventQueue
 from ..monad import Cont
 
-__all__ = ('EvetTest',)
+__all__ = ('EvetTest', 'EventQueueTest',)
 
 
 class EventTest(unittest.TestCase):
@@ -70,3 +70,49 @@ class EventTest(unittest.TestCase):
 
         event(1)
         self.assertEqual(rets, [1])
+
+    def test_reduce(self):
+        items = []
+        get = lambda: event.__monad__()(lambda val: items.append(val))
+        event = Event()
+
+        with event.reduce() as revent:
+            get()
+            self.assertEqual(items, [])
+
+            revent(0)
+            self.assertEqual(items, [0])
+
+            revent(1)
+            self.assertEqual(items, [0])
+
+        with self.assertRaises(ValueError):
+            revent(2)
+
+
+class EventQueueTest(unittest.TestCase):
+    def test(self):
+        items = []
+        get = lambda: queue.__monad__()(lambda val: items.append(val))
+        queue = EventQueue()
+
+        get()
+        self.assertEqual(items, [])
+        self.assertEqual(len(queue), 0)
+
+        queue(0)
+        self.assertEqual(items, [0])
+        self.assertEqual(len(queue), 0)
+
+        queue(1)
+        queue(2)
+        self.assertEqual(items, [0])
+        self.assertEqual(len(queue), 2)
+
+        get()
+        self.assertEqual(items, [0, 1])
+        self.assertEqual(len(queue), 1)
+
+        get()
+        self.assertEqual(items, [0, 1, 2])
+        self.assertEqual(len(queue), 0)
