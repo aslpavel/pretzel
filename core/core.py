@@ -15,7 +15,7 @@ else:
 
 from .poll import Poller, POLL_ERROR, POLL_READ, POLL_WRITE, POLL_DISCONNECT
 from ..common import BrokenPipeError, ConnectionError, CanceledError, BlockingErrorSet
-from ..monad import Result, async, async_block
+from ..monad import Result, async, async_block, do_done
 from ..state_machine import StateMachine
 
 __all__ = ('Core',)
@@ -89,12 +89,13 @@ class Core(object):
             cls.inst_local.inst = inst
         return inst
 
+    @async
     def sleep(self, delay):
         """Sleep
 
         Interrupt current coroutine for specified amount of time
         """
-        return self.time_queue.on(time() + delay)
+        do_done(self.time_queue.on(time() + delay))
 
     def sleep_until(self, when):
         """Sleep until
