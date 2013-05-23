@@ -15,9 +15,10 @@ Features
 
 Examples
 --------
-Simple echo server
 
 ```python
+"""Simple echo server
+"""
 from __future__ import print_function
 import sys
 import socket
@@ -67,8 +68,9 @@ if __name__ == '__main__':
     main()
 ```
 
-Cat remote file
 ```python
+"""Cat remote file
+"""
 from __future__ import print_function
 import os
 import sys
