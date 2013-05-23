@@ -7,7 +7,7 @@ Features
 * C# like async/await(async/yield) paradigm for asynchronous programming (monad base)
 * Cool asynchronous I/O loop implementation
 * Uniform asynchronous stream implementation for sockets and pipes
-* Interract with subprocesses asynchronously
+* Interact with subprocesses asynchronously
 * Greenlet support (but not required)
 * Remote code executing over ssh (with only requirements python and ssh itself)
 * Python 2/3, PyPy compatible
@@ -32,7 +32,7 @@ def client_coro(sock, addr):
     try:
         print('[+clinet] fd:{} addr:{}'.format(sock.fileno(), addr))
         while True:
-            data = yield sock.read(1024)  # receive data (throws an error if data is b'')  
+            data = yield sock.read(1024)  # receive data (throws an error if data is b'')
             sock.write_schedule(data)     # schedule data to be written
             yield sock.flush()            # flush buffered data
     except BrokenPipeError:
@@ -85,7 +85,7 @@ def main():
     if len(sys.argv) < 3:
         sys.stderr.write('usage: {} <host> <path>\n'.format(sys.argv[0]))
         sys.exit(1)
-    
+
     host = sys.argv[1]
     path = sys.argv[2]
     with (yield SSHConnection(host)) as ssh:  # create and connect
