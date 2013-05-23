@@ -1,9 +1,12 @@
 language: python
 python:
-    - "2.7"
-    - "3.2"
-    - "3.3"
-    - "pypy"
+    - 2.7
+    - 3.2
+    - 3.3
+    - pypy
+env:
+    # pypy takes longer to start
+    - PRETZEL_TEST_TIMEOUT=15
 before_script:
     # ssh login on localhost
     - ssh-keygen -f ~/.ssh/id_rsa -N ""

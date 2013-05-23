@@ -1,3 +1,4 @@
+import os
 import functools
 from ..core import Core, sleep
 from ..common import CanceledError
@@ -6,12 +7,14 @@ from ..remoting.hub import Hub
 
 __all__ = ('async_test',)
 
+TIMEOUT = int(os.environ.get('PRETZEL_TEST_TIMEOUT') or '3')
+
 
 def async_test(test):
     """Run asynchronous test in context of newly create core object
     """
     def timeout():
-        return (sleep(3).map_val(lambda _:
+        return (sleep(TIMEOUT).map_val(lambda _:
                 Result.from_exception(CanceledError('test timeout'))))
 
     @functools.wraps(test)
