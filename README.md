@@ -1,6 +1,6 @@
 Pretzel
 -------
-[![Build Status][build_status]](https://travis-ci.org/aslpave/pretzel)
+[![Build Status][build_status]](https://travis-ci.org/aslpavel/pretzel)
 
 Is an asynchronous application framework for python
 
