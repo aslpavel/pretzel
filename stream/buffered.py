@@ -193,7 +193,7 @@ def singleton(action):
     def singleton_action():
         def run(ret):
             done.on_once(lambda val: ret(val))
-            if len(done) == 1:
+            if len(done.handlers) == 1:
                 action().__monad__()(lambda val: done(val))
         return Cont(run)
     done = Event()

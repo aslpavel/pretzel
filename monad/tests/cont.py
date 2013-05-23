@@ -101,13 +101,13 @@ class ContTest(unittest.TestCase):
         e0, e1 = Event(), Event()
 
         async_all((e0, e1))(lambda val: rets.append(val))
-        self.assertEqual(len(e0), 1)
-        self.assertEqual(len(e1), 1)
+        self.assertEqual(len(e0.handlers), 1)
+        self.assertEqual(len(e1.handlers), 1)
 
         e1('two')
         e0('one')
-        self.assertFalse(e0)
-        self.assertFalse(e1)
+        self.assertFalse(e0.handlers)
+        self.assertFalse(e1.handlers)
         self.assertEqual(rets.pop().value, ('one', 'two'))
 
     def test_any(self):
@@ -115,13 +115,13 @@ class ContTest(unittest.TestCase):
         e0, e1 = Event(), Event()
 
         async_any((e0, e1))(lambda val: rets.append(val))
-        self.assertEqual(len(e0), 1)
-        self.assertEqual(len(e1), 1)
+        self.assertEqual(len(e0.handlers), 1)
+        self.assertEqual(len(e1.handlers), 1)
 
         e0('done')
-        self.assertFalse(e0)
-        self.assertTrue(e1)
+        self.assertFalse(e0.handlers)
+        self.assertTrue(e1.handlers)
         self.assertEqual(rets.pop().value, 'done')
 
         e1('done_next')
-        self.assertFalse(e1)
+        self.assertFalse(e1.handlers)

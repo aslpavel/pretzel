@@ -1,7 +1,7 @@
 from .monad import Cont
 from collections import deque
 
-__all__ = ('Event', 'QueueEvent',)
+__all__ = ('Event', 'EventQueue',)
 
 
 class Event(object):
@@ -57,12 +57,6 @@ class Event(object):
         self.off(handler)
         return self
 
-    def __len__(self):
-        return len(self.handlers)
-
-    def __bool__(self):
-        return bool(self.handlers)
-
     def __monad__(self):
         """Continuation for nearest event
         """
@@ -74,7 +68,7 @@ class Event(object):
         return self.__monad__().future()
 
     def __str__(self):
-        return 'Event(handlers:{})'.format(len(self))
+        return '{}(handlers:{})'.format(type(self).__name__, len(self.handlers))
 
     def __repr__(self):
         return str(self)
@@ -128,14 +122,14 @@ class EventQueue(Event):
         self.queue = deque()
 
     def __call__(self, event):
-        if self:
+        if self.handlers:
             Event.__call__(self, event)
         else:
             self.queue.append(event)
 
     def on(self, handler):
         Event.on(self, handler)
-        while self:
+        while self.handlers:
             if not self.queue:
                 return
             Event.__call__(self, self.queue.popleft())
@@ -143,8 +137,12 @@ class EventQueue(Event):
     def __len__(self):
         return len(self.queue)
 
+    def __bool__(self):
+        return bool(self.queue)
+
     def __str__(self):
-        return 'EventQueue(len:{}, handlers:{})'.format(len(self.queue), len(self.handlers))
+        return '{}(len:{}, handlers:{})'.format(type(self).__name__,
+                                                len(self.queue), len(self.handlers))
 
 
 class ReducedEvent(object):
