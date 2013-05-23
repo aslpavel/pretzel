@@ -4,7 +4,7 @@ Is an asynchronous application framework for python
 
 Features
 --------
-* C# like async/await paradigm for asynchronous programming (async/yield)
+* C# like async/await(async/yield) paradigm for asynchronous programming (monad base)
 * Cool asynchronous I/O loop implementation
 * Uniform asynchronous stream implementation for sockets and pipes
 * Interract with subprocesses asynchronously
