@@ -16,6 +16,7 @@ before_script:
 script:
     - cd ..
     - coverage run -m unittest pretzel
+    - coverage report
     - mv .coverage pretzel
     - cd pretzel
 after_success:

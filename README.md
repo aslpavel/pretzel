@@ -1,6 +1,7 @@
 Pretzel
 -------
-[![Build Status][build_status]](https://travis-ci.org/aslpavel/pretzel)
+[![Build Status][build_status]][build_url]
+[![Coverage Status][coverage_status]][coverage_url]
 
 Is an asynchronous application framework for python
 
@@ -20,4 +21,7 @@ Examples
 * [Simple echo server](https://gist.github.com/aslpavel/5635559)
 * [Cat remote file over ssh](https://gist.github.com/aslpavel/5635610)
 
-[build_status]: https://api.travis-ci.org/aslpavel/pretzel.png "Build status"
+[build_badge]: https://api.travis-ci.org/aslpavel/pretzel.png "build status"
+[build_url]: https://travis-ci.org/aslpavel/pretzel
+[coverage_badge]: https://coveralls.io/repos/aslpavel/pretzel/badge.png?branch=master "coverage status"
+[coverage_url]: https://coveralls.io/r/aslpavel/pretzel?branch=master
