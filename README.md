@@ -1,7 +1,7 @@
 Pretzel
 -------
-[![Build Status][build_status]][build_url]
-[![Coverage Status][coverage_status]][coverage_url]
+[![Build Status][build_badge]][build_url]
+[![Coverage Status][coverage_badge]][coverage_url]
 
 Is an asynchronous application framework for python
 
