@@ -1,23 +1,23 @@
-"""Connection mesh
+'''Connection mesh
 
 Create composed ssh connection and work with it the same way as with single
 ssh connection.
 
 Example:
-    conns = yield ComposedConnection(['localhost'] * 9, mesh='tree:3')
+    conns = yield CompositeConnection([\'localhost\'] * 9, mesh=\'tree:3\')
     pids = list((yield conns(os.getpid)())))
     print(pids)  # [3269, 3277, 3285, 3270, 3278, 3290, 3271, 3276, 3282]
-"""
+'''
 import math
 import random
 from .ssh import SSHConnection
 from ...monad import List, Proxy, async, async_all, do_return
 
-__all__ = ('ComposedConnection',)
+__all__ = ('CompositeConnection',)
 
 
 @async
-def ComposedConnection(hosts, mesh='flat', **conn_opts):
+def CompositeConnection(hosts, mesh='flat', **conn_opts):
     """Create composed ssh connection from list of hosts.
 
     hosts -- list of hosts
