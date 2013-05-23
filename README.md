@@ -1,6 +1,7 @@
 Pretzel
 -------
-![build status is unknown](build_status "Build status")
+[![Build Status][build_status]](https://travis-ci.org/aslpave/pretzel)
+
 Is an asynchronous application framework for python
 
 Features
@@ -19,4 +20,4 @@ Examples
 * [Simple echo server](https://gist.github.com/aslpavel/5635559)
 * [Cat remote file over ssh](https://gist.github.com/aslpavel/5635610)
 
-[build_status]: https://api.travis-ci.org/aslpavel/pretzel.png
+[build_status]: https://api.travis-ci.org/aslpavel/pretzel.png "Build status"
