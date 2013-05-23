@@ -149,7 +149,8 @@ class StateTransScope(object):
         return self
 
     def __exit__(self, et, eo, tb):
-        self.state(self.fail if issubclass(et, Exception) else self.succ)
+        self.state(self.succ if et is None or not issubclass(et, Exception) else
+                   self.fail)
         return False
 
     def __bool__(self):
