@@ -11,3 +11,5 @@ before_script:
 script:
     - cd ..
     - python -munittest pretzel
+notifications:
+    email: false

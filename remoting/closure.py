@@ -20,13 +20,14 @@ class Closure(object):
         return self.func(*args, **kwargs)
 
     def __reduce__(self):
-        return (_restore_closure,
+        closure = _closure_get(self.func)
+        return (_closure_resotre,
                (marshal.dumps(self.func.__code__),
                 self.func.__name__,
                 self.func.__module__,
                 self.func.__kwdefaults__ if PY3 else self.func.func_defaults,
-                None if self.func.__closure__ is None else
-                tuple(cell.cell_contents for cell in self.func.__closure__)))
+                None if closure is None else
+                tuple(cell.cell_contents for cell in closure)))
 
     def __str__(self):
         return 'Closure({})'.format(self.func.__name__)
@@ -35,11 +36,19 @@ class Closure(object):
         return str(self)
 
 
-def _restore_closure(code, name, module, argdefs, closure):
+def _closure_resotre(code, name, module, argdefs, closure):
     return Closure(types.FunctionType(
                    marshal.loads(code),
                    importlib.import_module(module).__dict__,
                    name,
                    argdefs,
                    None if closure is None else
-                   tuple((lambda: val).__closure__[0] for val in closure)))
+                   tuple(_closure_get(lambda: val)[0] for val in closure)))
+
+
+if hasattr(_closure_resotre, '__closure__'):
+    def _closure_get(func):
+        return func.__closure__
+else:
+    def _closure_get(func):
+        return func.func_closure
