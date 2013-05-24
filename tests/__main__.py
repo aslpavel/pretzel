@@ -11,7 +11,7 @@ def main():
                         action='store_true', help='run coverage')
     opts = parser.parse_args()
 
-    if opts.coverage and os.environ.get('TRAVIS_PYTHON_VERSION') != 'pypy':
+    if opts.coverage:
         import coverage
         cov = coverage.coverage()
         cov.start()

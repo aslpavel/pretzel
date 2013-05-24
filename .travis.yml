@@ -15,8 +15,10 @@ before_script:
     - cp ~/.ssh/{id_rsa.pub,authorized_keys}
 script:
     - cd ..
-    - python -mpretzel.tests
-    - "test -f .coverage && mv .coverage pretzel"
+    - python -mpretzel.tests -c
+    # do not run coverage on pypy
+    - "if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then python -mpretzel.tests -c; else python -mpretzel.tests; fi"
+    - "test -f .coverage && mv .coverage pretzel || true"
     - cd pretzel
 after_success:
     "test -f .coverage && coveralls"
