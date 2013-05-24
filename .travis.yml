@@ -8,8 +8,8 @@ env:
     # pypy takes longer to start
     - PRETZEL_TEST_TIMEOUT=30
 install:
-    pip install coveralls --use-mirrors
-    pip install greenlet --use-mirrors
+    - pip install coveralls --use-mirrors
+    - pip install greenlet --use-mirrors
 before_script:
     # ssh login on localhost
     - ssh-keygen -f ~/.ssh/id_rsa -N ""
