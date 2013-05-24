@@ -3,8 +3,7 @@ python:
     - 2.7
     - 3.2
     - 3.3
-    # exclude pypy for now (see build 7, 11)
-    #- pypy
+    - pypy
 env:
     # pypy takes longer to start
     - PRETZEL_TEST_TIMEOUT=30
@@ -16,11 +15,10 @@ before_script:
     - cp ~/.ssh/{id_rsa.pub,authorized_keys}
 script:
     - cd ..
-    - coverage run -m unittest pretzel
-    - coverage report
-    - mv .coverage pretzel
+    - python -mpretzel.tests
+    - "test -f .coverage && mv .coverage pretzel"
     - cd pretzel
 after_success:
-    coveralls
+    "test -f .coverage && coveralls"
 notifications:
     email: false
