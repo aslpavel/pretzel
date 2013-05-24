@@ -21,6 +21,6 @@ script:
     - "test -f .coverage && mv .coverage pretzel || true"
     - cd pretzel
 after_success:
-    "test -f .coverage && coveralls"
+    "test -f .coverage && coveralls || true"
 notifications:
     email: false
