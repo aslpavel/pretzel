@@ -84,6 +84,8 @@ class Result(Monad):
             return self
 
     def __eq__(self, other):
+        if not isinstance(other, Result):
+            return False
         if self.pair[1] is None:
             return self.pair == other.pair
         elif other.pair[1] is None:
