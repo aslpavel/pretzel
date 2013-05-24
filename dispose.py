@@ -11,6 +11,7 @@ class Disposable(object):
     def __call__(self):
         self.dispose()
 
+    @property
     def disposed(self):
         raise NotImplementedError()
 
@@ -39,6 +40,7 @@ class FuncDisp(Disposable):
     def __init__(self, action=None):
         self.action = action
 
+    @property
     def disposed(self):
         return self.action is None
 
@@ -48,8 +50,7 @@ class FuncDisp(Disposable):
             return action()
 
     def __str__(self):
-        return '<{}[disp:{}] at {}>'.format(type(self).__name__,
-                                            self.disposed, id(self))
+        return '{}(disposed:{})'.format(type(self).__name__, self.disposed)
     __repr__ = __str__
 
 
@@ -100,6 +101,7 @@ class CompDisp(Disposable):
     def __len__(self):
         return len(self.disps) if self.disps else 0
 
+    @property
     def disposed(self):
         return self.disps is None
 
@@ -110,6 +112,6 @@ class CompDisp(Disposable):
                 disp.__exit__(None, None, None)
 
     def __str__(self):
-        return '<{}[disp:{} len:{}] at {}>'.format(type(self).__name__,
-                                                   self.disposed, len(self), id(self))
+        return '{}(len:{}, disposed:{})'.format(type(self).__name__,
+                                                len(self), self.disposed)
     __repr__ = __str__

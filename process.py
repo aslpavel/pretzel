@@ -3,6 +3,7 @@
 import io
 import os
 import sys
+import errno
 import pickle
 import signal
 import atexit
@@ -146,14 +147,22 @@ class Process(object):
                 self.stdout = stdout()
                 self.stderr = stderr()
 
-                status = self.core.waitpid(self.pid).future()  # no zombies
-                status(self.dispose)
+                waitpid = self.core.waitpid(self.pid).future()  # no zombies
                 try:
                     error_data = yield self.disp.add(status_pipe()).read_until_eof()
                     if error_data:
                         pickle.loads(error_data).value  # will raise captured error
                 except BrokenPipeError:
                     pass
+                self.state(self.STATE_RUN)
+
+                @async
+                def check_status():
+                    status = yield waitpid
+                    if self.opts.check and status != 0:
+                        raise ProcessError('non-zero exit status: {}'.format(status))
+                    do_return(status)
+                check_status()(self.opts.status)
 
             # child
             else:
@@ -171,34 +180,38 @@ class Process(object):
                     with io.open(status_fd, 'wb') as error_stream:
                         pickle.dump(Result.from_current_error(), error_stream)
                 finally:
-                    getattr(os, '_exit', lambda _: os.kill(os.getpid(), signal.SIGKILL))(255)
+                    getattr(os, '_exit', lambda _: os.kill(os.getpid(), signal.SIGKILL))(111)
 
-            self.state(self.STATE_RUN)
             do_return(self)
         except Exception:
-            self.dispose(Result.from_current_error())
+            self.opts.status(Result.from_current_error())
+            self.dispose()
             raise
 
     def __monad__(self):
         return self()
 
-    def dispose(self, status=None):
+    @property
+    def disposed(self):
+        return self.disp.disposed
+
+    def dispose(self):
         self.state(self.STATE_DISP)
         self.disp.dispose()
         for stream in (self.stdin, self.stdout, self.stderr):
             if stream is not None:
                 stream.dispose()
-        if status is None:
-            # schedule kill signal
-            if self.pid and not self.status.completed:
-                (self.core.sleep(self.opts.kill_delay)(lambda _:
-                 not self.status.completed and os.kill(self.pid, signal.SIGTERM)))
-        else:
-            def check_status(status):
-                if self.opts.check and status != 0:
-                    raise ProcessError('non-zero exit status: {}'.format(status))
-                return status
-            self.opts.status(status.bind(check_status))
+        # schedule kill signal
+        if self.pid and not self.status.completed:
+            if self.opts.kill_delay > 0:
+                def terminate(_):
+                    if not self.status.completed:
+                        try:
+                            os.kill(self.pid, signal.SIGTERM)
+                        except OSError as error:
+                            if error.errno != errno.ECHILD:
+                                self.opts.status(Result.from_current_error())
+                self.core.sleep(self.opts.kill_delay)(terminate)
 
     def __enter__(self):
         return self

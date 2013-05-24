@@ -170,6 +170,7 @@ class Future(object):
         def ret(res):
             self.res = res
             rets, self.rets = self.rets, None
+            assert rets is not None, 'continuation has been called twice'
             for ret in rets:
                 ret(res)
         cont.__monad__()(ret)

@@ -462,9 +462,10 @@ class ProcQueue(object):
             res = os.waitpid(pid, os.WNOHANG)
             if res[0] != 0:
                 ret(os.WEXITSTATUS(res[1]))
-            if self.pids.get(pid):
-                raise ValueError('pid {} has already being waited'.format(pid))
-            self.pids[pid] = ret
+            else:
+                if self.pids.get(pid):
+                    raise ValueError('pid {} has already being waited'.format(pid))
+                self.pids[pid] = ret
         self.init()
         return cont
 

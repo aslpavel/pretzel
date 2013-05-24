@@ -43,9 +43,10 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_stress(self):
-        procs = yield Cont.sequence(process_call(['uname']) for _ in range(20))
+        reference = yield process_call(['uname'])
+        procs = yield Cont.sequence(process_call(['uname']) for _ in range(30))
         for proc in procs:
-            proc.value
+            self.assertEqual(proc.value, reference)
 
     @async_test
     def test_devnull(self):

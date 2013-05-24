@@ -7,7 +7,7 @@ from ..remoting.hub import Hub
 
 __all__ = ('async_test',)
 
-TIMEOUT = int(os.environ.get('PRETZEL_TEST_TIMEOUT') or '3')
+TIMEOUT = int(os.environ.get('PRETZEL_TEST_TIMEOUT') or '5')
 
 
 def async_test(test):

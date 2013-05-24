@@ -2,21 +2,23 @@ import os
 import unittest
 from .proxy import Remote
 from ..hub import pair
-from ..conn import ForkConnection
+from ..conn import ForkConnection, SSHConnection
 from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
 from ...core import schedule
 from ...tests import async_test
 
-__all__ = ('ConnectionTest',)
+__all__ = ('ForkConnectionTest',)
 
 
-class ConnectionTest(unittest.TestCase):
+class ForkConnectionTest(unittest.TestCase):
+    conn_type = ForkConnection
+    conn_args = tuple()
+
     @async_test
-    def test_fork(self):
-        with (yield ForkConnection()) as conn:
+    def test_proxy(self):
+        with (yield self.conn_type(*self.conn_args)) as conn:
             self.assertNotEqual(os.getpid(), (yield conn(os.getpid)()))
-            self.assertEqual(conn.process.pid, (yield conn(os.getpid)()))
 
             with (yield proxify(conn(Remote)('val'))) as proxy:
                 # call
@@ -57,12 +59,12 @@ class ConnectionTest(unittest.TestCase):
         """Nested connection test
         """
         pids = set()
-        with (yield ForkConnection()) as c0:
+        with (yield self.conn_type(*self.conn_args)) as c0:
             pids.add((yield c0(os.getpid)()))
-            with (yield ~c0(ForkConnection)()) as c1:
+            with (yield ~c0(self.conn_type)(*self.conn_args)) as c1:
                 pids.add((yield c1(os.getpid)()))
                 self.assertTrue(isinstance(c1, ConnectionProxy))
-                with (yield ~c1(ForkConnection)()) as c2:
+                with (yield ~c1(self.conn_type)(*self.conn_args)) as c2:
                     pids.add((yield c2(os.getpid)()))
         self.assertEqual(len(pids), 3)
 
@@ -72,5 +74,10 @@ class ConnectionTest(unittest.TestCase):
     @async_test
     def test_sender_roundtrip(self):
         r, s = pair()
-        with (yield ForkConnection()) as conn:
+        with (yield self.conn_type(*self.conn_args)) as conn:
             self.assertEqual(tuple((yield conn(s)).addr), tuple(s.addr))
+
+
+class SSHConnectionTest(ForkConnectionTest):
+    conn_type = SSHConnection
+    conn_args = ('localhost',)
