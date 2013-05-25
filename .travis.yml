@@ -11,9 +11,6 @@ install:
     - pip install coveralls --use-mirrors
     - pip install greenlet --use-mirrors
 before_script:
-    # ssh login on localhost
-    - ssh-keygen -f ~/.ssh/id_rsa -N ""
-    - cp ~/.ssh/{id_rsa.pub,authorized_keys}
     - "netstat -tan | grep LISTEN"
     - "ssh -oBatchMode=yes localhost true"
 script:
