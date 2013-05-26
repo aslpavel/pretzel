@@ -11,6 +11,7 @@ install:
     - pip install coveralls --use-mirrors
     - pip install greenlet --use-mirrors
 before_script:
+    - ssh-add -D
     - ssh-keygen -R localhost
     - ssh-keygen -f ~/.ssh/id_rsa -N ""
     - cp ~/.ssh/{id_rsa.pub,authorized_keys}
