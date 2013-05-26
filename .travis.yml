@@ -15,7 +15,7 @@ before_script:
     - ssh-keygen -f ~/.ssh/id_rsa -N ""
     - cp ~/.ssh/{id_rsa.pub,authorized_keys}
     - "netstat -tan | grep LISTEN"
-    - "ssh -v -oBatchMode=yes localhost true"
+    - "ssh -v -oBatchMode=yes,StrictHostKeyChecking=no localhost true"
 script:
     - cd ..
     - cp pretzel/.coveragerc ./
