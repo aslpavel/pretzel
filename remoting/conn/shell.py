@@ -48,6 +48,7 @@ class ShellConnection(StreamConnection):
         connection with connection this as its only argument.
         """
         def preexec():
+            # pragma: no cover
             os.chdir('/')
             os.setsid()
 
@@ -73,7 +74,7 @@ class ShellConnection(StreamConnection):
         self.flags['host'] = yield self(socket.gethostname)()
 
 
-def shell_conn_init(bufsize):
+def shell_conn_init(bufsize):  # pragma: no cover
     """Shell connection initialization function
     """
     # Make sure standard output and input won't be used. As it is now used

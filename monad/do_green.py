@@ -15,12 +15,12 @@ if greenlet is None:
         def do(block):
             @wraps(block)
             def do_block(*args, **kw):
-                raise NotImplementedError('failed to load greenelt module')
+                raise NotImplementedError('greenlet module was not found')
             return do_block
         return do
 
     def bind_green(monad):
-        raise NotImplementedError('failed to load greenlet monad')
+        raise NotImplementedError('greenelt module was not found')
 
 else:
     def do_green(Monad):

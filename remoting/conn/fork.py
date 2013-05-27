@@ -39,6 +39,7 @@ class ForkConnection(StreamConnection):
 
         # process
         def preexec():
+            # pragma: no cover
             reader()
             writer()
             os.chdir('/')
@@ -67,7 +68,7 @@ class ForkConnection(StreamConnection):
         self.flags['type'] = 'fork'
 
 
-def fork_conn_init(reader_fd, writer_fd, bufsize):
+def fork_conn_init(reader_fd, writer_fd, bufsize):  # pragma: no cover
     """Fork connection initialization function
     """
     with Core.local() as core:
