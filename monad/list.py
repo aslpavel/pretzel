@@ -44,6 +44,6 @@ class List(tuple, Monad):
         return List, tuple(self)
 
     def __str__(self):
-        return '[{}]'.format(', '.join(repr(val) for val in self))
+        return 'List({})'.format(', '.join(repr(val) for val in self))
 
     __repr__ = __str__
