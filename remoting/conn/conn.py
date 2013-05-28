@@ -156,7 +156,12 @@ class Connection(object):
                         src.send((yield msg(self)))
                 break
             except InterruptError:
-                yield self.recv_ev  # wait for pending import
+                # Required module is being imported right now. Wait for pending
+                # imports. We also need to postpone dispatch of the message
+                # because, message which resumed this method, may in the same
+                # time complete pending import.
+                yield self.recv_ev
+                yield self.core.schedule()
             except Exception:
                 if not self.disposed:
                     err = Result.from_current_error()

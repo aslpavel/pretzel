@@ -6,6 +6,7 @@ from ..conn import ForkConnection, SSHConnection
 from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
 from ...core import schedule
+from ...monad import async_all
 from ...tests import async_test
 
 __all__ = ('ForkConnectionTest',)
@@ -76,6 +77,17 @@ class ForkConnectionTest(unittest.TestCase):
         r, s = pair()
         with (yield self.conn_type(*self.conn_args)) as conn:
             self.assertEqual(tuple((yield conn(s)).addr), tuple(s.addr))
+
+    @async_test
+    def test_interrupt(self):
+        """Test interrupt inside Connection.do_recv
+        """
+        from .conn_int import int_function
+        with (yield self.conn_type(*self.conn_args)) as conn:
+            # We need to send two requests (second will cause interrupt)
+            res0, res1 = yield async_all((conn(int_function)(), conn(int_function)()))
+            self.assertEqual(res0, int_function())
+            self.assertEqual(res1, int_function())
 
 
 class SSHConnectionTest(ForkConnectionTest):
