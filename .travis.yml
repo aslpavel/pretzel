@@ -25,12 +25,17 @@ script: |
     export PYTHONPATH=`pwd`
     if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then
         cp pretzel/.coveragerc ./
+        echo :: UNITTESTS
         coverage run -m unittest pretzel
+        echo :: BENCHMARK
         coverage run -a -m pretzel.bench
+        echo :: COVERAGE
         coverage report
         cp .coverage pretzel
     else
+        echo :: UNITTESTS
         python -m unittest pretzel
+        echo :: BENCHMARK
         python -m pretzel.bench
     fi
     cd pretzel
