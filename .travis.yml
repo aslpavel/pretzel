@@ -1,31 +1,43 @@
 language: python
+
 python:
     - 2.7
     - 3.2
     - 3.3
     - pypy
+
 env:
-    # pypy takes longer to start
-    - PRETZEL_TEST_TIMEOUT=30
+    - PRETZEL_TEST_TIMEOUT=30 # pypy takes longer to start
+
 install:
     - pip install coveralls --use-mirrors
     - pip install greenlet --use-mirrors
-before_script:
-    - ssh-keygen -R localhost
-    - ssh-keygen -f ~/.ssh/id_rsa -N ""
-    - cp ~/.ssh/{id_rsa.pub,authorized_keys}
-    - "netstat -tan | grep LISTEN"
-    - "ssh -v -oBatchMode=yes -oStrictHostKeyChecking=no localhost true"
-script:
-    - cd ..
-    # tests and coverage
-    - cp pretzel/.coveragerc ./
-    - "if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then coverage run -m unittest pretzel; else python -m unittest pretzel; fi"
-    - "test -f .coverage && coverage report && mv .coverage pretzel || true"
-    # small benchmark
-    - python -mpretzel.bench
-    - cd pretzel
-after_success:
-    "test -f .coverage && coveralls || true"
+
+before_script: |
+    ssh-keygen -R localhost
+    ssh-keygen -f ~/.ssh/id_rsa -N ""
+    cp ~/.ssh/{id_rsa.pub,authorized_keys}
+    netstat -tan | grep LISTEN
+    ssh -v -oBatchMode=yes -oStrictHostKeyChecking=no localhost true
+
+script: |
+    cd ..
+    if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then
+        cp pretzel/.coveragerc ./
+        coverage run -m unittest pretzel
+        coverage run -a -m pretzel.bench
+        coverage report
+        cp .coverage pretzel
+    else
+        python -m unittest pretzel
+        python -m pretzel.bench
+    fi
+    cd pretzel
+
+after_success: |
+    if [[ -f .coverage ]]; then
+        coveralls
+    fi
+
 notifications:
     email: false
