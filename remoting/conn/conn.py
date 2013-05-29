@@ -168,7 +168,10 @@ class Connection(object):
                     if src is not None:
                         src.send(err)
                     else:
-                        err.trace()  # nowhere to send, just show trace
+                        def banner():
+                            return ('Impossible to send error response to:\n{}'
+                                    .format(msg))
+                        err.trace(banner=banner)
                 break
 
     def __monad__(self):
