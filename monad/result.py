@@ -58,13 +58,16 @@ class Result(Monad):
         else:
             reraise(*self.pair[1])
 
-    def trace(self, debug=False, file=None):
+    def trace(self, debug=None, file=None, banner=None):
         """Show traceback
 
-        Show traceback if any and optionally interrupt for debugging.
+        Arguments:
+            debug: weather start debugger on error or not
+            file: output file object
+            banner: callable object or None, if callable returns banner string
         """
         if self.pair[1] is not None:
-            result_excepthook(*self.pair[1], file=file)
+            result_excepthook(*self.pair[1], file=file, banner=banner)
             if debug:
                 pdb.post_mortem(self.pair[1][2])
         return self
@@ -124,12 +127,19 @@ class Result(Monad):
     __repr__ = __str__
 
 
-def result_excepthook(et, eo, tb, file=None):
+def result_excepthook(et, eo, tb, file=None, banner=None):
     """Result specific exception hook
 
     Correctly shows embedded traceback if any.
+
+    Arguments:
+        file: output file object
+        banner: callable object or None, if callable returns banner string
     """
     stream = file or StringIO()
+    if banner:
+        stream.write(banner())
+        stream.write('\n')
 
     tb = ''.join(traceback.format_exception(et, eo, tb))
     stream.write(tb.encode('utf-8') if PY2 else tb)

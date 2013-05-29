@@ -1,6 +1,9 @@
 """Continuation monad implementation
 """
+import sys
 import types
+import textwrap
+import linecache
 from .do import do
 from .do_green import do_green
 from .monad import Monad
@@ -21,8 +24,12 @@ class Cont(Monad):
     def __init__(self, run):
         self.run = run
 
-    def __call__(self, ret=lambda val: isinstance(val, Result) and val.trace()):
-        return self.run(ret)
+    def __call__(self, ret=None):
+        if ret is None:
+            return self.run(self.ret_default())
+            # return self.run(lambda val: isinstance(val, Result) and val.trace())
+        else:
+            return self.run(ret)
 
     def __or__(self, other):
         def run(ret):
@@ -56,6 +63,34 @@ class Cont(Monad):
 
     def __repr__(self):
         return str(self)
+
+    @classmethod
+    def ret_default(cls):
+        """Default continuation handler
+        """
+        def banner():
+            """Banner with place of coroutine creation
+            """
+            filename = code.co_filename
+            line = linecache.getline(filename, lineno, globals)
+            if line:
+                line = '\n    {}'.format(line.strip())
+            return textwrap.dedent("""\
+                Error in coroutine started from:
+                  File "{}", line {}, in {}{}\
+                """).format(filename, lineno, code.co_name, line)
+
+        frame = sys._getframe(2)
+        code = frame.f_code
+        lineno = frame.f_lineno
+        globals = frame.f_globals
+        del frame
+
+        def ret(val):
+            if not isinstance(val, Result):
+                return
+            val.trace(banner=banner)
+        return ret
 
 
 def callcc(func):
