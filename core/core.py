@@ -218,13 +218,17 @@ class Core(object):
         if not self.state(self.STATE_DISP):
             return False
 
-        exc = exc or CanceledError('core has been disposed')
-        files_queue, self.files_queue = self.files_queue, {}
-        for file in files_queue.values():
-            file.dispose(exc)
-        self.time_queue.dispose(exc)
-        self.sched_queue.dispose(exc)
-        self.proc_queue.dispose(exc)
+        try:
+            exc = exc or CanceledError('core has been disposed')
+            files_queue, self.files_queue = self.files_queue, {}
+            for file in files_queue.values():
+                file.dispose(exc)
+            self.time_queue.dispose(exc)
+            self.sched_queue.dispose(exc)
+            self.proc_queue.dispose(exc)
+        finally:
+            self.waker.dispose()
+            self.poller.dispose()
         return True
 
     def __enter__(self):
