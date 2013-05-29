@@ -81,8 +81,7 @@ def shell_conn_init(bufsize):  # pragma: no cover
     # for communication.
     sys.stdin = io.open(os.devnull, 'r')
     fd_close_on_exec(sys.stdin.fileno())
-    sys.stdout = io.open(os.devnull, 'w')
-    fd_close_on_exec(sys.stdout.fileno())
+    sys.stdout = sys.stderr
 
     with Core.local() as core:
         # initialize connection
