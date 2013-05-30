@@ -12,7 +12,7 @@ Features
 * Uniform asynchronous stream implementation for sockets and pipes
 * Interact with subprocesses asynchronously
 * Greenlet support (but not required)
-* Remote code executing over ssh (with only requirements python and ssh itself)
+* Remote code executing over ssh or in child process (with only requirements python and ssh itself)
 * Python 2/3, PyPy compatible
 * Asynchronous python shell `python -mpretzel.apps.shell` (requires greenlet)
 
