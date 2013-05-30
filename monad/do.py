@@ -45,11 +45,13 @@ def do(Monad):
                         gen.close()
                         return value(ret.args[0] if ret.args else None)
                     except Exception:
-                        gen.close()
                         return error()
 
-                gen = block(*args, **kw)
-                return do_next(Result.from_value(None))
+                try:
+                    gen = block(*args, **kw)
+                    return do_next(Result.from_value(None))
+                except Exception:
+                    return error()
         return do_block
     return do
 

@@ -1,13 +1,10 @@
 """Continuation monad implementation
 """
-import sys
 import types
-import textwrap
-import linecache
 from .do import do
 from .do_green import do_green
 from .monad import Monad
-from .result import Result
+from .result import Result, callsite_banner
 from functools import wraps
 
 __all__ = ('Cont', 'Future', 'callcc', 'async', 'async_green', 'async_block',
@@ -26,8 +23,8 @@ class Cont(Monad):
 
     def __call__(self, ret=None):
         if ret is None:
-            return self.run(self.ret_default())
-            # return self.run(lambda val: isinstance(val, Result) and val.trace())
+            banner = callsite_banner('Error in coroutine started from:')
+            return self.run(lambda val: isinstance(val, Result) and val.trace(banner=banner))
         else:
             return self.run(ret)
 
@@ -63,34 +60,6 @@ class Cont(Monad):
 
     def __repr__(self):
         return str(self)
-
-    @classmethod
-    def ret_default(cls):
-        """Default continuation handler
-        """
-        def banner():
-            """Banner with place of coroutine creation
-            """
-            filename = code.co_filename
-            line = linecache.getline(filename, lineno, globals)
-            if line:
-                line = '\n    {}'.format(line.strip())
-            return textwrap.dedent("""\
-                Error in coroutine started from:
-                  File "{}", line {}, in {}{}\
-                """).format(filename, lineno, code.co_name, line)
-
-        frame = sys._getframe(2)
-        code = frame.f_code
-        lineno = frame.f_lineno
-        globals = frame.f_globals
-        del frame
-
-        def ret(val):
-            if not isinstance(val, Result):
-                return
-            val.trace(banner=banner)
-        return ret
 
 
 def callcc(func):
@@ -136,7 +105,8 @@ def async_block(block):
             try:
                 ret(val if isinstance(val, Result) else Result.from_value(val))
             except Exception:
-                Result.from_current_error().trace()
+                banner = lambda: 'Return function passed to async_block failed'
+                Result.from_current_error().trace(banner=banner)
         try:
             block(async_ret)
         except Exception:

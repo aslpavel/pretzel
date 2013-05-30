@@ -2,6 +2,7 @@
 """
 import io
 import sys
+import textwrap
 from pickle import Pickler, Unpickler
 from ..hub import Hub, Sender, pair
 from ..proxy import Proxy
@@ -168,10 +169,9 @@ class Connection(object):
                     if src is not None:
                         src.send(err)
                     else:
-                        def banner():
-                            return ('Impossible to send error response to:\n{}'
-                                    .format(msg))
-                        err.trace(banner=banner)
+                        err.trace(banner=lambda: textwrap.dedent("""\
+                            Impossible to send error response to message:
+                              {}""").format(msg))
                 break
 
     def __monad__(self):

@@ -6,10 +6,11 @@ import pdb
 import socket
 import textwrap
 import traceback
+import linecache
 from .monad import Monad
 from ..common import reraise, StringIO, PY2
 
-__all__ = ('Result', 'result_excepthook',)
+__all__ = ('Result', 'result_excepthook', 'callsite_banner',)
 
 
 class Result(Monad):
@@ -124,7 +125,16 @@ class Result(Monad):
                 'val:{}'.format(self.pair[0]) if self.pair[1] is None else
                 'err:{}'.format(repr(self.pair[1][1]))))
 
-    __repr__ = __str__
+    def __repr__(self):
+        return str(self)
+
+
+def _from_value(val):
+    return Result.from_value(val)
+
+
+def _from_exc(exc):
+    return Result.from_exception(exc)
 
 
 def result_excepthook(et, eo, tb, file=None, banner=None):
@@ -156,9 +166,28 @@ def result_excepthook(et, eo, tb, file=None, banner=None):
 sys.excepthook = result_excepthook
 
 
-def _from_value(val):
-    return Result.from_value(val)
+def callsite_banner(msg=None, depth=2):
+    """Call site banner
 
+    Returns banner function from current call site
+    """
+    frame = sys._getframe(depth)
+    code = frame.f_code
+    lineno = frame.f_lineno
+    globals = frame.f_globals
+    del frame
 
-def _from_exc(exc):
-    return Result.from_exception(exc)
+    def banner():
+        filename = code.co_filename
+        line = linecache.getline(filename, lineno, globals)
+        if line:
+            line = '\n    {}'.format(line.strip())
+        return textwrap.dedent("""\
+            {msg}
+              File "{filename}", line {lineno}, in {name}{line}\
+            """).format(msg=msg or 'Error caused by call:',
+                        filename=filename,
+                        lineno=lineno,
+                        name=code.co_name,
+                        line=line)
+    return banner

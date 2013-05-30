@@ -32,7 +32,7 @@ class StreamConnection (Connection):
                 msg_next = self.reader.read_bytes().future()
                 while True:
                     msg, msg_next = (yield msg_next), self.reader.read_bytes().future()
-                    self.do_recv(msg)(lambda val: (not self.disposed) and val.trace())
+                    self.do_recv(msg)()
             except (CanceledError, BrokenPipeError):
                 pass
             finally:
