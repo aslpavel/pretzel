@@ -463,9 +463,9 @@ class ProcQueue(object):
     def on(self, pid):
         @async_block
         def cont(ret):
-            res = os.waitpid(pid, os.WNOHANG)
-            if res[0] != 0:
-                ret(os.WEXITSTATUS(res[1]))
+            pid_done, status = os.waitpid(pid, os.WNOHANG)
+            if pid_done == pid:
+                ret(os.WEXITSTATUS(status))
             else:
                 if self.pids.get(pid):
                     raise ValueError('pid {} has already being waited'.format(pid))
