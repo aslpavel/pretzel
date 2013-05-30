@@ -432,10 +432,12 @@ class Code(tuple):
                     if arg:
                         a_count, kw_count = arg & 0xf, arg >> 4
                         kw = {}
-                        for _ in range(kw_count):
-                            val, key = stack.pop(), stack.pop()
-                            kw[key] = val
-                        a, stack = stack[-a_count:], stack[:-a_count]
+                        if kw_count:
+                            for _ in range(kw_count):
+                                val, key = stack.pop(), stack.pop()
+                                kw[key] = val
+                        if a_count:
+                            a, stack = stack[-a_count:], stack[:-a_count]
                         stack.append(stack.pop()(*a, **kw))
                     else:
                         stack.append(stack.pop()())
