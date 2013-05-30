@@ -183,17 +183,18 @@ class BootImporter(object):
 class BootLoader(object):
     __slots__ = ('name', 'source', 'filename', 'ispkg', 'pkg',)
 
-    def __init__(self, name, source, filename, ispkg, pkg=None):
+    def __init__(self, name, source, filename, ispkg, pkg=None, encoding=None):
         self.name = name
         self.source = source
         self.filename = filename
         self.ispkg = ispkg
         self.pkg = pkg or name if ispkg else name.rpartition('.')[0]
         if PY2:
-            self.name = self.name.encode('utf-8')
-            self.source = self.source.encode('utf-8')
-            self.filename = self.filename.encode('utf-8')
-            self.pkg = self.pkg.encode('utf-8')
+            encoding = encoding or 'utf-8'
+            self.name = self.name.encode(encoding)
+            self.source = self.source.encode(encoding)
+            self.filename = self.filename.encode(encoding)
+            self.pkg = self.pkg.encode(encoding)
 
     @classmethod
     def from_stream(cls, stream):

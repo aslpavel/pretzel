@@ -10,7 +10,7 @@ from ...monad import async_all
 from ...boot import BootLoader
 from ...tests import async_test
 
-__all__ = ('ForkConnectionTest',)
+__all__ = ('ForkConnectionTest', 'SSHConnectionTest',)
 
 
 class ForkConnectionTest(unittest.TestCase):
