@@ -406,6 +406,7 @@ class Code(tuple):
 
     def eval(self, args, pos, stack, monad):
         ops, consts = self
+        a_empty = tuple()
         try:
             ops_size = len(ops)
             while pos < ops_size:
@@ -436,6 +437,7 @@ class Code(tuple):
                             for _ in range(kw_count):
                                 val, key = stack.pop(), stack.pop()
                                 kw[key] = val
+                        a = a_empty
                         if a_count:
                             a, stack = stack[-a_count:], stack[:-a_count]
                         stack.append(stack.pop()(*a, **kw))
