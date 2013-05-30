@@ -2,6 +2,7 @@
 """
 import os
 import sys
+import socket
 import inspect
 import pkgutil
 from .hub import pair
@@ -14,8 +15,9 @@ __all__ = ('Importer',)
 
 
 class Importer(object):
-    def __init__(self, sender):
+    def __init__(self, sender, location=None):
         self.sender = sender
+        self.location = location or (socket.gethostname(), os.getpid())
         self.loaders = {}
 
     @classmethod
@@ -137,7 +139,7 @@ class Importer(object):
         return hash(self.sender)
 
     def __reduce__(self):
-        return Importer, (self.sender,)
+        return Importer, (self.sender, self.location)
 
     def dispose(self):
         if self in sys.meta_path:
@@ -157,8 +159,9 @@ class Importer(object):
         return False
 
     def __str__(self):
-        return ('<{}[addr:{}]>'.format(type(self).__name__,
-                self.sender.addr if self.sender else None))
+        return ('{}(addr:{}, host:{}, pid:{})'.format(type(self).__name__,
+                self.sender.addr if self.sender else None,
+                *self.location))
 
     def __repr__(self):
         return str(self)

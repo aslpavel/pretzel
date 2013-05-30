@@ -7,6 +7,7 @@ from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
 from ...core import schedule
 from ...monad import async_all
+from ...boot import BootLoader
 from ...tests import async_test
 
 __all__ = ('ForkConnectionTest',)
@@ -89,7 +90,22 @@ class ForkConnectionTest(unittest.TestCase):
             self.assertEqual(res0, int_function())
             self.assertEqual(res1, int_function())
 
+    @async_test
+    def test_importer(self):
+        with (yield self.conn_type(*self.conn_args)) as conn:
+            self.assertEqual((yield conn(clean_path)()), [])
+            self.assertEqual((yield conn(__import__)('wsgiref').__loader__ >> type),
+                             BootLoader)
+
 
 class SSHConnectionTest(ForkConnectionTest):
     conn_type = SSHConnection
     conn_args = ('localhost',)
+
+
+def clean_path():
+    """Clean system path to force use of connection importer
+    """
+    import sys
+    del sys.path[:]
+    return sys.path
