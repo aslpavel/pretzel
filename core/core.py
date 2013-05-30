@@ -476,10 +476,10 @@ class ProcQueue(object):
     def __call__(self):
         for pid, ret in tuple(self.pids.items()):
             try:
-                res = os.waitpid(pid, os.WNOHANG)
-                if res[0] != 0:
+                pid_done, status = os.waitpid(pid, os.WNOHANG)
+                if pid_done == pid:
                     self.pids.pop(pid, None)
-                    ret(os.WEXITSTATUS(res[1]))
+                    ret(os.WEXITSTATUS(status))
             except Exception:
                 self.pids.pop(pid, None)
                 ret(Result.from_current_error())
