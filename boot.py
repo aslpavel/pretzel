@@ -361,7 +361,7 @@ else:
     PY3 = False
 
 
-def main():
+def main():  # pragma: no cover
     import argparse
 
     parser = argparse.ArgumentParser()

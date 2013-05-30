@@ -25,21 +25,20 @@ class Importer(object):
         """Create importer proxy object
         """
         def importer_handler(name, dst, src):
-            send = lambda val: src.send(Result.from_value(val))
             try:
                 if name is None:
                     return False  # dispose importer
                 module = sys.modules.get(name, False)
                 if module is None:
-                    send(None)  # Module is cached as not found (python 2)
+                    src.send(None)  # Module is cached as not found (python 2)
                     return True
                 loader = pkgutil.get_loader(name)
                 if loader is None or not hasattr(loader, 'get_source'):
-                    send(None)
+                    src.send(None)
                     return True
                 source = loader.get_source(name)
                 if source is None:
-                    send(None)
+                    src.send(None)
                     return True
                 ispkg = loader.is_package(name)
                 if module and hasattr(module, '__package__'):
@@ -51,9 +50,9 @@ class Importer(object):
                                 inspect.getfile(module))
                 except TypeError:
                     filename = '<unknown>'
-                send(BootLoader(name, source, filename, ispkg, pkg))
+                src.send(BootLoader(name, source, filename, ispkg, pkg))
             except Exception:
-                send(Result.from_current_error())
+                src.send(Result.from_current_error())
             return True
 
         recv, send = pair(hub=hub)
