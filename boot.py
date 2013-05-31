@@ -165,9 +165,10 @@ class BootImporter(object):
     def read_source(filename):
         """Read source from file name
         """
-        source = io.BytesIO()
         encoding = 'utf-8'
         encoding_pattern = re.compile(b'coding[:=]\s*([-\w.]+)')  # PEP: 0263
+
+        source = io.BytesIO()
         with io.open(filename, 'rb') as stream:
             for line in stream:
                 if line.startswith(b'#'):
@@ -177,31 +178,37 @@ class BootImporter(object):
                         source.write(b'\n')
                         continue
                 source.write(line)
-        return source.getvalue() if PY2 else source.getvalue().decode(encoding)
+        if PY2:
+            return source.getvalue()
+        else:
+            return source.getvalue().decode(encoding)
 
 
 class BootLoader(object):
     __slots__ = ('name', 'source', 'filename', 'ispkg', 'pkg',)
 
-    def __init__(self, name, source, filename, ispkg, pkg=None, encoding=None):
+    def __init__(self, name, source, filename, ispkg, pkg=None):
         self.name = name
         self.source = source
         self.filename = filename
         self.ispkg = ispkg
         self.pkg = pkg or name if ispkg else name.rpartition('.')[0]
-        if PY2:
-            encoding = encoding or 'utf-8'
-            self.name = self.name.encode(encoding)
-            self.source = self.source.encode(encoding)
-            self.filename = self.filename.encode(encoding)
-            self.pkg = self.pkg.encode(encoding)
 
     @classmethod
     def from_stream(cls, stream):
         data = json.loads(zlib.decompress(stream.read(struct.unpack('>L',
                           stream.read(struct.calcsize('>L')))[0])).decode('utf-8'))
-        return cls(data['name'], data['source'], data['filename'],
-                   data['ispkg'], data['pkg'])
+        if PY2:
+            # Convert unicode string to bytes, avoids problems with traceback
+            # creation and error reporting.
+            return cls(data['name'].encode('utf-8'),
+                       data['source'].encode('utf-8'),
+                       data['filename'].encode('utf-8'),
+                       data['ispkg'],
+                       data['pkg'].encode('utf-8'))
+        else:
+            return cls(data['name'], data['source'], data['filename'],
+                       data['ispkg'], data['pkg'])
 
     def to_stream(self, stream):
         data = zlib.compress(json.dumps({

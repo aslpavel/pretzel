@@ -1,7 +1,6 @@
 """Remote importer
 """
 import os
-import re
 import sys
 import socket
 import inspect
@@ -11,7 +10,6 @@ from .expr import SetItemExpr, GetAttrExpr, LoadArgExpr
 from ..core import Core
 from ..monad import Result, async, do_return
 from ..boot import BootLoader
-from ..common import StringIO
 
 __all__ = ('Importer',)
 
@@ -52,8 +50,7 @@ class Importer(object):
                                 inspect.getfile(module))
                 except TypeError:
                     filename = '<unknown>'
-                encoding = detect_encoding(source)
-                src.send(BootLoader(name, source, filename, ispkg, pkg, encoding))
+                src.send(BootLoader(name, source, filename, ispkg, pkg))
             except Exception:
                 src.send(Result.from_current_error())
             return True
@@ -167,17 +164,3 @@ class Importer(object):
 
     def __repr__(self):
         return str(self)
-
-
-def detect_encoding(source):
-    """Detect encoding of source
-    """
-    encoding = 'utf-8'
-    encoding_pattern = re.compile('coding[:=]\s*([-\w.]+)')  # PEP: 0263
-    for line in StringIO(source):
-        if line.startswith('#'):
-            match = encoding_pattern.search(line)
-            if match:
-                encoding = match.group(1).decode()
-                break
-    return encoding
