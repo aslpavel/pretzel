@@ -10,7 +10,7 @@ from ...process import Process, ProcessPipe, PIPE
 from ...monad import async
 from ...stream import BufferedFile
 from ...core import Core
-from ...boot import BootImporter
+from ...boot import BootImporter, __name__ as boot_name
 
 __all__ = ('ForkConnection',)
 
@@ -38,8 +38,7 @@ class ForkConnection(StreamConnection):
         writer = self.disp.add(ProcessPipe(False, bufsize=self.bufsize, core=self.core))
 
         # process
-        def preexec():
-            # pragma: no cover
+        def preexec():  # pragma: no cover
             reader()
             writer()
             os.chdir('/')
@@ -62,6 +61,7 @@ class ForkConnection(StreamConnection):
 
         # install importer
         self.disp.add((yield Importer.create_remote(self)))
+        self.module_map['_boot'] = boot_name
 
         # update name
         self.flags['pid'] = self.process.pid

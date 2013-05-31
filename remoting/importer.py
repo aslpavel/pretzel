@@ -94,7 +94,7 @@ class Importer(object):
                     loader = BootLoader(name, source, file, False, None)
                     yield conn(loader)().__package__
 
-                # remote_conn.module_map ['__main__'] = main
+                # remote_conn.module_map['__main__'] = main
                 yield conn.sender(SetItemExpr(GetAttrExpr(LoadArgExpr(0),
                                   'module_map'), '__main__', name).code())
                 conn.module_map[name] = '__main__'

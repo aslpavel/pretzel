@@ -133,8 +133,8 @@ class BootImporter(object):
         source = StringIO()
         source.write(textwrap.dedent("""\
             {}
-            _bootstrap.BootImporter.from_bytes({}).install()
-            """).format(boot_boot('_bootstrap'), boot_binary(self.to_bytes())))
+            _boot.BootImporter.from_bytes({}).install()
+            """).format(boot_boot('_boot'), boot_binary(self.to_bytes())))
         if init is not None:
             source.write(textwrap.dedent("""
                 import pickle

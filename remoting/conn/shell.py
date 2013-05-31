@@ -16,7 +16,7 @@ from .stream import StreamConnection
 from ..importer import Importer
 from ...monad import async
 from ...process import Process, PIPE
-from ...boot import BootImporter
+from ...boot import BootImporter, __name__ as boot_name
 from ...core import Core
 from ...stream import BufferedFile, fd_close_on_exec
 
@@ -68,6 +68,7 @@ class ShellConnection(StreamConnection):
 
         # install importer
         self.disp.add((yield Importer.create_remote(self)))
+        self.module_map['_boot'] = boot_name
 
         # update flags
         self.flags['pid'] = yield self(os.getpid)()
