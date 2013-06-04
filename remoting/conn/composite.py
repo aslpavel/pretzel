@@ -20,13 +20,17 @@ __all__ = ('CompositeConnection',)
 def CompositeConnection(hosts, mesh='flat', **conn_opts):
     """Create composed ssh connection from list of hosts.
 
-    hosts -- list of hosts
-    mesh  -- for of connection mesh. Available option 'flat' - direct
-             connections, 'tree:factor' - mesh has a form of tree with factor
-             children.
+    Arguments:
+        hosts: List of hosts
+        mesh: Mesh of connection. Available options are
+             'flat' - direct connections
+             'tree:factor' - mesh has a form of tree with factor children.
+    Returns:
+        Continuation list of connections
     """
     if mesh == 'flat':
-        do_return((yield ContList(SSHConnection(host, **conn_opts) for host in hosts)))
+        conns = yield ContList(SSHConnection(host, **conn_opts) for host in hosts)
+        do_return((yield ContList(conn(conn) for conn in conns)))  # to proxy
 
     elif mesh.startswith('tree:'):
         tree = Tree.from_list(hosts, int(mesh[len('tree:'):]))
@@ -37,7 +41,7 @@ def CompositeConnection(hosts, mesh='flat', **conn_opts):
                 do_return(None)  # to level connection
             if conn is None:
                 conn = yield SSHConnection(host, **conn_opts)
-                conn = yield conn(conn)  # convert to proxy object (guarantees semantic)
+                conn = yield conn(conn)  # to proxy
             else:
                 conn = yield ~conn(SSHConnection)(host, **conn_opts)
             do_return(conn)

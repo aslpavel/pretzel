@@ -7,7 +7,7 @@ from ...common import CanceledError, BrokenPipeError
 __all__ = ('StreamConnection',)
 
 
-class StreamConnection (Connection):
+class StreamConnection(Connection):
     """Stream based connected
     """
     def __init__(self, hub=None, core=None):
