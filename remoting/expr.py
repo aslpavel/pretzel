@@ -354,7 +354,7 @@ class CodeGen(object):
     def const(self, const):
         try:
             return self.consts.index(const)
-        except ValueError:
+        except Exception:
             self.consts.append(const)
             return len(self.consts) - 1
 
