@@ -43,7 +43,7 @@ class FileTest(unittest.TestCase):
                 else:
                     size += write.value
 
-            # drain socket
+            # drain file
             while received.tell() < size:
                 yield schedule()
             self.assertEqual(received.getvalue(), b'X' * size)
