@@ -455,8 +455,14 @@ class ProcQueue(object):
             with self.current_lock:
                 if self.current[0] is None:
                     self.current[0] = self
-                    signal.signal(signal.SIGCHLD, lambda s, f:
-                                  self.core.schedule()(lambda _: self()))
+
+                    def signal_handler(sig, frame):
+                        # Call waker explicitly, otherwise signal may be received
+                        # right before poll, and schedule continuation will not
+                        # be called
+                        self.core.waker()
+                        self.core.schedule()(lambda _: self())
+                    signal.signal(signal.SIGCHLD, signal_handler)
                     return
         raise ValueError('process queue can only be used by single core')
 
