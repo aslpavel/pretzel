@@ -5,7 +5,6 @@ import itertools
 from ..sock import Socket
 from ...monad import async
 from ...common import BrokenPipeError
-from ...event import Event
 from ...core import schedule
 from ...tests import async_test
 
@@ -19,7 +18,6 @@ class SockTest(unittest.TestCase):
     @async_test
     def test(self):
         received = io.BytesIO()
-        start = Event()
 
         @async
         def server_coro():
@@ -29,12 +27,12 @@ class SockTest(unittest.TestCase):
                 client, addr = yield sock.accept()
                 with client:
                     try:
-                        yield start
                         while True:
                             received.write((yield client.read(1024)))
                     except BrokenPipeError:
                         pass
         server = server_coro().future()
+        server.__monad__()()  # error trace if any
         if server.completed:
             yield server
 
@@ -43,14 +41,13 @@ class SockTest(unittest.TestCase):
 
             # fill socket buffer
             size = 0
-            for blocks in itertools.count():
+            for _ in itertools.count():
                 write = sock.write(self.BLOCK).future()
                 if not write.completed:
                     size += yield write
                     break
                 else:
                     size += write.value
-            start(None)
 
             # drain socket
             while received.tell() < size:

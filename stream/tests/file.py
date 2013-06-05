@@ -4,7 +4,6 @@ import itertools
 import unittest
 from ..file import File
 from ...monad import async
-from ...event import Event
 from ...common import BrokenPipeError
 from ...core import schedule
 from ...tests import async_test
@@ -18,7 +17,6 @@ class FileTest(unittest.TestCase):
     @async_test
     def test(self):
         received = io.BytesIO()
-        start = Event()
         reader_fd, writer_fd = os.pipe()
 
         @async
@@ -30,20 +28,20 @@ class FileTest(unittest.TestCase):
                 except BrokenPipeError:
                     pass
         reader_future = reader_coro().future()
+        reader_future.__monad__()()  # error trace if any
         if reader_future.completed:
             yield reader_future
 
         with File(writer_fd) as writer:
-            # fill socket buffer
+            # fill file buffer
             size = 0
-            for blocks in itertools.count():
+            for _ in itertools.count():
                 write = writer.write(self.BLOCK).future()
                 if not write.completed:
                     size += yield write
                     break
                 else:
                     size += write.value
-            start(None)
 
             # drain socket
             while received.tell() < size:
