@@ -12,7 +12,7 @@ __all__ = ('ProcessTest',)
 class ProcessTest(unittest.TestCase):
     @async_test
     def test_call(self):
-        out, err, code = yield process_call(command, input=b'10', check=False)
+        out, err, code = yield process_call(command, b'10', check=False)
         self.assertEqual(code, 117)
         self.assertEqual(out, b'02468')
         self.assertEqual(err, b'13579')

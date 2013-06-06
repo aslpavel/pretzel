@@ -283,16 +283,18 @@ class ProcessPipe(object):
         return str(self)
 
 
-def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
+def process_call(command, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
                  bufsize=None, kill_delay=None, core=None):
     """Asynchronously run command
 
     Asynchronously returns standard output, standard error and return code tuple.
     """
-    if input is not None and stdin is not None:
-        raise ValueError('input and stdin arguments cannot be used together')
-    stdin = PIPE if stdin is None else stdin
+    stdin_data = None
+    if stdin is None:
+        stdin = PIPE
+    elif isinstance(stdin, (bytes, memoryview)):
+        stdin, stdin_data = PIPE, stdin
     stdout = PIPE if stdout is None else stdout
     stderr = PIPE if stderr is None else stderr
 
@@ -302,8 +304,8 @@ def process_call(command, input=None, stdin=None, stdout=None, stderr=None,
                      preexec=preexec, shell=shell, environ=environ, check=check,
                      bufsize=bufsize, kill_delay=kill_delay, core=core) as proc:
             yield proc
-            if input:
-                proc.stdin.write_schedule(input)
+            if stdin_data:
+                proc.stdin.write_schedule(stdin_data)
                 proc.stdin.flush_and_dispose()()
             elif proc.stdin:
                 proc.stdin.dispose()
