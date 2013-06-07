@@ -105,6 +105,8 @@ class SSHConnectionTest(ForkConnectionTest):
 
 def clean_path():
     """Clean system path to force use of connection importer
+
+    Called from remote connection.
     """
     import sys
     del sys.path[:]

@@ -460,8 +460,9 @@ class ProcQueue(object):
                         # Call waker explicitly, otherwise signal may be received
                         # right before poll, and schedule continuation will not
                         # be called
-                        self.core.waker()
-                        self.core.schedule()(lambda _: self())
+                        if not self.core.disposed:
+                            self.core.waker()
+                            self.core.schedule()(lambda _: self())
                     signal.signal(signal.SIGCHLD, signal_handler)
                     return
         raise ValueError('process queue can only be used by single core')

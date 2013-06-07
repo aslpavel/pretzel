@@ -1,53 +1,83 @@
 '''Connection mesh
 
-Create composed ssh connection and work with it the same way as with single
-ssh connection.
-
-Example:
-    conns = yield CompositeConnection([\'localhost\'] * 9, mesh=\'tree:3\')
-    pids = list((yield conns(os.getpid)())))
-    print(pids)  # [3269, 3277, 3285, 3270, 3278, 3290, 3271, 3276, 3282]
+Create composite connection and work with it the same way as with single
+connection.
 '''
 import math
 import random
+import functools
+from .fork import ForkConnection
 from .ssh import SSHConnection
 from ...monad import List, Proxy, async, async_all, do_return
 
-__all__ = ('CompositeConnection',)
+__all__ = ('composite_conn', 'composite_ssh_conn', 'composite_fork_conn',)
 
 
 @async
-def CompositeConnection(hosts, mesh='flat', **conn_opts):
-    """Create composed ssh connection from list of hosts.
+def composite_conn(conn_facts, mesh=None):
+    """Create composite connection from list of connection factories.
 
     Arguments:
-        hosts: List of hosts
-        mesh: Mesh of connection. Available options are
-             'flat' - direct connections
+        conn_facts: List of connection factories. Keep in mind that this factories
+                    must be pickle-able in case of non flat mesh (you can use
+                    functools.partial to keep connection type pickle-able)
+        mesh: Mesh of composite connection. Available options are
+             'flat' - direct connections (is default)
              'tree:factor' - mesh has a form of tree with factor children.
     Returns:
         Continuation list of connections
     """
+    mesh = mesh or 'flat'
+    conn_facts = tuple(conn_facts)
+
     if mesh == 'flat':
-        conns = yield ContList(SSHConnection(host, **conn_opts) for host in hosts)
+        conns = yield ContList(conn_facts)()
         do_return((yield ContList(conn(conn) for conn in conns)))  # to proxy
 
     elif mesh.startswith('tree:'):
-        tree = Tree.from_list(hosts, int(mesh[len('tree:'):]))
+        tree_factor = int(mesh.partition(':')[2])
+        if tree_factor < 1:
+            raise ValueError('tree factor must be positive')
+        tree = Tree.from_list(conn_facts, tree_factor)
 
         @async
-        def connect(host, conn):
-            if host is None:
-                do_return(None)  # to level connection
-            if conn is None:
-                conn = yield SSHConnection(host, **conn_opts)
+        def connect(conn_fact, parent):
+            if conn_fact is None:
+                do_return(None)
+            if parent is None:
+                conn = yield conn_fact()
                 conn = yield conn(conn)  # to proxy
             else:
-                conn = yield ~conn(SSHConnection)(host, **conn_opts)
+                conn = yield ~parent(conn_fact)()
             do_return(conn)
         conns = yield tree(connect, None)
 
         do_return(ContList(conns[1:]))  # strip None from beginning
+
+
+def composite_ssh_conn(hosts, mesh=None, **conn_opts):
+    """Create composite ssh connection from list of hosts
+
+    Arguments:
+        hosts: List of hosts
+        mesh: Mesh of composite connection (see composite_conn)
+        **conn_opts: Common connection options
+    """
+    conn_facts = (functools.partial(SSHConnection, host, **conn_opts)
+                  for host in hosts)
+    return composite_conn(conn_facts, mesh=mesh)
+
+
+def composite_fork_conn(count, mesh=None, **conn_opts):
+    """Create `count` composite fork connection
+
+    Arguments:
+        count: Number of fork connections
+        mesh: Mesh of composite connection (see composite_conn)
+        **conn_opts: Common connection options
+    """
+    conn_facts = (functools.partial(ForkConnection, **conn_opts),) * count
+    return composite_conn(conn_facts, mesh=mesh)
 
 
 class ContList(Proxy):
