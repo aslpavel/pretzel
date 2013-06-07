@@ -101,6 +101,7 @@ class Socket(File):
         sock, self.sock = self.sock, None
         if not self.dispose():
             raise ValueError('socket is disposed')
+        self.blocking(True)
         return sock
 
     def blocking(self, enable=None):

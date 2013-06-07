@@ -75,6 +75,7 @@ class File(Stream):
             raise ValueError('file is disposed')
         try:
             self.closefd = False
+            self.blocking(True)
             return self.fd
         finally:
             self.dispose()
