@@ -75,6 +75,9 @@ class Process(object):
         self.disp = CompDisp()
         self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
 
+        if isinstance(command, str):
+            command = [command]
+
         opts = {
             'stdin': stdin,
             'stdout': stdout,

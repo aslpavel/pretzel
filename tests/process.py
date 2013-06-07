@@ -39,7 +39,7 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_cleanup(self):
-        with (yield Process(['cat'], stdin=PIPE, stdout=PIPE, stderr=PIPE,
+        with (yield Process('cat', stdin=PIPE, stdout=PIPE, stderr=PIPE,
                             check=False)) as proc:
             self.assertTrue(proc.stdin.close_on_exec())
             self.assertTrue(proc.stdout.close_on_exec())
@@ -49,26 +49,26 @@ class ProcessTest(unittest.TestCase):
     @async_test
     def test_bad_exec(self):
         with self.assertRaises(OSError):
-            print((yield process_call(['does_not_exists'])))
+            print((yield process_call('does_not_exists')))
 
     @async_test
     def test_stress(self):
-        reference = yield process_call(['uname'])
-        procs = yield Cont.sequence(process_call(['uname']) for _ in range(30))
+        reference = yield process_call('uname')
+        procs = yield Cont.sequence(process_call('uname') for _ in range(30))
         for proc in procs:
             self.assertEqual(proc.value, reference)
 
     @async_test
     def test_devnull(self):
-        self.assertEqual((yield process_call(['cat'], stdin=DEVNULL)),
+        self.assertEqual((yield process_call('cat', stdin=DEVNULL)),
                          (b'', b'', 0))
 
     @async_test
     def test_check_option(self):
-        out, err, code = yield process_call(['false'], check=False)
+        out, err, code = yield process_call('false', check=False)
         self.assertNotEqual(code, 0)
         with self.assertRaises(ProcessError):
-            yield process_call(['false'], check=True)
+            yield process_call('false', check=True)
 
 
 command = ['python', '-c', textwrap.dedent("""
