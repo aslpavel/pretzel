@@ -1,6 +1,7 @@
 import textwrap
 import unittest
 import tempfile
+import time
 from . import async_test
 from ..monad import Cont
 from ..dispose import CompDisp
@@ -69,6 +70,16 @@ class ProcessTest(unittest.TestCase):
         self.assertNotEqual(code, 0)
         with self.assertRaises(ProcessError):
             yield process_call('false', check=True)
+
+    @async_test
+    def test_kill_delay(self):
+        with (yield Process(['sleep', '10'], kill_delay=0.5)) as proc:
+            pass
+        self.assertFalse(proc.status.completed)
+        start = time.time()
+        self.assertEqual((yield proc.status), 0)
+        stop = time.time()
+        self.assertTrue(stop - start < 1)
 
 command = ['python', '-c', textwrap.dedent("""
     import sys
