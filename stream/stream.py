@@ -3,6 +3,7 @@
 from collections import defaultdict
 from ..monad import async
 from ..state_machine import StateMachine
+from ..common import BrokenPipeError, DEFAULT_BUFSIZE
 
 __all__ = ('Stream',)
 
@@ -85,6 +86,29 @@ class Stream(object):
         """
         yield self.flush()
         self.dispose()
+
+    @async
+    def copy_to(self, stream, bufsize=None):
+        """Copy content of this stream to different stream
+
+        Stream can be either asynchronous stream or python binary stream.
+        """
+        bufsize = bufsize or DEFAULT_BUFSIZE
+        if isinstance(stream.write(b''), int):
+            # destination stream is synchronous python stream
+            try:
+                while True:
+                    stream.write((yield self.read(bufsize)))
+            except BrokenPipeError:
+                pass
+            stream.flush()
+        else:
+            try:
+                while True:
+                    yield stream.write((yield self.read(bufsize)))
+            except BrokenPipeError:
+                pass
+            yield stream.flush()
 
     @property
     def disposed(self):

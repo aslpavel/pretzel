@@ -7,7 +7,7 @@ import struct
 from functools import wraps
 from collections import deque
 from .wrapped import WrappedStream
-from ..common import BrokenPipeError
+from ..common import BrokenPipeError, DEFAULT_BUFSIZE
 from ..monad import Cont, async, do_return
 from ..event import Event
 
@@ -17,13 +17,12 @@ __all__ = ('BufferedStream',)
 class BufferedStream(WrappedStream):
     """Buffered stream
     """
-    default_bufsize = 1 << 16
     size_struct = struct.Struct('>I')
 
     def __init__(self, base, bufsize=None):
         WrappedStream.__init__(self, base)
 
-        self.bufsize = bufsize or self.default_bufsize
+        self.bufsize = bufsize or DEFAULT_BUFSIZE
         self.read_buffer = Buffer()
         self.write_buffer = Buffer()
 

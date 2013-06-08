@@ -312,6 +312,7 @@ def process_call(command, stdin=None, stdout=None, stderr=None,
                 proc.stdin.flush_and_dispose()()
             elif proc.stdin:
                 proc.stdin.dispose()
+
             out = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
             err = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
             do_return((yield async_all((out, err, proc.status))))
