@@ -70,6 +70,8 @@ class ProcessTest(unittest.TestCase):
         with self.assertRaises(ProcessError):
             yield process_call('false', check=True)
 
+    def test_fail(self):
+        self.assertTrue(False)
 
 command = ['python', '-c', textwrap.dedent("""
     import sys

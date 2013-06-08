@@ -26,17 +26,17 @@ script: |
     if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then
         cp pretzel/.coveragerc ./
         echo :: UNITTESTS
-        coverage run -m unittest pretzel
+        coverage run -m unittest pretzel || exit 1
         echo :: BENCHMARK
-        coverage run -a -m pretzel.bench
+        coverage run -a -m pretzel.bench || exit 1
         echo :: COVERAGE
         coverage report
         cp .coverage pretzel
     else
         echo :: UNITTESTS
-        python -m unittest pretzel
+        python -m unittest pretzel || exit 1
         echo :: BENCHMARK
-        python -m pretzel.bench
+        python -m pretzel.bench || exit 1
     fi
     cd pretzel
 
