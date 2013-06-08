@@ -16,7 +16,6 @@ PRETZEL_TEST_TIMEOUT = int(os.environ.get('PRETZEL_TEST_TIMEOUT', '5'))
 sys.setrecursionlimit(int(os.environ.get('PRETZEL_RECLIMIT', '8192')))
 
 
-
 def load_tests(loader, tests, pattern):
     """Load test protocol
     """

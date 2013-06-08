@@ -14,6 +14,7 @@ import textwrap
 
 from .stream import StreamConnection
 from ..importer import Importer
+from ... import PRETZEL_BUFSIZE, PRETZEL_RECLIMIT
 from ...monad import async
 from ...process import Process, PIPE
 from ...boot import BootImporter, __name__ as boot_name
@@ -108,7 +109,7 @@ def boot_tramp(data):
             binascii.b2a_base64(zlib.compress(data)).strip().decode('utf-8')))
 
 shell_tramp = boot_tramp(textwrap.dedent("""\
-    import io, struct
+    import os, io, struct
     with io.open(0, "rb", buffering=0, closefd=False) as stream:
         size = struct.unpack(">I", stream.read(struct.calcsize(">I")))[0]
         data = io.BytesIO()
@@ -117,5 +118,7 @@ shell_tramp = boot_tramp(textwrap.dedent("""\
             if not chunk:
                 raise ValueError("payload is incomplete")
             data.write(chunk)
+    os.environ["PRETZEL_BUFSIZE"] = "{bufsize}"
+    os.environ["PRETZEL_RECLIMIT"] = "{reclimit}"
     exec(data.getvalue().decode("utf-8"))
-    """).encode('utf-8'))
+    """.format(bufsize=PRETZEL_BUFSIZE, reclimit=PRETZEL_RECLIMIT)).encode('utf-8'))
