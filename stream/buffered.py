@@ -7,7 +7,8 @@ import struct
 from functools import wraps
 from collections import deque
 from .wrapped import WrappedStream
-from ..common import BrokenPipeError, DEFAULT_BUFSIZE
+from .. import PRETZEL_BUFSIZE
+from ..common import BrokenPipeError
 from ..monad import Cont, async, do_return
 from ..event import Event
 
@@ -22,7 +23,7 @@ class BufferedStream(WrappedStream):
     def __init__(self, base, bufsize=None):
         WrappedStream.__init__(self, base)
 
-        self.bufsize = bufsize or DEFAULT_BUFSIZE
+        self.bufsize = bufsize or PRETZEL_BUFSIZE
         self.read_buffer = Buffer()
         self.write_buffer = Buffer()
 

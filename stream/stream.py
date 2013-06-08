@@ -1,9 +1,10 @@
 """Base asynchronous stream type
 """
 from collections import defaultdict
+from .. import PRETZEL_BUFSIZE
 from ..monad import async
 from ..state_machine import StateMachine
-from ..common import BrokenPipeError, DEFAULT_BUFSIZE
+from ..common import BrokenPipeError
 
 __all__ = ('Stream',)
 
@@ -93,7 +94,7 @@ class Stream(object):
 
         Stream can be either asynchronous stream or python binary stream.
         """
-        bufsize = bufsize or DEFAULT_BUFSIZE
+        bufsize = bufsize or PRETZEL_BUFSIZE
         if isinstance(stream.write(b''), int):
             # destination stream is synchronous python stream
             try:

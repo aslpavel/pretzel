@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import zlib
 import json
+from .. import PRETZEL_BUFSIZE
 
 __all__ = ('StoreStream',)
 
@@ -9,7 +10,6 @@ class StoreStream(object):
     """Stream object with Store back-end.
     """
     default_compress = 9
-    default_bufsize = 1 << 16
 
     def __init__(self, store, header, bufsize=None, compress=None):
         self.store = store
@@ -17,7 +17,7 @@ class StoreStream(object):
 
         header = self.header()
         if not header:
-            self.bufsize = bufsize or self.default_bufsize
+            self.bufsize = bufsize or PRETZEL_BUFSIZE
             self.chunks = []
             self.size = 0
             self.compress = self.default_compress if compress is None else compress

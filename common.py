@@ -6,9 +6,7 @@ import errno
 
 __all__ = ('reraise', 'execute', 'StringIO', 'ConnectionError',
            'BrokenPipeError', 'CanceledError', 'BlockingErrorSet',
-           'PipeErrorSet', 'PY2', 'PY3', 'DEFAULT_BUFSIZE',)
-
-DEFAULT_BUFSIZE = 1 << 16
+           'PipeErrorSet', 'PY2', 'PY3',)
 
 
 class CanceledError(Exception):

@@ -1,11 +1,20 @@
 """Asynchronous application framework
 """
+import os
 import sys
+
+__all__ = ('PRETZEL_RECLIMIT', 'PRETZEL_BUFSIZE', 'PRETZEL_TEST_TIMEOUT',)
+
+# Environment configurable pretzel variables
+PRETZEL_RECLIMIT = int(os.environ.get('PRETZEL_RECLIMIT', '8192'))
+PRETZEL_BUFSIZE = int(os.environ.get('PRETZEL_BUFSIZE', '65536'))
+PRETZEL_TEST_TIMEOUT = int(os.environ.get('PRETZEL_TEST_TIMEOUT', '5'))
+
+
 # Increase of recursion limit is desirable as in case of long sequence of
 # instantly resolved monads do_block may exhaust it.
-sys.setrecursionlimit(8192)
+sys.setrecursionlimit(int(os.environ.get('PRETZEL_RECLIMIT', '8192')))
 
-__all__ = []
 
 
 def load_tests(loader, tests, pattern):
