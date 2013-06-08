@@ -184,7 +184,7 @@ def callsite_banner(msg=None, depth=2):
             line = '\n    {}'.format(line.strip())
         return textwrap.dedent("""\
             {msg}
-              File "{filename}", line {lineno}, in {name}{line}\
+              File "{filename}", line {lineno}, in {name}{line}
             """).format(msg=msg or 'Error caused by call:',
                         filename=filename,
                         lineno=lineno,
