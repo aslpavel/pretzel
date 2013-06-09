@@ -286,6 +286,7 @@ class ProcessPipe(object):
         return str(self)
 
 
+@async
 def process_call(command, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
                  bufsize=None, kill_delay=None, core=None):
@@ -301,19 +302,19 @@ def process_call(command, stdin=None, stdout=None, stderr=None,
     stdout = PIPE if stdout is None else stdout
     stderr = PIPE if stderr is None else stderr
 
-    @async
-    def process():
-        with Process(command=command, stdin=stdin, stdout=stdout, stderr=stderr,
-                     preexec=preexec, shell=shell, environ=environ, check=check,
-                     bufsize=bufsize, kill_delay=kill_delay, core=core) as proc:
-            yield proc
-            if stdin_data:
-                proc.stdin.write_schedule(stdin_data)
-                proc.stdin.flush_and_dispose()()
-            elif proc.stdin:
-                proc.stdin.dispose()
+    with (yield Process(command=command, stdin=stdin, stdout=stdout,
+                        stderr=stderr, preexec=preexec, shell=shell,
+                        environ=environ, check=check, bufsize=bufsize,
+                        kill_delay=kill_delay, core=core)) as proc:
+        _in = Cont.unit(None)
+        if stdin_data:
+            proc.stdin.write_schedule(stdin_data)
+            _in = proc.stdin.flush_and_dispose()
+        elif proc.stdin:
+            proc.stdin.dispose()
 
-            out = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
-            err = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
-            do_return((yield async_all((out, err, proc.status))))
-    return process()
+        _out = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
+        _err = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
+
+        out, err, status, _ = yield async_all((_out, _err, proc.status, _in))
+        do_return((out, err, status))
