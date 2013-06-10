@@ -1,6 +1,6 @@
 import unittest
 from ..do import do_return
-from ..cont import async, async_block, async_all, async_any
+from ..async import async, async_block, async_all, async_any
 from ..result import Result
 from ...event import Event
 
