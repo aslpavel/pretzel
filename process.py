@@ -8,15 +8,15 @@ import pickle
 import signal
 import atexit
 from .event import Event
-from .dispose import CompDisp
-from .monad import Result, Cont, async, async_all, do_return
+from .dispose import CompDisp, FuncDisp
+from .monad import Result, Cont, async, async_all, do_return, do_done
 from .core import Core
 from .stream import BufferedFile, fd_close_on_exec
 from .common import BrokenPipeError
 from .state_machine import StateMachine
 
 __all__ = ('Process', 'ProcessError', 'ProcessPipe', 'PIPE', 'DEVNULL',
-           'process_call',)
+           'process_call', 'process_chain_call',)
 
 
 def devnull_fd():
@@ -168,7 +168,7 @@ class Process(object):
                 check_status()(self.opts.status)
 
             # child
-            else:
+            else:  # pragma: no cover
                 try:
                     status_fd = status_pipe()
                     fd_close_on_exec(status_fd, True)
@@ -256,7 +256,7 @@ class ProcessPipe(object):
             os.close(self.child_fd)
             stream = BufferedFile(self.parent_fd, bufsize=self.bufsize, core=self.core)
             return stream
-        else:
+        else:  # pragma: no cover (child process)
             os.close(self.parent_fd)
             if fd is None or fd == self.child_fd:
                 return self.child_fd
@@ -290,9 +290,11 @@ class ProcessPipe(object):
 def process_call(command, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
                  bufsize=None, kill_delay=None, core=None):
-    """Asynchronously run command
+    """Run command
 
-    Asynchronously returns standard output, standard error and return code tuple.
+    Returns:
+        (output, error, code) where output and error bytes or None and code
+        is a process status code.
     """
     stdin_data = None
     if stdin is None:
@@ -306,15 +308,81 @@ def process_call(command, stdin=None, stdout=None, stderr=None,
                         stderr=stderr, preexec=preexec, shell=shell,
                         environ=environ, check=check, bufsize=bufsize,
                         kill_delay=kill_delay, core=core)) as proc:
-        _in = Cont.unit(None)
+        in_cont = Cont.unit(None)
         if stdin_data:
             proc.stdin.write_schedule(stdin_data)
-            _in = proc.stdin.flush_and_dispose()
+            in_cont = proc.stdin.flush_and_dispose()
         elif proc.stdin:
             proc.stdin.dispose()
 
-        _out = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
-        _err = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
+        out_cont = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
+        err_cont = proc.stderr.read_until_eof() if proc.stderr else Cont.unit(None)
 
-        out, err, status, _ = yield async_all((_out, _err, proc.status, _in))
+        _, out, err, status = yield async_all((in_cont, out_cont, err_cont, proc.status))
+        do_return((out, err, status))
+
+
+@async
+def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_opts):
+    """Run pipe chained commands
+
+    Returns:
+        (output, error, codes) where output and error bytes or None and codes
+        is a list of process status codes.
+    """
+    if not commands:
+        raise ValueError('commands list must not be empty')
+
+    with CompDisp() as disp:
+        def disp_fd(fd):
+            disp.add(FuncDisp(lambda: os.close(fd)))
+            return fd
+
+        stdin_data = None
+        if stdin is None:
+            stdin = PIPE
+        elif isinstance(stdin, (bytes, memoryview)):
+            stdin, stdin_data = PIPE, stdin
+
+        stdout = PIPE if stdout is None else stdout
+
+        err_cont = Cont.unit(None)
+        if stderr in (PIPE, None):
+            stderr_fd, stderr = os.pipe()
+            stderr_stream = disp.add(BufferedFile(stderr_fd,
+                                                  bufsize=proc_opts.get('bufsize'),
+                                                  core=proc_opts.get('core')))
+            stderr_stream.close_on_exec(True)
+            stderr_close = disp.add(FuncDisp(lambda: os.close(stderr)))
+
+            @async
+            def err_coro():
+                stderr_close()
+                do_done(stderr_stream.read_until_eof())
+            err_cont = err_coro()
+
+        # run processes
+        procs = []
+        for command in commands[:-1]:
+            proc = yield disp.add(Process(command, stdin=stdin, stdout=PIPE,
+                                          stderr=stderr, **proc_opts))
+            procs.append(proc)
+            stdin = disp_fd(proc.stdout.detach())
+        proc = yield disp.add(Process(commands[-1], stdin=stdin, stdout=stdout,
+                                      stderr=stderr, **proc_opts))
+        procs.append(proc)
+
+        # send input
+        in_cont = Cont.unit(None)
+        proc_first = procs[0]
+        if stdin_data:
+            proc_first.stdin.write_schedule(stdin_data)
+            in_cont = proc_first.stdin.flush_and_dispose()
+        elif proc_first.stdin:
+            proc_first.stdin.dispose()
+
+        # receive output and wait for completion
+        out_cont = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
+        _, out, err, status = yield async_all((in_cont, out_cont, err_cont,
+                                               async_all(proc.status for proc in procs)))
         do_return((out, err, status))

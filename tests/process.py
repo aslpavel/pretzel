@@ -5,7 +5,8 @@ import time
 from . import async_test
 from ..monad import Cont
 from ..dispose import CompDisp
-from ..process import Process, ProcessError, PIPE, DEVNULL, process_call
+from ..process import (Process, ProcessError, PIPE, DEVNULL,
+                       process_call, process_chain_call,)
 
 __all__ = ('ProcessTest',)
 
@@ -80,6 +81,17 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual((yield proc.status), 0)
         stop = time.time()
         self.assertTrue(stop - start < 1)
+
+    @async_test
+    def test_chain(self):
+        commands = [command, ['cat'], ['wc', '-c']]
+
+        self.assertEqual((yield process_chain_call(commands, stdin=b'10', check=False)),
+                         (b'5\n', b'13579', (117, 0, 0)))
+
+        with self.assertRaises(ProcessError):
+            yield process_chain_call(commands, stdin=b'10')
+
 
 command = ['python', '-c', textwrap.dedent("""
     import sys
