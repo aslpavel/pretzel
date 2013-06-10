@@ -1,6 +1,9 @@
+import math
 import unittest
+import itertools
+from heapq import heappush, heappop
 from ..do import do_return
-from ..async import async, async_block, async_all, async_any
+from ..async import async, async_block, async_all, async_any, async_limit
 from ..result import Result
 from ...event import Event
 
@@ -125,3 +128,39 @@ class ContTest(unittest.TestCase):
 
         e1('done_next')
         self.assertFalse(e1.handlers)
+
+    def test_limit(self):
+        timer = Timer()
+        timer_limit_10 = async_limit(10)(lambda val: timer(val))
+
+        count = 1024
+        res = async_all(timer_limit_10(1) for i in range(count)).future()
+        for i in range(count):
+            if res.completed:
+                res.value
+                break
+            timer.tick()
+        self.assertEqual(timer.time, math.ceil(count/ 10.))
+
+
+class Timer(object):
+    def __init__(self):
+        self.time = 0
+        self.uid = itertools.count()
+        self.queue = []
+
+    def __call__(self, time):
+        @async_block
+        def cont(ret):
+            heappush(self.queue, (self.time + time, next(self.uid), ret))
+        return cont
+
+    def tick(self):
+        self.time += 1
+        while self.queue:
+            time, _, ret = self.queue[0]
+            if time > self.time:
+                return
+            else:
+                heappop(self.queue)
+                ret(self.time)

@@ -4,12 +4,14 @@ Function to work and create continuation monads with embedded value of
 result monad type.
 """
 from functools import wraps
+from collections import deque
 from .do import do
 from .do_green import do_green
 from .cont import Cont
 from .result import Result
 
-__all__ = ('async', 'async_green', 'async_block', 'async_any', 'async_all',)
+__all__ = ('async', 'async_green', 'async_block', 'async_any', 'async_all',
+           'async_limit',)
 
 
 def async(block):
@@ -102,3 +104,39 @@ def async_all(conts):
         for index, cont in enumerate(conts):
             all_ret(index, cont)
     return all_cont
+
+
+def async_limit(limit):
+    """Limit number of simultaneously executing coroutines
+
+    Returns decorator, which limit number of unresolved continuations to
+    specified limit value.
+    """
+    def async_limit(func):
+        worker_count = [0]
+        worker_queue = deque()
+
+        @async
+        def worker():
+            try:
+                worker_count[0] += 1
+                while worker_queue:
+                    ret, args, kwargs = worker_queue.popleft()
+                    try:
+                        ret((yield func(*args, **kwargs)))
+                    except Exception:
+                        ret(Result.from_current_error())
+            finally:
+                worker_count[0] -= 1
+
+        @wraps(func)
+        def async_limit(*args, **kwargs):
+            @async_block
+            def cont(ret):
+                worker_queue.append((ret, args, kwargs))
+                if worker_count[0] < limit:
+                    worker()()
+            return cont
+
+        return async_limit
+    return async_limit
