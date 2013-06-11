@@ -20,10 +20,11 @@ class ForkConnection(StreamConnection):
 
     Connection with forked and exec-ed process via two pipes.
     """
-    def __init__(self, command=None, bufsize=None, hub=None, core=None):
+    def __init__(self, command=None, environ=None, bufsize=None, hub=None, core=None):
         StreamConnection.__init__(self, hub=hub, core=core)
         self.bufsize = bufsize
         self.command = [sys.executable, '-'] if command is None else command
+        self.environ = environ
         self.process = None
 
     @async
@@ -51,7 +52,8 @@ class ForkConnection(StreamConnection):
 
         # send payload
         payload = (BootImporter.from_modules().bootstrap
-                  (fork_conn_init, writer.child_fd, reader.child_fd, self.bufsize).encode())
+                  (fork_conn_init, writer.child_fd, reader.child_fd,
+                   self.bufsize, self.environ).encode())
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush_and_dispose()
 
@@ -68,9 +70,12 @@ class ForkConnection(StreamConnection):
         self.flags['type'] = 'fork'
 
 
-def fork_conn_init(reader_fd, writer_fd, bufsize):  # pragma: no cover
+def fork_conn_init(reader_fd, writer_fd, bufsize, environ):  # pragma: no cover
     """Fork connection initialization function
     """
+    if environ:
+        os.environ.update(environ)
+
     with Core.local() as core:
         # initialize connection
         conn = StreamConnection(core=core)

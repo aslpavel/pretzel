@@ -31,7 +31,7 @@ class ShellConnection(StreamConnection):
     is untouched.
     """
     def __init__(self, command=None, escape=None, py_exec=None,
-                 bufsize=None, hub=None, core=None):
+                 environ=None, bufsize=None, hub=None, core=None):
         StreamConnection.__init__(self, hub=hub, core=core)
 
         self.bufsize = bufsize
@@ -39,6 +39,7 @@ class ShellConnection(StreamConnection):
         self.command = command or []
         self.command.extend((self.py_exec, '-c', '\'{}\''.format(shell_tramp)
                             if escape else shell_tramp))
+        self.environ = environ
         self.process = None
 
     @async
@@ -59,7 +60,7 @@ class ShellConnection(StreamConnection):
 
         # send payload
         payload = (BootImporter.from_modules().bootstrap(
-                   shell_conn_init, self.bufsize).encode('utf-8'))
+                   shell_conn_init, self.bufsize, self.environ).encode('utf-8'))
         self.process.stdin.write_schedule(struct.pack('>I', len(payload)))
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush()
@@ -76,7 +77,7 @@ class ShellConnection(StreamConnection):
         self.flags['host'] = yield self(socket.gethostname)()
 
 
-def shell_conn_init(bufsize):  # pragma: no cover
+def shell_conn_init(bufsize, environ):  # pragma: no cover
     """Shell connection initialization function
     """
     # Make sure standard output and input won't be used. As it is now used
@@ -84,6 +85,9 @@ def shell_conn_init(bufsize):  # pragma: no cover
     sys.stdin = io.open(os.devnull, 'r')
     fd_close_on_exec(sys.stdin.fileno())
     sys.stdout = sys.stderr
+
+    if environ:
+        os.environ.update(environ)
 
     with Core.local() as core:
         # initialize connection
