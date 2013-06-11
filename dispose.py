@@ -1,5 +1,7 @@
 """Helper classes to compose disposable objects
 """
+from .monad import async_block
+
 __all__ = ('Disposable', 'FuncDisp', 'CompDisp',)
 
 
@@ -16,10 +18,10 @@ class Disposable(object):
         raise NotImplementedError()
 
     def __bool__(self):
-        return self.disposed()
+        return self.disposed
 
     def __nonzero__(self):
-        return self.disposed()
+        return self.disposed
 
     def dispose(self):
         raise NotImplementedError()
@@ -30,6 +32,12 @@ class Disposable(object):
     def __exit__(self, et, eo, tb):
         self.dispose()
         return False
+
+    def __str__(self):
+        return '{}(disposed:{})'.format(type(self).__name__, self.disposed)
+
+    def __repr__(self):
+        return str(self)
 
 
 class FuncDisp(Disposable):
@@ -49,13 +57,9 @@ class FuncDisp(Disposable):
         if action is not None:
             return action()
 
-    def __str__(self):
-        return '{}(disposed:{})'.format(type(self).__name__, self.disposed)
-    __repr__ = __str__
-
 
 class CompDisp(Disposable):
-    """Composite multiple disposables
+    """Composite disposable
 
     Treat multiple disposable as one.
     """
@@ -78,6 +82,9 @@ class CompDisp(Disposable):
         else:
             self.disps.append(disp)
         return disp
+
+    def add_action(self, action):
+        return self.add(FuncDisp(action))
 
     def __iadd__(self, disp):
         self.add(disp)
@@ -111,7 +118,7 @@ class CompDisp(Disposable):
             for disp in reversed(disps):
                 disp.__exit__(None, None, None)
 
-    def __str__(self):
-        return '{}(len:{}, disposed:{})'.format(type(self).__name__,
-                                                len(self), self.disposed)
-    __repr__ = __str__
+    def __monad__(self):
+        """Wait for composite disposable object to be disposed
+        """
+        return async_block(lambda ret: self.add_action(lambda: ret(None)))

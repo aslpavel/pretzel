@@ -2,6 +2,7 @@ import unittest
 import operator
 import itertools
 from ..dispose import FuncDisp, CompDisp
+from ..monad import async
 
 __all__ = ('FuncDispTest', 'CompDispTest',)
 
@@ -13,7 +14,9 @@ class FuncDispTest(unittest.TestCase):
         res = [0]
 
         with FuncDisp(disp) as d0:
+            self.assertFalse(d0)
             self.assertEqual(res[0], 0)
+        self.assertTrue(d0)
         self.assertEqual(res[0], 1)
         d0.dispose()
         self.assertEqual(res[0], 1)
@@ -34,10 +37,12 @@ class CompDispTest(unittest.TestCase):
             lambda: operator.setitem(ctx, 3, 1)))
 
         d = CompDisp((d0,))
+        self.assertFalse(d)
         self.assertEqual(ctx, [0, 0, 0, 0])
         d += d1
         with d:
             self.assertEqual(ctx, [0, 0, 0, 0])
+        self.assertTrue(d)
         self.assertEqual(ctx, [1, 1, 0, 0])
         d += FuncDisp(lambda: d.add(d3))
         d.dispose()
@@ -59,3 +64,10 @@ class CompDispTest(unittest.TestCase):
             d.add(d3)
             self.assertEqual(ctx, [0, 0, 0, 0])
         self.assertEqual(ctx, [4, 2, 3, 1])
+
+    def test_async(self):
+        with CompDisp() as d:
+            future = d.__monad__().future()
+            self.assertFalse(future.completed)
+        self.assertTrue(future.completed)
+        self.assertTrue(d.__monad__().future().completed)
