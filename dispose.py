@@ -11,7 +11,7 @@ class Disposable(object):
     __slots__ = tuple()
 
     def __call__(self):
-        self.dispose()
+        return self.dispose()
 
     @property
     def disposed(self):
@@ -54,8 +54,11 @@ class FuncDisp(Disposable):
 
     def dispose(self):
         action, self.action = self.action, None
-        if action is not None:
-            return action()
+        if action is None:
+            return False
+        else:
+            action()
+            return True
 
 
 class CompDisp(Disposable):
@@ -114,9 +117,12 @@ class CompDisp(Disposable):
 
     def dispose(self):
         disps, self.disps = self.disps, None
-        if disps is not None:
+        if disps is None:
+            return False
+        else:
             for disp in reversed(disps):
                 disp.__exit__(None, None, None)
+            return True
 
     def __monad__(self):
         """Wait for composite disposable object to be disposed

@@ -157,5 +157,5 @@ class SelectPoller(Poller):
         return events.items()
 
 
-class KQueuePoller (SelectPoller):
+class KQueuePoller(SelectPoller):
     pass

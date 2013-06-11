@@ -39,9 +39,14 @@ class Connection(object):
         self.module_map = {}
 
         self.receiver, self.sender = pair(hub=self.hub)
-        self.disp = CompDisp()
         self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
         self.recv_ev = Event()
+
+        ## dispose
+        self.dispose = CompDisp()
+        self.dispose.add_action(lambda: self.do_disconnect())
+        self.dispose.add(self.receiver)
+        self.dispose.add_action(lambda: self.state(self.STATE_DISP))
 
         ## marshaling
         PACK_ROUTE = 1
@@ -171,7 +176,7 @@ class Connection(object):
                     else:
                         err.trace(banner=lambda: textwrap.dedent("""\
                             Impossible to send error response to message:
-                              {}""").format(msg))
+                              {} -> {}""").format(msg, dst))
                 break
 
     def __monad__(self):
@@ -183,14 +188,6 @@ class Connection(object):
     @property
     def disposed(self):
         return self.state.state == self.STATE_DISP
-
-    def dispose(self):
-        if not self.state(self.STATE_DISP):
-            return False
-        self.receiver.dispose()
-        self.do_disconnect()
-        self.disp.dispose()
-        return True
 
     def __enter__(self):
         return self

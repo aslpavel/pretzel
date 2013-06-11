@@ -53,7 +53,7 @@ class ShellConnection(StreamConnection):
             os.chdir('/')
             os.setsid()
 
-        self.process = yield (self.disp.add(Process(self.command, stdin=PIPE,
+        self.process = yield (self.dispose.add(Process(self.command, stdin=PIPE,
                               stdout=PIPE, preexec=preexec, kill_delay=-1,
                               bufsize=self.bufsize, core=self.core)))
 
@@ -68,7 +68,7 @@ class ShellConnection(StreamConnection):
                                                  self.process.stdin))
 
         # install importer
-        self.disp.add((yield Importer.create_remote(self)))
+        self.dispose.add((yield Importer.create_remote(self)))
         self.module_map['_boot'] = boot_name
 
         # update flags
@@ -90,7 +90,7 @@ def shell_conn_init(bufsize):  # pragma: no cover
         conn = StreamConnection(core=core)
         conn.flags['pid'] = os.getpid()
         conn.flags['host'] = socket.gethostname()
-        conn.disp.add(core)
+        conn.dispose.add_action(lambda: core.schedule()(lambda _: core.dispose()))
 
         # connect
         in_stream = BufferedFile(0, bufsize=bufsize, core=core)

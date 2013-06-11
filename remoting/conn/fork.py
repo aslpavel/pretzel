@@ -34,8 +34,8 @@ class ForkConnection(StreamConnection):
         connection with connection this as its only argument.
         """
         # pipes
-        reader = self.disp.add(ProcessPipe(True, bufsize=self.bufsize, core=self.core))
-        writer = self.disp.add(ProcessPipe(False, bufsize=self.bufsize, core=self.core))
+        reader = self.dispose.add(ProcessPipe(True, bufsize=self.bufsize, core=self.core))
+        writer = self.dispose.add(ProcessPipe(False, bufsize=self.bufsize, core=self.core))
 
         # process
         def preexec():  # pragma: no cover
@@ -44,9 +44,9 @@ class ForkConnection(StreamConnection):
             os.chdir('/')
             os.setsid()
 
-        self.process = self.disp.add(Process(self.command,
-                                     stdin=PIPE, preexec=preexec, kill_delay=-1,
-                                     bufsize=self.bufsize, core=self.core))
+        self.process = self.dispose.add(Process(self.command,
+                                        stdin=PIPE, preexec=preexec, kill_delay=-1,
+                                        bufsize=self.bufsize, core=self.core))
         yield self.process  # exec-ed
 
         # send payload
@@ -55,12 +55,12 @@ class ForkConnection(StreamConnection):
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush_and_dispose()
 
-        reader_stream = self.disp.add(reader())
-        writer_stream = self.disp.add(writer())
+        reader_stream = self.dispose.add(reader())
+        writer_stream = self.dispose.add(writer())
         yield StreamConnection.do_connect(self, (reader_stream, writer_stream))
 
         # install importer
-        self.disp.add((yield Importer.create_remote(self)))
+        self.dispose.add((yield Importer.create_remote(self)))
         self.module_map['_boot'] = boot_name
 
         # update name
@@ -76,7 +76,7 @@ def fork_conn_init(reader_fd, writer_fd, bufsize):  # pragma: no cover
         conn = StreamConnection(core=core)
         conn.flags['pid'] = os.getpid()
         conn.flags['type'] = 'fork'
-        conn.disp.add(core)
+        conn.dispose.add_action(lambda: core.schedule()(lambda _: core.dispose()))
 
         # connect
         reader = BufferedFile(reader_fd, bufsize=bufsize, core=core)
