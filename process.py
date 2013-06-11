@@ -163,8 +163,8 @@ class Process(object):
                 def check_status():
                     status = yield waitpid
                     if self.opts.check and status != 0:
-                        raise ProcessError('command \'{}\' returned non-zero exit '
-                                           'status {}'.format(self.opts.command, status))
+                        raise ProcessError('command {} returned non-zero exit status {}'
+                                           .format(self.opts.command, status))
                     do_return(status)
                 check_status()(self.opts.status)
 
