@@ -333,9 +333,9 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
     if not commands:
         raise ValueError('commands list must not be empty')
 
-    with CompDisp() as disp:
+    with CompDisp() as dispose:
         def disp_fd(fd):
-            disp.add(FuncDisp(lambda: os.close(fd)))
+            dispose.add(FuncDisp(lambda: os.close(fd)))
             return fd
 
         stdin_data = None
@@ -349,11 +349,11 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
         err_cont = Cont.unit(None)
         if stderr in (PIPE, None):
             stderr_fd, stderr = os.pipe()
-            stderr_stream = disp.add(BufferedFile(stderr_fd,
-                                                  bufsize=proc_opts.get('bufsize'),
-                                                  core=proc_opts.get('core')))
+            stderr_stream = dispose.add(BufferedFile(stderr_fd,
+                                                     bufsize=proc_opts.get('bufsize'),
+                                                     core=proc_opts.get('core')))
             stderr_stream.close_on_exec(True)
-            stderr_close = disp.add(FuncDisp(lambda: os.close(stderr)))
+            stderr_close = dispose.add(FuncDisp(lambda: os.close(stderr)))
 
             @async
             def err_coro():
@@ -364,12 +364,12 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
         # run processes
         procs = []
         for command in commands[:-1]:
-            proc = yield disp.add(Process(command, stdin=stdin, stdout=PIPE,
-                                          stderr=stderr, **proc_opts))
+            proc = yield dispose.add(Process(command, stdin=stdin, stdout=PIPE,
+                                             stderr=stderr, **proc_opts))
             procs.append(proc)
             stdin = disp_fd(proc.stdout.detach())
-        proc = yield disp.add(Process(commands[-1], stdin=stdin, stdout=stdout,
-                                      stderr=stderr, **proc_opts))
+        proc = yield dispose.add(Process(commands[-1], stdin=stdin, stdout=stdout,
+                                         stderr=stderr, **proc_opts))
         procs.append(proc)
 
         # send input
