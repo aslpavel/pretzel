@@ -63,6 +63,8 @@ def composite_ssh_conn(hosts, mesh=None, **conn_opts):
         mesh: Mesh of composite connection (see composite_conn)
         **conn_opts: Common connection options
     """
+    if isinstance(hosts, str):
+        hosts = (hosts,)
     conn_facts = (functools.partial(SSHConnection, host, **conn_opts)
                   for host in hosts)
     return composite_conn(conn_facts, mesh=mesh)
