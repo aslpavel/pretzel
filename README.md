@@ -16,6 +16,21 @@ Features
 * Python 2/3, PyPy compatible
 * Asynchronous python shell `python -mpretzel.apps.shell` (requires greenlet)
 
+Installation
+------------
+As git submodule:
+```
+git submodule add git://github.com/aslpavel/pretzel.git <path_to_submodule>
+```
+Pip from git:
+```
+pip install git+git://github.com/aslpavel/pretzel-pkg.git
+```
+Pip from PyPI
+```
+pip install pretzel
+```
+
 Examples
 --------
 * [Simple echo server](https://gist.github.com/aslpavel/5635559)
