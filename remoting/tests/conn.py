@@ -16,12 +16,14 @@ __all__ = ('ForkConnectionTest', 'SSHConnectionTest',)
 
 
 class ForkConnectionTest(unittest.TestCase):
-    conn_type = functools.partial(ForkConnection,
-                                  environ={'PRETZEL_POLLER': PRETZEL_POLLER})
+    conn_env = {'PRETZEL_POLLER': PRETZEL_POLLER}
+    conn_type = functools.partial(ForkConnection, environ=conn_env)
 
     @async_test
     def test_misc(self):
-        with (yield self.conn_type(environ={'MYENV': 'MYVAL'})) as conn:
+        environ = self.conn_env.copy()
+        environ['MYENV'] = 'MYVAL'
+        with (yield self.conn_type(environ=environ)) as conn:
             # make sure process id differ
             self.assertNotEqual((yield conn(os.getpid)()), os.getpid())
 
@@ -128,7 +130,7 @@ class ForkConnectionTest(unittest.TestCase):
 
 class SSHConnectionTest(ForkConnectionTest):
     conn_type = functools.partial(SSHConnection, host='localhost',
-                                  environ={'PRETZEL_POLLER': PRETZEL_POLLER})
+                                  environ=ForkConnectionTest.conn_env)
 
 
 def clean_path():
