@@ -6,7 +6,7 @@ from ..conn import ForkConnection, SSHConnection
 from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
 from ...core import schedule
-from ...monad import async_all
+from ...monad import Result, async_all
 from ...boot import BootLoader
 from ...tests import async_test
 
@@ -23,6 +23,12 @@ class ForkConnectionTest(unittest.TestCase):
             self.assertNotEqual(os.getpid(), (yield conn(os.getpid)()))
 
             with (yield proxify(conn(Remote)('val'))) as proxy:
+                # result
+                self.assertEqual((yield conn(Result.from_value('test_value'))),
+                                 'test_value')
+                with self.assertRaises(RuntimeError):
+                    yield conn(Result.from_exception(RuntimeError()))
+
                 # call
                 self.assertEqual((yield proxy('test')), 'test')
 

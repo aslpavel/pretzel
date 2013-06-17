@@ -8,7 +8,7 @@ python:
 
 env:
     global:
-        - PRETZEL_TEST_TIMEOUT=30 # pypy takes longer to start
+        - PRETZEL_TEST_TIMEOUT=30  # pypy takes longer to start
     matrix:
         - PRETZEL_POLLER=epoll
         - PRETZEL_POLLER=select

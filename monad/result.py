@@ -137,7 +137,7 @@ def _from_exc(exc):
     return Result.from_exception(exc)
 
 
-def result_excepthook(et, eo, tb, file=None, banner=None):
+def result_excepthook(et, eo, tb, file=None, banner=None):  # pragma: no cover
     """Result specific exception hook
 
     Correctly shows embedded traceback if any.
