@@ -1,5 +1,6 @@
 import os
 import unittest
+import functools
 from .proxy import Remote
 from ..hub import pair
 from ..conn import ForkConnection, SSHConnection
@@ -14,15 +15,18 @@ __all__ = ('ForkConnectionTest', 'SSHConnectionTest',)
 
 
 class ForkConnectionTest(unittest.TestCase):
-    conn_type = ForkConnection
-    conn_args = tuple()
+    conn_type = functools.partial(ForkConnection)
 
     @async_test
     def test_proxy(self):
-        with (yield self.conn_type(*self.conn_args)) as conn:
+        with (yield self.conn_type()) as conn:
             self.assertNotEqual(os.getpid(), (yield conn(os.getpid)()))
 
             with (yield proxify(conn(Remote)('val'))) as proxy:
+                # bad message
+                with self.assertRaises(TypeError):
+                    yield conn.sender('bad_message')
+
                 # result
                 self.assertEqual((yield conn(Result.from_value('test_value'))),
                                  'test_value')
@@ -67,12 +71,12 @@ class ForkConnectionTest(unittest.TestCase):
         """Nested connection test
         """
         pids = set()
-        with (yield self.conn_type(*self.conn_args)) as c0:
+        with (yield self.conn_type()) as c0:
             pids.add((yield c0(os.getpid)()))
-            with (yield ~c0(self.conn_type)(*self.conn_args)) as c1:
+            with (yield ~c0(self.conn_type)()) as c1:
                 pids.add((yield c1(os.getpid)()))
                 self.assertTrue(isinstance(c1, ConnectionProxy))
-                with (yield ~c1(self.conn_type)(*self.conn_args)) as c2:
+                with (yield ~c1(self.conn_type)()) as c2:
                     pids.add((yield c2(os.getpid)()))
         self.assertEqual(len(pids), 3)
 
@@ -82,7 +86,7 @@ class ForkConnectionTest(unittest.TestCase):
     @async_test
     def test_sender_roundtrip(self):
         r, s = pair()
-        with (yield self.conn_type(*self.conn_args)) as conn:
+        with (yield self.conn_type()) as conn:
             self.assertEqual(tuple((yield conn(s)).addr), tuple(s.addr))
 
     @async_test
@@ -90,7 +94,7 @@ class ForkConnectionTest(unittest.TestCase):
         """Test interrupt inside Connection.do_recv
         """
         from .conn_int import int_function
-        with (yield self.conn_type(*self.conn_args)) as conn:
+        with (yield self.conn_type()) as conn:
             # We need to send two requests (second will cause interrupt)
             res0, res1 = yield async_all((conn(int_function)(), conn(int_function)()))
             self.assertEqual(res0, int_function())
@@ -98,15 +102,14 @@ class ForkConnectionTest(unittest.TestCase):
 
     @async_test
     def test_importer(self):
-        with (yield self.conn_type(*self.conn_args)) as conn:
+        with (yield self.conn_type()) as conn:
             self.assertEqual((yield conn(clean_path)()), [])
             self.assertEqual((yield conn(__import__)('wsgiref').__loader__ >> type),
                              BootLoader)
 
 
 class SSHConnectionTest(ForkConnectionTest):
-    conn_type = SSHConnection
-    conn_args = ('localhost',)
+    conn_type = functools.partial(SSHConnection, host='localhost')
 
 
 def clean_path():

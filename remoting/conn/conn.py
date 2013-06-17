@@ -153,7 +153,7 @@ class Connection(object):
                     # is not empty so it needs to be routed.
                     self.hub.send(msg, dst, src)
                 else:
-                    if msg is None:
+                    if msg is None:  # pragma: no cover (covered by remote path)
                         self.dispose()
                         return
                     if src is None:
@@ -161,14 +161,14 @@ class Connection(object):
                     else:
                         src.send((yield msg(self)))
                 break
-            except InterruptError:
+            except InterruptError:  # pragma: no cover (covered by remote path)
                 # Required module is being imported right now. Wait for pending
                 # imports. We also need to postpone dispatch of the message
                 # because, message which resumed this method, may in the same
                 # time complete pending import.
                 yield self.recv_ev
                 yield self.core.schedule()
-            except Exception:
+            except Exception:  # pragma: no cover (covered by remote path)
                 if not self.disposed:
                     err = Result.from_current_error()
                     if src is not None:
