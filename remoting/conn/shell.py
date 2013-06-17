@@ -58,6 +58,12 @@ class ShellConnection(StreamConnection):
                               stdout=PIPE, preexec=preexec, kill_delay=-1,
                               bufsize=self.bufsize, core=self.core)))
 
+        # check remote python version
+        version = yield self.process.stdout.read_bytes()
+        if version.decode() != str(sys.version_info[0]):
+            raise ValueError('remote python major version mismatch: {}'
+                             .format(version.decode()))
+
         # send payload
         payload = (BootImporter.from_modules().bootstrap(
                    shell_conn_init, self.bufsize, self.environ).encode('utf-8'))
@@ -114,9 +120,17 @@ def boot_tramp(data):
             binascii.b2a_base64(zlib.compress(data)).strip().decode('utf-8')))
 
 shell_tramp = boot_tramp(textwrap.dedent("""\
-    import os, io, struct
+    import os, io, sys, struct
+    # send version
+    version = str(sys.version_info[0]).encode()
+    os.write(1, struct.pack(">I", len(version)))
+    os.write(1, version)
+    # receiver payload
     with io.open(0, "rb", buffering=0, closefd=False) as stream:
-        size = struct.unpack(">I", stream.read(struct.calcsize(">I")))[0]
+        size_data = stream.read(struct.calcsize(">I"))
+        if not size_data:
+            sys.exit(0)  # version mismatch
+        size = struct.unpack(">I", size_data)[0]
         data = io.BytesIO()
         while size > data.tell():
             chunk = stream.read(size - data.tell())
