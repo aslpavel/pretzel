@@ -67,6 +67,7 @@ class ShellConnection(StreamConnection):
 
         yield StreamConnection.do_connect(self, (self.process.stdout,
                                                  self.process.stdin))
+        yield self(os.chdir)('/')
 
         # install importer
         self.dispose.add((yield Importer.create_remote(self)))

@@ -20,19 +20,20 @@ class ForkConnectionTest(unittest.TestCase):
     @async_test
     def test_proxy(self):
         with (yield self.conn_type()) as conn:
-            self.assertNotEqual(os.getpid(), (yield conn(os.getpid)()))
+            self.assertNotEqual((yield conn(os.getpid)()), os.getpid())
+            self.assertEqual((yield conn(os.getcwd)()), '/')
+
+            # bad message
+            with self.assertRaises(TypeError):
+                yield conn.sender('bad_message')
+
+            # result
+            self.assertEqual((yield conn(Result.from_value('test_value'))),
+                             'test_value')
+            with self.assertRaises(RuntimeError):
+                yield conn(Result.from_exception(RuntimeError()))
 
             with (yield proxify(conn(Remote)('val'))) as proxy:
-                # bad message
-                with self.assertRaises(TypeError):
-                    yield conn.sender('bad_message')
-
-                # result
-                self.assertEqual((yield conn(Result.from_value('test_value'))),
-                                 'test_value')
-                with self.assertRaises(RuntimeError):
-                    yield conn(Result.from_exception(RuntimeError()))
-
                 # call
                 self.assertEqual((yield proxy('test')), 'test')
 
