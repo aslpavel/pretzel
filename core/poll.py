@@ -1,5 +1,6 @@
 import errno
 import select
+from .. import PRETZEL_POLLER
 
 __all__ = ('Poller', 'POLL_READ', 'POLL_WRITE', 'POLL_URGENT', 'POLL_DISCONNECT', 'POLL_ERROR',)
 
@@ -25,13 +26,9 @@ POLL_DISCONNECT = EPOLLHUP
 
 
 class Poller (object):
-    DEFAULT_NAME = 'epoll' if hasattr(select, 'epoll') else \
-                   'kqueue' if hasattr(select, 'kqueue') else \
-                   'select'
-
     @classmethod
     def from_name(cls, name=None):
-        name = name or cls.DEFAULT_NAME
+        name = name or PRETZEL_POLLER
 
         if name == 'epoll' and hasattr(select, 'epoll'):
             return EPollPoller()

@@ -7,7 +7,11 @@ python:
     - pypy
 
 env:
-    - PRETZEL_TEST_TIMEOUT=30 # pypy takes longer to start
+    global:
+        - PRETZEL_TEST_TIMEOUT=30 # pypy takes longer to start
+    matrix:
+        - PRETZEL_POLLER=epoll
+        - PRETZEL_POLLER=select
 
 install:
     - pip install coveralls --use-mirrors
