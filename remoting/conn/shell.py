@@ -8,7 +8,7 @@ import os
 import sys
 import zlib
 import socket
-import struct
+import pickle
 import binascii
 import textwrap
 
@@ -64,11 +64,19 @@ class ShellConnection(StreamConnection):
             raise ValueError('remote python major version mismatch: {}'
                              .format(version.decode()))
 
-        # send payload
-        payload = (BootImporter.from_modules().bootstrap(
-                   shell_conn_init, self.bufsize, self.environ).encode('utf-8'))
-        self.process.stdin.write_schedule(struct.pack('>I', len(payload)))
-        self.process.stdin.write_schedule(payload)
+        # send environment data
+        environ = {
+            'PRETZEL_RECLIMIT': str(PRETZEL_RECLIMIT),
+            'PRETZEL_BUFSIZE': str(PRETZEL_BUFSIZE),
+        }
+        if self.environ:
+            environ.update(self.environ)
+        self.process.stdin.write_bytes(pickle.dumps(environ))
+
+        # send boot data
+        boot_data = (BootImporter.from_modules().bootstrap(
+                     shell_conn_init, self.bufsize).encode('utf-8'))
+        self.process.stdin.write_bytes(boot_data)
         yield self.process.stdin.flush()
 
         yield StreamConnection.do_connect(self, (self.process.stdout,
@@ -84,7 +92,7 @@ class ShellConnection(StreamConnection):
         self.flags['host'] = yield self(socket.gethostname)()
 
 
-def shell_conn_init(bufsize, environ):  # pragma: no cover
+def shell_conn_init(bufsize):  # pragma: no cover
     """Shell connection initialization function
     """
     # Make sure standard output and input won't be used. As it is now used
@@ -92,9 +100,6 @@ def shell_conn_init(bufsize, environ):  # pragma: no cover
     sys.stdin = io.open(os.devnull, 'r')
     fd_close_on_exec(sys.stdin.fileno())
     sys.stdout = sys.stderr
-
-    if environ:
-        os.environ.update(environ)
 
     with Core.local() as core:
         # initialize connection
@@ -120,24 +125,28 @@ def boot_tramp(data):
             binascii.b2a_base64(zlib.compress(data)).strip().decode('utf-8')))
 
 shell_tramp = boot_tramp(textwrap.dedent("""\
-    import os, io, sys, struct
+    import os, io, sys, struct, pickle
+    size_struct = struct.Struct("{size_format}")
     # send version
     version = str(sys.version_info[0]).encode()
-    os.write(1, struct.pack(">I", len(version)))
+    os.write(1, size_struct.pack(len(version)))
     os.write(1, version)
     # receiver payload
     with io.open(0, "rb", buffering=0, closefd=False) as stream:
-        size_data = stream.read(struct.calcsize(">I"))
-        if not size_data:
-            sys.exit(0)  # version mismatch
-        size = struct.unpack(">I", size_data)[0]
-        data = io.BytesIO()
-        while size > data.tell():
-            chunk = stream.read(size - data.tell())
-            if not chunk:
-                raise ValueError("payload is incomplete")
-            data.write(chunk)
-    os.environ["PRETZEL_BUFSIZE"] = "{bufsize}"
-    os.environ["PRETZEL_RECLIMIT"] = "{reclimit}"
-    exec(data.getvalue().decode("utf-8"))
-    """.format(bufsize=PRETZEL_BUFSIZE, reclimit=PRETZEL_RECLIMIT)).encode('utf-8'))
+        def read_bytes():
+            size_data = stream.read(size_struct.size)
+            if len(size_data) < size_struct.size:
+                sys.exit(0)
+            size = size_struct.unpack(size_data)[0]
+            data = io.BytesIO()
+            while size > data.tell():
+                chunk = stream.read(size - data.tell())
+                if not chunk:
+                    raise ValueError("payload is incomplete")
+                data.write(chunk)
+            return data.getvalue()
+        env_data = read_bytes()
+        boot_data = read_bytes()
+    os.environ.update(pickle.loads(env_data))
+    exec(boot_data.decode("utf-8"))
+    """.format(size_format=BufferedFile.size_struct.format.decode())).encode('utf-8'))

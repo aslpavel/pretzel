@@ -18,8 +18,8 @@ class ForkConnectionTest(unittest.TestCase):
     conn_type = functools.partial(ForkConnection)
 
     @async_test
-    def test_proxy(self):
-        with (yield self.conn_type()) as conn:
+    def test_misc(self):
+        with (yield self.conn_type(environ={'MYENV': 'MYVAL'})) as conn:
             self.assertNotEqual((yield conn(os.getpid)()), os.getpid())
             self.assertEqual((yield conn(os.getcwd)()), '/')
 
@@ -27,12 +27,20 @@ class ForkConnectionTest(unittest.TestCase):
             with self.assertRaises(TypeError):
                 yield conn.sender('bad_message')
 
-            # result
+            # result marshaling
             self.assertEqual((yield conn(Result.from_value('test_value'))),
                              'test_value')
             with self.assertRaises(RuntimeError):
                 yield conn(Result.from_exception(RuntimeError()))
 
+            # environment
+            myenv = yield conn(__import__)('os').environ.get('MYENV')
+            self.assertEqual(myenv, 'MYVAL')
+            self.assertEqual(os.environ.get('MYENV'), None)
+
+    @async_test
+    def test_proxy(self):
+        with (yield self.conn_type()) as conn:
             with (yield proxify(conn(Remote)('val'))) as proxy:
                 # call
                 self.assertEqual((yield proxy('test')), 'test')

@@ -44,6 +44,8 @@ class ForkConnection(StreamConnection):
             writer()
             os.chdir('/')
             os.setsid()
+            if self.environ:
+                os.environ.update(self.environ)
 
         self.process = self.dispose.add(Process(self.command,
                                         stdin=PIPE, preexec=preexec, kill_delay=-1,
@@ -53,7 +55,7 @@ class ForkConnection(StreamConnection):
         # send payload
         payload = (BootImporter.from_modules().bootstrap
                   (fork_conn_init, writer.child_fd, reader.child_fd,
-                   self.bufsize, self.environ).encode())
+                   self.bufsize).encode())
         self.process.stdin.write_schedule(payload)
         yield self.process.stdin.flush_and_dispose()
 
@@ -70,12 +72,9 @@ class ForkConnection(StreamConnection):
         self.flags['type'] = 'fork'
 
 
-def fork_conn_init(reader_fd, writer_fd, bufsize, environ):  # pragma: no cover
+def fork_conn_init(reader_fd, writer_fd, bufsize):  # pragma: no cover
     """Fork connection initialization function
     """
-    if environ:
-        os.environ.update(environ)
-
     with Core.local() as core:
         # initialize connection
         conn = StreamConnection(core=core)
