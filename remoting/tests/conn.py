@@ -10,17 +10,26 @@ from ...core import schedule
 from ...monad import Result, async_all
 from ...boot import BootLoader
 from ...tests import async_test
+from ... import PRETZEL_POLLER, __name__ as pretzel
 
 __all__ = ('ForkConnectionTest', 'SSHConnectionTest',)
 
 
 class ForkConnectionTest(unittest.TestCase):
-    conn_type = functools.partial(ForkConnection)
+    conn_type = functools.partial(ForkConnection,
+                                  environ={'PRETZEL_POLLER': PRETZEL_POLLER})
 
     @async_test
     def test_misc(self):
         with (yield self.conn_type(environ={'MYENV': 'MYVAL'})) as conn:
+            # make sure process id differ
             self.assertNotEqual((yield conn(os.getpid)()), os.getpid())
+
+            # make sure poller is the same
+            self.assertEqual((yield conn(__import__)(pretzel).PRETZEL_POLLER),
+                             PRETZEL_POLLER)
+
+            # current working directory
             self.assertEqual((yield conn(os.getcwd)()), '/')
 
             # bad message
@@ -34,8 +43,8 @@ class ForkConnectionTest(unittest.TestCase):
                 yield conn(Result.from_exception(RuntimeError()))
 
             # environment
-            myenv = yield conn(__import__)('os').environ.get('MYENV')
-            self.assertEqual(myenv, 'MYVAL')
+            remote_environ = conn(__import__)('os').environ
+            self.assertEqual((yield remote_environ.get('MYENV')), 'MYVAL')
             self.assertEqual(os.environ.get('MYENV'), None)
 
     @async_test
@@ -118,7 +127,8 @@ class ForkConnectionTest(unittest.TestCase):
 
 
 class SSHConnectionTest(ForkConnectionTest):
-    conn_type = functools.partial(SSHConnection, host='localhost')
+    conn_type = functools.partial(SSHConnection, host='localhost',
+                                  environ={'PRETZEL_POLLER': PRETZEL_POLLER})
 
 
 def clean_path():
