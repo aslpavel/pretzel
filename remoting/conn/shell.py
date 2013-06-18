@@ -97,9 +97,11 @@ def shell_conn_init(bufsize):  # pragma: no cover
     """
     # Make sure standard output and input won't be used. As it is now used
     # for communication.
-    sys.stdin = io.open(os.devnull, 'r')
-    fd_close_on_exec(sys.stdin.fileno())
-    sys.stdout = sys.stderr
+    in_fd = os.dup(0)
+    with io.open(os.devnull, 'r') as stdin:
+        os.dup2(stdin.fileno(), 0)
+    out_fd = os.dup(1)
+    os.dup2(sys.stderr.fileno(), 1)
 
     with Core.local() as core:
         # initialize connection
@@ -109,9 +111,9 @@ def shell_conn_init(bufsize):  # pragma: no cover
         conn.dispose.add_action(lambda: core.schedule()(lambda _: core.dispose()))
 
         # connect
-        in_stream = BufferedFile(0, bufsize=bufsize, core=core)
+        in_stream = BufferedFile(in_fd, bufsize=bufsize, core=core)
         in_stream.close_on_exec(True)
-        out_stream = BufferedFile(1, bufsize=bufsize, core=core)
+        out_stream = BufferedFile(out_fd, bufsize=bufsize, core=core)
         out_stream.close_on_exec(True)
         conn.connect((in_stream, out_stream))()
 
