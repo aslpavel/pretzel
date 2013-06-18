@@ -92,7 +92,8 @@ class StoreAllocator (object):
             raise ValueError('out of space')
         block = self.blocks.pop(index)
         for block_order in range(order, block.order):
-            insort(self.blocks, StoreBlock(block_order, block.offset + (1 << block_order)))
+            insort(self.blocks,
+                   StoreBlock(block_order, block.offset + (1 << block_order)))
         return StoreBlock(order, block.offset)
 
     def free(self, block):
@@ -103,7 +104,8 @@ class StoreAllocator (object):
             index = bisect_left(self.blocks, buddy)
             if index < len(self.blocks) and buddy == self.blocks[index]:
                 self.blocks.pop(index)
-                block = StoreBlock(order + 1, buddy.offset if block.offset & (1 << order) else block.offset)
+                block = StoreBlock(order + 1, buddy.offset
+                                   if block.offset & (1 << order) else block.offset)
             else:
                 self.blocks.insert(index, block)
                 return

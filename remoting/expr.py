@@ -411,7 +411,7 @@ class Code(tuple):
             ops_size = len(ops)
             while pos < ops_size:
                 if ops[pos] & HAS_ARG:
-                    op, arg = ops[pos:pos+2]
+                    op, arg = ops[pos:pos + 2]
                     pos = pos + 2
                 else:
                     op, arg = ops[pos], '<not available>'
@@ -527,7 +527,7 @@ class Code(tuple):
         pos = 0
         while pos < len(ops):
             if ops[pos] & HAS_ARG:
-                op, arg = ops[pos:pos+2]
+                op, arg = ops[pos:pos + 2]
                 stream.write('  {:>02} {:<10} '.format(pos, MAP_OP_NAME[op]))
                 if op in (OP_LDCONST, OP_GETATTR, OP_SETATTR):
                     stream.write(repr(consts[arg]))

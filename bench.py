@@ -42,7 +42,7 @@ class Benchmark(object):
             if len(results) < self.min_count:
                 return None, None
             res_mean = reduce(add, results, 0) / len(results)
-            res_error = (reduce(add, ((result - res_mean)**2
+            res_error = (reduce(add, ((result - res_mean) ** 2
                          for result in results), 0) / (len(results) - 1))
             return res_mean, res_error
         results = []
@@ -66,8 +66,8 @@ class Benchmark(object):
                 self.dispose()
 
         res_mean, res_error = run()
-        return (self.name, res_mean/self.factor,
-                res_error/res_mean, len(results)*self.factor)
+        return (self.name, res_mean / self.factor,
+                res_error / res_mean, len(results) * self.factor)
 
     def dispose(self):
         pass
@@ -104,7 +104,7 @@ class TextBenchmarkRunner (object):
             lines.append((name,                           # name
                          '{:.3f}s'.format(time * count),  # time
                          '{:.0f}'.format(count),          # count
-                         '{:.0f}'.format(1/time),         # count/time
+                         '{:.0f}'.format(1 / time),       # count/time
                          '{:.3f}%'.format(error * 100)))  # error
             time_total += time * count
             self.file.write('.')

@@ -122,8 +122,8 @@ class Tree(object):
         def build(vals):
             val, vals = vals[0], vals[1:]
             if vals:
-                bucket = int(math.ceil(len(vals)/float(factor)))
-                return cls(val, tuple(build(vals[bucket*i:bucket*(i+1)])
+                bucket = int(math.ceil(len(vals) / float(factor)))
+                return cls(val, tuple(build(vals[bucket * i:bucket * (i + 1)])
                            for i in range(factor) if bucket * i < len(vals)))
             else:
                 return cls(val, tuple())

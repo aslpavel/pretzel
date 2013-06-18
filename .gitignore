@@ -1,4 +1,5 @@
 *.pyc
 *.pyo
+*.coverage
 __pycache__
 pretzel.sublime-*

@@ -32,7 +32,7 @@ class Serializer(object):
         """
         struct_data = self.read_bytes()
         if complex:
-            return [struct.unpack(struct_data[offset:offset+struct.size])
+            return [struct.unpack(struct_data[offset:offset + struct.size])
                     for offset in range(0, len(struct_data), struct.size)]
         else:
             return [struct.unpack(struct_data[offset:offset + struct.size])[0]

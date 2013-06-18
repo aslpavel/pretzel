@@ -32,4 +32,4 @@ class MonadTest(unittest.TestCase):
 
     def test_ap(self):
         # ap :: (Monad a) => m (a -> b) -> (m a -> m b)
-        self.assertEqual(List.ap(List(lambda a: a*2))(List(1, 2)), List(2, 4))
+        self.assertEqual(List.ap(List(lambda a: a * 2))(List(1, 2)), List(2, 4))

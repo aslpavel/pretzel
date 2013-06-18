@@ -63,4 +63,4 @@ else:
 
 BlockingErrorSet = {errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK,
                     errno.EINPROGRESS, errno.EINTR}
-PipeErrorSet = {errno.EPIPE,  errno.ESHUTDOWN}
+PipeErrorSet = {errno.EPIPE, errno.ESHUTDOWN}

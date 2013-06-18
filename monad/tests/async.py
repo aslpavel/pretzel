@@ -140,7 +140,7 @@ class ContTest(unittest.TestCase):
                 res.value
                 break
             timer.tick()
-        self.assertEqual(timer.time, math.ceil(count/ 10.))
+        self.assertEqual(timer.time, math.ceil(count / 10.))
 
 
 class Timer(object):
