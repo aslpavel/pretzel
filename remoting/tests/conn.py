@@ -1,6 +1,7 @@
 import os
 import unittest
 import functools
+import importlib
 from .proxy import Remote
 from ..hub import pair
 from ..conn import ForkConnection, SSHConnection
@@ -28,8 +29,8 @@ class ForkConnectionTest(unittest.TestCase):
             self.assertNotEqual((yield conn(os.getpid)()), os.getpid())
 
             # make sure poller is the same
-            self.assertEqual((yield conn(__import__)(pretzel).PRETZEL_POLLER),
-                             PRETZEL_POLLER)
+            self.assertEqual((yield conn(importlib.import_module)
+                             (pretzel).PRETZEL_POLLER), PRETZEL_POLLER)
 
             # current working directory
             self.assertEqual((yield conn(os.getcwd)()), '/')
@@ -45,7 +46,7 @@ class ForkConnectionTest(unittest.TestCase):
                 yield conn(Result.from_exception(RuntimeError()))
 
             # environment
-            remote_environ = conn(__import__)('os').environ
+            remote_environ = conn(importlib.import_module)('os').environ
             self.assertEqual((yield remote_environ.get('MYENV')), 'MYVAL')
             self.assertEqual(os.environ.get('MYENV'), None)
 
