@@ -124,7 +124,7 @@ def shell_conn_init(bufsize):  # pragma: no cover
 def boot_tramp(data):
     return ('import zlib,binascii;'
             'exec(zlib.decompress(binascii.a2b_base64(b"{}")))'.format(
-            binascii.b2a_base64(zlib.compress(data)).strip().decode('utf-8')))
+            binascii.b2a_base64(zlib.compress(data, 9)).strip().decode('utf-8')))
 
 shell_tramp = boot_tramp(textwrap.dedent("""\
     import os, io, sys, struct, pickle

@@ -326,7 +326,7 @@ def boot_binary(data):
     Returns source code which unpack into provided binary ``data``.
     """
     return ('zlib.decompress(binascii.a2b_base64(b"\\\n{}"))'.format(
-            '\\\n'.join(textwrap.wrap(binascii.b2a_base64(zlib.compress(data))
+            '\\\n'.join(textwrap.wrap(binascii.b2a_base64(zlib.compress(data, 9))
             .strip().decode('utf-8'), 78))))
 
 
