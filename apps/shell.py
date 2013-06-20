@@ -10,6 +10,7 @@ import socket
 import textwrap
 import functools
 from collections import deque
+from ..utils import lazy
 from ..monad import Result, async, async_any, async_green, bind_green
 from ..core import Core, schedule
 from ..event import Event
@@ -225,9 +226,13 @@ class ShellStream(object):
     """Send-able stream like object
     """
     def __init__(self, stream):
+        encoding = getattr(stream, 'encoding', 'utf-8')
+        get_stream = lazy(BufferedFile, stream, closefd=False)
+
         def write(data):
-            stream.write(data)
-            stream.flush()
+            stream = get_stream()
+            stream.write_schedule(data.encode(encoding))
+            stream.flush()()
             return True
         self.writer = Event()
         self.writer.on(write)
