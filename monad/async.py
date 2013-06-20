@@ -9,9 +9,10 @@ from .do import do
 from .do_green import do_green
 from .cont import Cont
 from .result import Result
+from ..event import Event
 
 __all__ = ('async', 'async_green', 'async_block', 'async_any', 'async_all',
-           'async_limit',)
+           'async_limit', 'async_single',)
 
 
 def async(block):
@@ -130,7 +131,7 @@ def async_limit(limit):
                 worker_count[0] -= 1
 
         @wraps(func)
-        def async_limit(*args, **kwargs):
+        def func_limit(*args, **kwargs):
             @async_block
             def cont(ret):
                 worker_queue.append((ret, args, kwargs))
@@ -138,5 +139,23 @@ def async_limit(limit):
                     worker()()
             return cont
 
-        return async_limit
+        return func_limit
     return async_limit
+
+
+def async_single(func, *args, **kwargs):
+    """Singleton asynchronous action
+
+    If there is current non finished continuation, all calls would return this
+    continuation, otherwise new continuation will be started.
+    """
+    @wraps(func)
+    def func_single():
+        @async_block
+        def cont(ret):
+            done.on_once(ret)
+            if len(done.handlers) == 1:
+                func(*args, **kwargs).__monad__()(done)
+        return cont
+    done = Event()
+    return func_single

@@ -4,13 +4,11 @@ Buffered stream is wrapped stream. Implements additional methods which leverage
 buffered nature of the stream.
 """
 import struct
-from functools import wraps
 from collections import deque
 from .wrapped import WrappedStream
 from .. import PRETZEL_BUFSIZE
 from ..uniform import BrokenPipeError
-from ..monad import Cont, async, do_return
-from ..event import Event
+from ..monad import async, async_single, do_return
 
 __all__ = ('BufferedStream',)
 
@@ -27,6 +25,7 @@ class BufferedStream(WrappedStream):
         self.read_buffer = Buffer()
         self.write_buffer = Buffer()
 
+        @async_single
         @async
         def flush():
             """Flush write buffers
@@ -36,7 +35,7 @@ class BufferedStream(WrappedStream):
                     block = self.write_buffer.slice(self.bufsize)
                     self.write_buffer.dequeue((yield self.base.write(block)), False)
                 yield self.base.flush()
-        self.flush = singleton(flush)
+        self.flush = flush
 
     @async
     def read(self, size):
@@ -181,23 +180,6 @@ class BufferedStream(WrappedStream):
                                self.size_struct, False)
         for bytes in bytes_list:
             self.write_schedule(bytes)
-
-
-def singleton(action):
-    """Singleton asynchronous action
-
-    If there is current non finished action all new continuations will be hooked
-    to this action result, otherwise new action will be started.
-    """
-    @wraps(action)
-    def singleton_action():
-        def run(ret):
-            done.on_once(lambda val: ret(val))
-            if len(done.handlers) == 1:
-                action().__monad__()(lambda val: done(val))
-        return Cont(run)
-    done = Event()
-    return singleton_action
 
 
 class Buffer(object):

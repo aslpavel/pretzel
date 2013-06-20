@@ -1,4 +1,4 @@
-from .monad import Cont
+from .monad.cont import Cont
 from collections import deque
 
 __all__ = ('Event', 'EventQueue',)
