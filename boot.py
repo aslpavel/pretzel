@@ -345,7 +345,6 @@ if sys.version_info[0] > 2:
 
     StringIO = io.StringIO
     PY2 = False
-    PY3 = True
 
 else:
     def execute(code, globs=None, locs=None):
@@ -366,7 +365,6 @@ else:
 
     StringIO = io.BytesIO
     PY2 = True
-    PY3 = False
 
 
 def main():  # pragma: no cover

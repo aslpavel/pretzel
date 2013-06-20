@@ -3,7 +3,7 @@
 import types
 import marshal
 import importlib
-from ..uniform import PY3
+from ..uniform import PY2
 __all__ = ('Closure',)
 
 
@@ -25,7 +25,7 @@ class Closure(object):
                (marshal.dumps(self.func.__code__),
                 self.func.__name__,
                 self.func.__module__,
-                self.func.__kwdefaults__ if PY3 else self.func.func_defaults,
+                self.func.__kwdefaults__ if not PY2 else self.func.func_defaults,
                 None if closure is None else
                 tuple(cell.cell_contents for cell in closure)))
 
