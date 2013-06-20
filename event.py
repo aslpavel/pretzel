@@ -1,4 +1,3 @@
-from .monad.cont import Cont
 from collections import deque
 
 __all__ = ('Event', 'EventQueue',)
@@ -183,3 +182,6 @@ class ReducedEvent(object):
 
 EVENT_FIRE = 0
 EVENT_DISPOSE = 1
+
+# Event object is used inside async_single, defer import of Cont
+from .monad.cont import Cont

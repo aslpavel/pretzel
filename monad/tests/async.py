@@ -113,6 +113,9 @@ class ContTest(unittest.TestCase):
         self.assertFalse(e1.handlers)
         self.assertEqual(rets.pop().value, ('one', 'two'))
 
+        async_all(tuple())(lambda val: rets.append(val))
+        self.assertEqual(rets.pop().value, tuple())
+
     def test_any(self):
         rets = []
         e0, e1 = Event(), Event()
@@ -128,6 +131,9 @@ class ContTest(unittest.TestCase):
 
         e1('done_next')
         self.assertFalse(e1.handlers)
+
+        with self.assertRaises(ValueError):
+            async_any(tuple())
 
     def test_limit(self):
         timer = Timer()

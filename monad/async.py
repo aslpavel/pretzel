@@ -69,13 +69,16 @@ def async_any(conts):
 
     @async_block
     def any_cont(ret):
-        def any_ret(val):
-            if not done[0]:
-                done[0] = True
+        # Context structure: [completed?]
+        ctx = [False]
+
+        def cont_ret(val):
+            if not ctx[0]:
+                ctx[0] = True
                 ret(val)
-        done = [False]
+
         for cont in conts:
-            cont(any_ret)
+            cont.run(cont_ret)
     return any_cont
 
 
@@ -86,24 +89,24 @@ def async_all(conts):
     """
     conts = tuple(cont.__monad__() for cont in conts)
     if not conts:
-        raise ValueError('continuation set is empty')
+        return Cont.unit(Result.unit(tuple()))
 
     @async_block
     def all_cont(ret):
-        def all_ret(index, cont):
-            def all_ret(val):
-                if isinstance(val, Result):
-                    res[index] = val
-                else:
-                    res[index] = Result.from_value(val)
-                count[0] -= 1
-                if not count[0]:
-                    ret(Result.sequence(res))
-            cont(all_ret)
-        res = [None] * len(conts)
-        count = [len(conts)]
+        # Context structure: [val_0 .. val_N, count]
+        ctx = [None] * (len(conts) + 1)
+        ctx[-1] = len(conts)
+
+        def cont_register(index, cont):
+            def cont_ret(val):
+                ctx[index] = (val if isinstance(val, Result) else Result.from_value(val))
+                ctx[-1] -= 1
+                if not ctx[-1]:
+                    ret(Result.sequence(ctx[:-1]))
+            cont.run(cont_ret)
+
         for index, cont in enumerate(conts):
-            all_ret(index, cont)
+            cont_register(index, cont)
     return all_cont
 
 
