@@ -7,7 +7,7 @@ from pickle import Pickler, Unpickler
 from ..hub import Hub, Sender, pair
 from ..proxy import Proxy
 from ..expr import LoadConstExpr, LoadArgExpr
-from ...common import reraise
+from ...uniform import reraise
 from ...event import Event
 from ...core import Core
 from ...monad import Result, async, do_return

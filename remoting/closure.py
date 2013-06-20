@@ -3,7 +3,7 @@
 import types
 import marshal
 import importlib
-from ..common import PY3
+from ..uniform import PY3
 __all__ = ('Closure',)
 
 

@@ -12,7 +12,7 @@ from .dispose import CompDisp, FuncDisp
 from .monad import Result, Cont, async, async_all, do_return, do_done
 from .core import Core
 from .stream import BufferedFile, fd_close_on_exec
-from .common import BrokenPipeError
+from .uniform import BrokenPipeError
 from .state_machine import StateMachine
 
 __all__ = ('Process', 'ProcessError', 'ProcessPipe', 'PIPE', 'DEVNULL',

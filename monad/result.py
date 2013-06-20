@@ -8,7 +8,7 @@ import textwrap
 import traceback
 import linecache
 from .monad import Monad
-from ..common import reraise, StringIO, PY2
+from ..uniform import reraise, StringIO, PY2
 
 __all__ = ('Result', 'result_excepthook', 'callsite_banner',)
 

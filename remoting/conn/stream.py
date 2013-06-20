@@ -2,7 +2,7 @@
 """
 from .conn import Connection
 from ...monad import async
-from ...common import CanceledError, BrokenPipeError
+from ...uniform import CanceledError, BrokenPipeError
 
 __all__ = ('StreamConnection',)
 

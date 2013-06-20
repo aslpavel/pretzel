@@ -11,7 +11,7 @@ from .sock import Socket
 from .buffered import BufferedStream
 from ..monad import async, do_return
 from ..core import POLL_READ, POLL_WRITE
-from ..common import BrokenPipeError, BlockingErrorSet, PipeErrorSet
+from ..uniform import BrokenPipeError, BlockingErrorSet, PipeErrorSet
 
 __all__ = ('SocketSSL', 'BufferedSocketSSL')
 

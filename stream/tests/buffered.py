@@ -8,7 +8,7 @@ from ..stream import Stream
 from ..buffered import Buffer, BufferedStream
 from ...monad import Result, async, do_return
 from ...event import Event
-from ...common import BrokenPipeError
+from ...uniform import BrokenPipeError
 
 __all__ = ('BufferTest', 'BufferedStreamTest',)
 

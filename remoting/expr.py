@@ -2,7 +2,7 @@
 """
 import types
 from ..monad import Cont, Result
-from ..common import StringIO
+from ..uniform import StringIO
 
 __all__ = ('Expr', 'LoadArgExpr', 'LoadConstExpr', 'CallExpr',
            'GetAttrExpr', 'SetAttrExpr', 'GetItemExpr', 'SetItemExpr',

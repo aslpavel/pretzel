@@ -1,4 +1,4 @@
-"""Common function and types
+"""Utility functions and types to deal with python version differences.
 """
 import io
 import sys

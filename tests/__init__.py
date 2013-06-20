@@ -1,7 +1,7 @@
 import functools
 from .. import PRETZEL_TEST_TIMEOUT
 from ..core import Core, sleep
-from ..common import CanceledError
+from ..uniform import CanceledError
 from ..monad import Result, async
 from ..remoting.hub import Hub
 

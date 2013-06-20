@@ -61,6 +61,12 @@ class Poller (object):
         self.dispose()
         return False
 
+    def __str__(self):
+        return '{}()'.format(type(self).__name__)
+
+    def __repr__(self):
+        return str(self)
+
 
 class EPollPoller (Poller):
     """Poller base on epoll
@@ -96,6 +102,10 @@ class EPollPoller (Poller):
 
     def dispose(self):
         self.epoll.close()
+
+    def __str__(self):
+        return '{}(fds:{}, fd:{})'.format(type(self).__name__, len(self.fds),
+                                          self.epoll.fileno())
 
 
 class SelectPoller(Poller):
@@ -152,6 +162,10 @@ class SelectPoller(Poller):
             events[fd] = events.get(fd, 0) | POLL_ERROR
 
         return events.items()
+
+    def __str__(self):
+        return '{}(read:{}, write:{})'.format(type(self).__name__,
+                                              len(self.read), len(self.write))
 
 
 class KQueuePoller(SelectPoller):

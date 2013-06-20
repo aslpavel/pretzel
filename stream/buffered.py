@@ -8,7 +8,7 @@ from functools import wraps
 from collections import deque
 from .wrapped import WrappedStream
 from .. import PRETZEL_BUFSIZE
-from ..common import BrokenPipeError
+from ..uniform import BrokenPipeError
 from ..monad import Cont, async, do_return
 from ..event import Event
 

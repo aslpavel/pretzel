@@ -14,7 +14,7 @@ from ..monad import Result, async, async_any, async_green, bind_green
 from ..core import Core, schedule
 from ..event import Event
 from ..stream import BufferedFile
-from ..common import BrokenPipeError, CanceledError
+from ..uniform import BrokenPipeError, CanceledError
 from ..remoting import ForkConnection, SSHConnection, pair
 from ..state_machine import StateMachine
 from .. import __package__ as pretzel_pkg
@@ -229,11 +229,11 @@ class ShellStream(object):
             stream.write(data)
             stream.flush()
             return True
-        self.output = Event()
-        self.output.on(write)
+        self.writer = Event()
+        self.writer.on(write)
 
     def write(self, data):
-        self.output(data)
+        self.writer(data)
         return len(data)
 
     def flush(self):
@@ -246,7 +246,7 @@ class ShellStream(object):
         raise NotImplementedError()
 
     def close(self):
-        self.output.dispose()
+        self.writer.dispose()
 
 
 @async

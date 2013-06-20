@@ -4,7 +4,7 @@ import itertools
 import unittest
 from ..file import File
 from ...monad import async
-from ...common import BrokenPipeError
+from ...uniform import BrokenPipeError
 from ...core import schedule
 from ...tests import async_test
 

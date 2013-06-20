@@ -14,7 +14,7 @@ else:
     from thread import get_ident
 
 from .poll import Poller, POLL_ERROR, POLL_READ, POLL_WRITE, POLL_DISCONNECT
-from ..common import BrokenPipeError, ConnectionError, CanceledError, BlockingErrorSet
+from ..uniform import BrokenPipeError, ConnectionError, CanceledError, BlockingErrorSet
 from ..monad import Result, async, async_block, do_done
 from ..state_machine import StateMachine
 

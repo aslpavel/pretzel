@@ -4,7 +4,7 @@ import unittest
 from . import waitpid
 from .core import FileQueue, TimeQueue, CORE_TIMEOUT
 from .poll import POLL_READ, POLL_WRITE, POLL_URGENT, POLL_DISCONNECT, EPOLLERR
-from ..common import BrokenPipeError, ConnectionError
+from ..uniform import BrokenPipeError, ConnectionError
 from ..tests import async_test
 
 __all__ = ('FileTest', 'TimeQueueTest', 'ProcQueueTest',)

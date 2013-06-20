@@ -4,7 +4,7 @@ from collections import defaultdict
 from .. import PRETZEL_BUFSIZE
 from ..monad import async
 from ..state_machine import StateMachine
-from ..common import BrokenPipeError
+from ..uniform import BrokenPipeError
 
 __all__ = ('Stream',)
 
