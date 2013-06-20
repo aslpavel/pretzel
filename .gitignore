@@ -3,3 +3,4 @@
 *.coverage
 __pycache__
 pretzel.sublime-*
+rdb.py
