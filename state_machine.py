@@ -1,3 +1,22 @@
+"""Fast and lightweight graph based state machine
+
+Usage example:
+    STATE_IDLE = 0
+    STATE_EXEC = 1
+    STATE_DISP = 2
+    STATE_NAMES = ('idle', 'executing', 'disposed',)
+    STATE_GRPAH = StateMachine.compile_graph({
+        STATE_IDLE: (STATE_IDLE, STATE_EXEC, STATE_DISP),
+        STATE_EXEC: (STATE_IDLE, STATE_DISP),
+        STATE_DISP: (STATE_DISP,),
+    })
+
+    state = StateMachine(STATE_GRPAH, STATE_NAMES)
+    state(STATE_EXEC)  # True            : change state to executing
+    state(STATE_EXEC)  # raise ValueError: transition is not allowed
+    state(STATE_DISP)  # True            : change state to disposed
+    state(STATE_DISP)  # False           : state has not been changed
+"""
 import array
 
 __all__ = ('StateMachine',)
