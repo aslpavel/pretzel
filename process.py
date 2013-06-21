@@ -29,7 +29,7 @@ def devnull_fd():
 
 
 @atexit.register
-def devnull_fd_dispose():
+def devnull_fd_dispose():  # no cover
     """Close devnull file descriptor
     """
     global DEVNULL_FD
@@ -83,7 +83,7 @@ class Process(object):
             'stdout': stdout,
             'stderr': stderr,
             'environ': environ,
-            'command': ['/bin/sh', '-c', ' '.join(command)] if shell else command,
+            'command': ['/usr/bin/env', 'sh', '-c', ' '.join(command)] if shell else command,
             'kill_delay': kill_delay or self.KILL_DELAY,
             'check': check is None or check,
             'bufsize': bufsize,
@@ -115,7 +115,7 @@ class Process(object):
                         if pid == os.getpid():
                             assert fd is None, 'fd option must not be used in parent process'
                             return None
-                        else:
+                        else:  # no cover (child process)
                             if fd is None or fd == child_fd:
                                 return child_fd
                             else:

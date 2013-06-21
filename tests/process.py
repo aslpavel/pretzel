@@ -15,8 +15,19 @@ class ProcessTest(unittest.TestCase):
     @async_test
     def test_call(self):
         out, err, code = yield process_call(command, b'10', check=False)
+
         self.assertEqual(code, 117)
         self.assertEqual(out, b'02468')
+        self.assertEqual(err, b'13579')
+
+    @async_test
+    def test_call_shell(self):
+        shell_command = list(command)
+        shell_command[-1] = '\'{}\''.format(command[-1])
+        shell_command += ['| wc -c']
+        out, err, code = yield process_call(shell_command, b'10', shell=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, b'5\n')
         self.assertEqual(err, b'13579')
 
     @async_test
@@ -109,7 +120,7 @@ class ProcessTest(unittest.TestCase):
             yield process_chain_call(commands, stdin=b'10')
 
 
-command = ['python', '-c', textwrap.dedent("""
+command = ['python', '-c', textwrap.dedent("""\
     import sys
     for value in range(int(input())):
         if value % 2 == 1:
