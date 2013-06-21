@@ -1,8 +1,8 @@
-'''Connection mesh
+"""Connection mesh
 
 Create composite connection and work with it the same way as with single
 connection.
-'''
+"""
 import math
 import random
 import functools
