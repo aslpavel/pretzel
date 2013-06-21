@@ -335,18 +335,14 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
         raise ValueError('commands list must not be empty')
 
     with CompDisp() as dispose:
-        def disp_fd(fd):
-            dispose.add(FuncDisp(lambda: os.close(fd)))
-            return fd
-
         stdin_data = None
         if stdin is None:
             stdin = PIPE
         elif isinstance(stdin, (bytes, memoryview)):
             stdin, stdin_data = PIPE, stdin
-
         stdout = PIPE if stdout is None else stdout
 
+        # standard error stream (common for all commands in pipe)
         err_cont = Cont.unit(None)
         if stderr in (PIPE, None):
             stderr_fd, stderr = os.pipe()
@@ -362,7 +358,15 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
                 do_done(stderr_stream.read_until_eof())
             err_cont = err_coro()
 
-        # run processes
+        # start processes
+        def disp_fd(fd):
+            """Register descriptor for disposal
+
+            Needed to correctly capture descriptor inside loop.
+            """
+            dispose.add(FuncDisp(lambda: os.close(fd)))
+            return fd
+
         procs = []
         for command in commands[:-1]:
             proc = yield dispose.add(Process(command, stdin=stdin, stdout=PIPE,
@@ -373,7 +377,7 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
                                          stderr=stderr, **proc_opts))
         procs.append(proc)
 
-        # send input
+        # write standard input
         in_cont = Cont.unit(None)
         proc_first = procs[0]
         if stdin_data:
@@ -382,7 +386,7 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
         elif proc_first.stdin:
             proc_first.stdin.dispose()
 
-        # receive output and wait for completion
+        # receive standard output and wait for processes completion
         out_cont = proc.stdout.read_until_eof() if proc.stdout else Cont.unit(None)
         _, out, err, status = yield async_all((in_cont, out_cont, err_cont,
                                                async_all(proc.status for proc in procs)))

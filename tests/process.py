@@ -86,8 +86,24 @@ class ProcessTest(unittest.TestCase):
     def test_chain(self):
         commands = [command, ['cat'], ['wc', '-c']]
 
+        # data in memory data
         self.assertEqual((yield process_chain_call(commands, stdin=b'10', check=False)),
                          (b'5\n', b'13579', (117, 0, 0)))
+
+        # data in files
+        with CompDisp() as dispose:
+            stdin = dispose.add(tempfile.TemporaryFile())
+            stdout = dispose.add(tempfile.TemporaryFile())
+            stderr = dispose.add(tempfile.TemporaryFile())
+            stdin.write(b'10')
+            stdin.seek(0)
+            result = yield process_chain_call(commands, stdin=stdin, stdout=stdout,
+                                              stderr=stderr, check=False)
+            self.assertEqual(result, (None, None, (117, 0, 0)))
+            stdout.seek(0)
+            self.assertEqual(stdout.read(), b'5\n')
+            stderr.seek(0)
+            self.assertEqual(stderr.read(), b'13579')
 
         with self.assertRaises(ProcessError):
             yield process_chain_call(commands, stdin=b'10')
