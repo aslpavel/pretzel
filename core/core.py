@@ -17,6 +17,7 @@ from .poll import Poller, POLL_ERROR, POLL_READ, POLL_WRITE, POLL_DISCONNECT
 from ..uniform import BrokenPipeError, ConnectionError, CanceledError, BlockingErrorSet
 from ..monad import Result, async, async_block, do_done
 from ..state_machine import StateMachine
+from ..dispose import CompDisp
 
 __all__ = ('Core',)
 
@@ -63,6 +64,22 @@ class Core(object):
         self.thread_ident = None
         self.poller = Poller.from_name(poller)
         self.waker = Waker(self)
+
+        def dispose_core():
+            self.state(self.STATE_DISP)
+            try:
+                exc = CanceledError('core has been disposed')
+                files_queue, self.files_queue = self.files_queue, {}
+                for file in files_queue.values():
+                    file.dispose(exc)
+                self.time_queue.dispose(exc)
+                self.sched_queue.dispose(exc)
+                self.proc_queue.dispose(exc)
+            finally:
+                self.waker.dispose()
+                self.poller.dispose()
+        self.dispose = CompDisp()
+        self.dispose.add_action(dispose_core)
 
     @classmethod
     def main(cls, inst=None):
@@ -214,28 +231,11 @@ class Core(object):
     def disposed(self):
         return self.state.state == self.STATE_DISP
 
-    def dispose(self, exc=None):
-        if not self.state(self.STATE_DISP):
-            return False
-
-        try:
-            exc = exc or CanceledError('core has been disposed')
-            files_queue, self.files_queue = self.files_queue, {}
-            for file in files_queue.values():
-                file.dispose(exc)
-            self.time_queue.dispose(exc)
-            self.sched_queue.dispose(exc)
-            self.proc_queue.dispose(exc)
-        finally:
-            self.waker.dispose()
-            self.poller.dispose()
-        return True
-
     def __enter__(self):
         return self
 
     def __exit__(self, et, eo, tb):
-        self.dispose(eo)
+        self.dispose()
         return False
 
     def __str__(self):
