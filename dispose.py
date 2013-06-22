@@ -64,7 +64,7 @@ class FuncDisp(Disposable):
 class CompDisp(Disposable):
     """Composite disposable
 
-    Treat multiple disposable as one.
+    Treat multiple disposables as one.
     """
     __slots__ = ('disps',)
 
