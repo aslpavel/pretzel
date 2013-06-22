@@ -16,8 +16,8 @@ import binascii
 import textwrap
 import importlib
 
-__all__ = ('BootImporter', 'BootLoader', 'boot_source', 'boot_boot',
-           'boot_binary',)
+__all__ = ('BootImporter', 'BootLoader', 'boot_module', 'boot_boot',
+           'boot_binary', 'boot_pack')
 
 
 class BootImporter(object):
@@ -273,8 +273,8 @@ class BootLoader(object):
         return str(self)
 
 
-def boot_source(name, source, filename):
-    """Bootstrap python source
+def boot_module(name, source, filename):
+    """Bootstrap python source as module
 
     Returns python source, witch when executed allows to import specified
     ``source`` as module with specified ``name``.
@@ -309,15 +309,17 @@ def boot_source(name, source, filename):
                                  source=boot_binary(source.encode('utf-8')))
 
 
-def boot_boot(name):
-    """Bootstrap this module
+def boot_pack(source, encoding=None):
+    """Pack python source
 
-    Returns python source, witch when executed allows to import this module
-    by specified "name".
+    Returns packed source which can be passed to python interpreter via '-c'
+    option and be executed. Resulted source does not contain only spaces and
+    ASCII symbols.
     """
-    module = sys.modules[__name__]
-    return boot_source(name, inspect.getsource(module),
-                       inspect.getsourcefile(module))
+    encoding = encoding or 'utf-8'
+    source_fmt = 'import zlib,binascii;exec(zlib.decompress(binascii.a2b_base64(b"{}")))'
+    source_packed = binascii.b2a_base64(zlib.compress(source.encode(encoding), 9)).strip()
+    return source_fmt.format(source_packed.decode())
 
 
 def boot_binary(data):
@@ -328,6 +330,17 @@ def boot_binary(data):
     return ('zlib.decompress(binascii.a2b_base64(b"\\\n{}"))'.format(
             '\\\n'.join(textwrap.wrap(binascii.b2a_base64(zlib.compress(data, 9))
             .strip().decode('utf-8'), 78))))
+
+
+def boot_boot(name):
+    """Bootstrap this module
+
+    Returns python source, witch when executed allows to import this module
+    by specified "name".
+    """
+    module = sys.modules[__name__]
+    return boot_module(name, inspect.getsource(module),
+                       inspect.getsourcefile(module))
 
 
 #  python version compatibility

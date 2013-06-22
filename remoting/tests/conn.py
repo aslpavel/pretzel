@@ -1,4 +1,5 @@
 import os
+import textwrap
 import unittest
 import functools
 import importlib
@@ -9,7 +10,8 @@ from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
 from ...core import schedule
 from ...monad import Result, async_all
-from ...boot import BootLoader
+from ...boot import BootLoader, boot_pack
+from ...process import process_call
 from ...tests import async_test
 from ... import PRETZEL_POLLER, __name__ as pretzel
 
@@ -132,6 +134,23 @@ class ForkConnectionTest(unittest.TestCase):
 class SSHConnectionTest(ForkConnectionTest):
     conn_type = functools.partial(SSHConnection, host='localhost',
                                   environ=ForkConnectionTest.conn_env)
+
+    @async_test
+    def test_stdout(self):
+        """Test that stdout if forwarded to stdin
+        """
+        test_stdout_source = textwrap.dedent("""\
+            from __future__ import print_function
+            from {pretzel}.app import app
+            from {pretzel}.remoting import SSHConnection
+            @app
+            def main():
+                with (yield SSHConnection('localhost')) as conn:
+                    yield conn(print)('done', end='')
+            main()
+            """.format(pretzel=pretzel))
+        result = yield process_call(['python', '-c', boot_pack(test_stdout_source)])
+        self.assertEqual(result, (b'', b'done', 0))
 
 
 def clean_path():

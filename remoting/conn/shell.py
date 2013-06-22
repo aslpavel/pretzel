@@ -6,10 +6,8 @@ is untouched.
 import io
 import os
 import sys
-import zlib
 import socket
 import pickle
-import binascii
 import textwrap
 
 from .stream import StreamConnection
@@ -17,9 +15,9 @@ from ..importer import Importer
 from ... import PRETZEL_BUFSIZE, PRETZEL_RECLIMIT
 from ...monad import async
 from ...process import Process, PIPE
-from ...boot import BootImporter, __name__ as boot_name
+from ...boot import BootImporter, boot_pack, __name__ as boot_name
 from ...core import Core
-from ...stream import BufferedFile, fd_close_on_exec
+from ...stream import BufferedFile
 
 __all__ = ('ShellConnection',)
 
@@ -120,13 +118,7 @@ def shell_conn_init(bufsize):  # pragma: no cover
         if not core.disposed:
             core()
 
-
-def boot_tramp(data):
-    return ('import zlib,binascii;'
-            'exec(zlib.decompress(binascii.a2b_base64(b"{}")))'.format(
-            binascii.b2a_base64(zlib.compress(data, 9)).strip().decode('utf-8')))
-
-shell_tramp = boot_tramp(textwrap.dedent("""\
+shell_tramp = boot_pack(textwrap.dedent("""\
     import os, io, sys, struct, pickle
     size_struct = struct.Struct("{size_format}")
     # send version
@@ -151,4 +143,4 @@ shell_tramp = boot_tramp(textwrap.dedent("""\
         boot_data = read_bytes()
     os.environ.update(pickle.loads(env_data))
     exec(boot_data.decode("utf-8"))
-    """.format(size_format=BufferedFile.size_struct.format.decode())).encode('utf-8'))
+    """.format(size_format=BufferedFile.size_struct.format.decode())))
