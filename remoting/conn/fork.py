@@ -48,7 +48,7 @@ class ForkConnection(StreamConnection):
                 os.environ.update(self.environ)
 
         self.process = self.dispose.add(Process(self.command,
-                                        stdin=PIPE, preexec=preexec, kill_delay=-1,
+                                        stdin=PIPE, preexec=preexec,
                                         bufsize=self.bufsize, core=self.core))
         yield self.process  # exec-ed
 

@@ -65,12 +65,10 @@ class Process(object):
         STATE_DISP: (STATE_DISP,),
     })
     STATE_NAMES = ('not-run', 'forking', 'running', 'disposed',)
-    KILL_DELAY = 10
 
     def __init__(self, command, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
-                 bufsize=None, kill_delay=None, core=None):
-
+                 bufsize=None, kill=None, core=None):
         # options
         class options(object):
             def __getattr__(self, name):
@@ -83,7 +81,7 @@ class Process(object):
             'stderr': stderr,
             'environ': environ,
             'command': ['/usr/bin/env', 'sh', '-c', ' '.join(command)] if shell else command,
-            'kill_delay': kill_delay or self.KILL_DELAY,
+            'kill': kill or -1,  # don't kill process by default
             'check': check is None or check,
             'bufsize': bufsize,
             'preexec': preexec,
@@ -100,22 +98,28 @@ class Process(object):
         self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
         self.status = self.opts.status.future()
 
-        # disposal
+        # killing
         def schedule_kill():
-            if not self.pid or self.status.completed or self.opts.kill_delay <= 0:
-                    return
+            if(not self.pid or
+               self.status.completed or
+               self.opts.kill < 0):
+                return
 
-            def terminate(_):
+            def kill(_):
                 if not self.status.completed:
                     try:
                         os.kill(self.pid, signal.SIGTERM)
                     except OSError as error:
                         if error.errno != errno.ECHILD:
                             self.opts.status(Result.from_current_error())
-            self.core.sleep(self.opts.kill_delay)(terminate)
+            self.core.sleep(self.opts.kill)(kill)
+
+        # disposal
         self.dispose = CompDisp()
         self.dispose.add_action(schedule_kill)
         self.dispose.add_action(lambda: self.state(self.STATE_DISP))
+        if self.opts.kill >= 0:
+            self.core.dispose.add(self)
 
     @async
     def __call__(self):
@@ -287,7 +291,7 @@ class ProcessPipe(object):
 @async
 def process_call(command, stdin=None, stdout=None, stderr=None,
                  preexec=None, shell=None, environ=None, check=None,
-                 bufsize=None, kill_delay=None, core=None):
+                 bufsize=None, kill=None, core=None):
     """Run command
 
     Returns:
@@ -305,7 +309,7 @@ def process_call(command, stdin=None, stdout=None, stderr=None,
     with (yield Process(command=command, stdin=stdin, stdout=stdout,
                         stderr=stderr, preexec=preexec, shell=shell,
                         environ=environ, check=check, bufsize=bufsize,
-                        kill_delay=kill_delay, core=core)) as proc:
+                        kill=kill, core=core)) as proc:
         in_cont = Cont.unit(None)
         if stdin_data:
             proc.stdin.write_schedule(stdin_data)

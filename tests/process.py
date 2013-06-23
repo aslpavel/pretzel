@@ -85,8 +85,8 @@ class ProcessTest(unittest.TestCase):
             yield process_call('false', check=True)
 
     @async_test
-    def test_kill_delay(self):
-        with (yield Process(['sleep', '10'], kill_delay=0.5)) as proc:
+    def test_kill(self):
+        with (yield Process(['sleep', '10'], kill=0.5)) as proc:
             pass
         self.assertFalse(proc.status.completed)
         start = time.time()
