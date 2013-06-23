@@ -2,7 +2,7 @@ import functools
 from .. import PRETZEL_TEST_TIMEOUT
 from ..core import Core, sleep
 from ..uniform import CanceledError
-from ..monad import Result, async
+from ..monad import async
 from ..remoting.hub import Hub
 
 __all__ = ('async_test',)
@@ -11,9 +11,10 @@ __all__ = ('async_test',)
 def async_test(test):
     """Run asynchronous test in context of newly create core object
     """
+    @async
     def timeout():
-        return (sleep(PRETZEL_TEST_TIMEOUT).map_val(lambda _:
-                Result.from_exception(CanceledError('test timeout'))))
+        yield sleep(PRETZEL_TEST_TIMEOUT)
+        raise CanceledError('test timeout')
 
     @functools.wraps(test)
     def test_async(*args):

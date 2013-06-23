@@ -22,7 +22,7 @@ before_script: |
     ssh-keygen -f ~/.ssh/id_rsa -N ""
     cp ~/.ssh/{id_rsa.pub,authorized_keys}
     netstat -tan | grep LISTEN
-    ssh -v -oBatchMode=yes -oStrictHostKeyChecking=no localhost true
+    ssh -oBatchMode=yes -oStrictHostKeyChecking=no localhost true
 
 script: |
     cd ..
