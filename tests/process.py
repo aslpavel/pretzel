@@ -7,6 +7,7 @@ from ..monad import Cont
 from ..dispose import CompDisp
 from ..process import (Process, ProcessError, PIPE, DEVNULL,
                        process_call, process_chain_call,)
+from .. import PRETZEL_TEST_TIMEOUT
 
 __all__ = ('ProcessTest',)
 
@@ -91,7 +92,7 @@ class ProcessTest(unittest.TestCase):
         start = time.time()
         self.assertEqual((yield proc.status), 0)
         stop = time.time()
-        self.assertTrue(stop - start < 5)
+        self.assertTrue(stop - start < max(PRETZEL_TEST_TIMEOUT - 1, 1))
 
     @async_test
     def test_chain(self):
