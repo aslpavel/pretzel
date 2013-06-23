@@ -29,7 +29,7 @@ def devnull_fd():
 
 
 @atexit.register
-def devnull_fd_dispose():  # no cover
+def devnull_fd_dispose():  # pragma: no cover
     """Close devnull file descriptor
     """
     global DEVNULL_FD
@@ -71,13 +71,12 @@ class Process(object):
                  preexec=None, shell=None, environ=None, check=None,
                  bufsize=None, kill_delay=None, core=None):
 
-        self.core = core or Core.local()
-        self.disp = CompDisp()
-        self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
-
+        # options
+        class options(object):
+            def __getattr__(self, name):
+                return opts[name]
         if isinstance(command, str):
             command = [command]
-
         opts = {
             'stdin': stdin,
             'stdout': stdout,
@@ -90,17 +89,33 @@ class Process(object):
             'preexec': preexec,
             'status': Event(),
         }
-
-        class options(object):
-            def __getattr__(self, name):
-                return opts[name]
         self.opts = options()
 
+        # properties
         self.pid = None
         self.stdin = None
         self.stdout = None
         self.stderr = None
+        self.core = core or Core.local()
+        self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
         self.status = self.opts.status.future()
+
+        # disposal
+        def schedule_kill():
+            if not self.pid or self.status.completed or self.opts.kill_delay <= 0:
+                    return
+
+            def terminate(_):
+                if not self.status.completed:
+                    try:
+                        os.kill(self.pid, signal.SIGTERM)
+                    except OSError as error:
+                        if error.errno != errno.ECHILD:
+                            self.opts.status(Result.from_current_error())
+            self.core.sleep(self.opts.kill_delay)(terminate)
+        self.dispose = CompDisp()
+        self.dispose.add_action(schedule_kill)
+        self.dispose.add_action(lambda: self.state(self.STATE_DISP))
 
     @async
     def __call__(self):
@@ -115,7 +130,7 @@ class Process(object):
                         if pid == os.getpid():
                             assert fd is None, 'fd option must not be used in parent process'
                             return None
-                        else:  # no cover (child process)
+                        else:  # pragma: no cover (child process)
                             if fd is None or fd == child_fd:
                                 return child_fd
                             else:
@@ -130,7 +145,7 @@ class Process(object):
                     return fake_pipe(default)
                 # from pipe
                 elif file == PIPE:
-                    return self.disp.add(ProcessPipe(reader, bufsize=self.opts.bufsize, core=core))
+                    return self.dispose.add(ProcessPipe(reader, bufsize=self.opts.bufsize, core=core))
                 # from /dev/null
                 elif file == DEVNULL:
                     return fake_pipe(devnull_fd())
@@ -141,18 +156,22 @@ class Process(object):
             stdin = pipe(self.opts.stdin, STDIN_FD, False)
             stdout = pipe(self.opts.stdout, STDOUT_FD, True)
             stderr = pipe(self.opts.stderr, STDERR_FD, True)
-            status_pipe = self.disp.add(ProcessPipe(True, bufsize=self.opts.bufsize, core=core))
+            status_pipe = self.dispose.add(ProcessPipe(True, bufsize=self.opts.bufsize, core=core))
 
             self.pid = os.fork()
             # parent
             if self.pid:
-                self.stdin = stdin()
-                self.stdout = stdout()
-                self.stderr = stderr()
+                def schedule_dispose(stream):
+                    if stream is None:
+                        return
+                    return self.dispose.add(stream)
+                self.stdin = schedule_dispose(stdin())
+                self.stdout = schedule_dispose(stdout())
+                self.stderr = schedule_dispose(stderr())
 
                 waitpid = self.core.waitpid(self.pid).future()  # no zombies
                 try:
-                    error_data = yield self.disp.add(status_pipe()).read_until_eof()
+                    error_data = yield self.dispose.add(status_pipe()).read_until_eof()
                     if error_data:
                         pickle.loads(error_data).value  # will raise captured error
                 except BrokenPipeError:
@@ -194,28 +213,6 @@ class Process(object):
 
     def __monad__(self):
         return self()
-
-    @property
-    def disposed(self):
-        return self.disp.disposed
-
-    def dispose(self):
-        self.state(self.STATE_DISP)
-        self.disp.dispose()
-        for stream in (self.stdin, self.stdout, self.stderr):
-            if stream is not None:
-                stream.dispose()
-        # schedule kill signal
-        if self.pid and not self.status.completed:
-            if self.opts.kill_delay > 0:
-                def terminate(_):
-                    if not self.status.completed:
-                        try:
-                            os.kill(self.pid, signal.SIGTERM)
-                        except OSError as error:
-                            if error.errno != errno.ECHILD:
-                                self.opts.status(Result.from_current_error())
-                self.core.sleep(self.opts.kill_delay)(terminate)
 
     def __enter__(self):
         return self

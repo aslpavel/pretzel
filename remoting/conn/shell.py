@@ -47,11 +47,9 @@ class ShellConnection(StreamConnection):
         Target is pickle-able and call-able which will be called upon successful
         connection with connection this as its only argument.
         """
-        def preexec():
-            # pragma: no cover
+        def preexec(): # pragma: no cover
             os.chdir('/')
             os.setsid()
-
         self.process = yield (self.dispose.add(Process(self.command, stdin=PIPE,
                               stdout=PIPE, preexec=preexec, kill_delay=-1,
                               bufsize=self.bufsize, core=self.core)))

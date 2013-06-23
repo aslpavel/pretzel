@@ -153,7 +153,7 @@ class SSHConnectionTest(ForkConnectionTest):
         self.assertEqual(result, (b'', b'done', 0))
 
 
-def clean_path():
+def clean_path():  # pragma: no cover
     """Clean system path to force use of connection importer
 
     Called from remote connection.
