@@ -6,9 +6,9 @@ import os
 import io
 import re
 import sys
-import imp
 import zlib
 import json
+import types
 import struct
 import pickle
 import inspect
@@ -232,7 +232,7 @@ class BootLoader(object):
         if name != self.name:
             raise ImportError('loader cannot handle {}'.format(name))
 
-        module = imp.new_module(self.name)
+        module = types.ModuleType(self.name)
         module.__package__ = self.pkg
         module.__file__ = self.filename
         module.__loader__ = self
@@ -281,12 +281,12 @@ def boot_module(name, source, filename):
     """
     source_payload = textwrap.dedent("""\
         import sys
-        import imp
         import zlib
+        import types
         import binascii
         {sep}
         def load():
-            module = imp.new_module("{name}")
+            module = types.ModuleType("{name}")
             module.__file__ = "{filename}"
             module.__package__ = "{name}"
             sys.modules["{name}"] = module
