@@ -91,7 +91,7 @@ class ProcessTest(unittest.TestCase):
         start = time.time()
         self.assertEqual((yield proc.status), 0)
         stop = time.time()
-        self.assertTrue(stop - start < 1)
+        self.assertTrue(stop - start < 5)
 
     @async_test
     def test_chain(self):
