@@ -19,7 +19,7 @@ class Cont(Monad):
 
     def __call__(self, ret=None):
         if ret is None:
-            banner = callsite_banner('Error in coroutine started from:')
+            banner = callsite_banner('[continuation] error in coroutine started from')
             return self.run(lambda val: isinstance(val, Result) and val.trace(banner=banner))
         else:
             return self.run(ret)

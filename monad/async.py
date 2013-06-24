@@ -45,16 +45,24 @@ def async_block(block):
     resolved with result monad containing this error.
     """
     def async_block(ret):
-        def async_ret(val=None):
+        def block_ret(val=None):
             try:
+                if returned[0]:  # pragma: no cover
+                    raise RuntimeError('return handler has been called twice')
+                returned[0] = True
                 ret(val if isinstance(val, Result) else Result.from_value(val))
-            except Exception:
-                banner = lambda: 'Return function passed to async_block failed'
+            except Exception:  # pragma: no cover
+                banner = lambda: '[async_block] return function failed'
                 Result.from_current_error().trace(banner=banner)
         try:
-            block(async_ret)
+            returned = [False]
+            block(block_ret)
         except Exception:
-            async_ret(Result.from_current_error())
+            if returned[0]:
+                banner = lambda: '[async_block] block failed after returning'
+                Result.from_current_error().trace(banner=banner)
+            else:
+                block_ret(Result.from_current_error())
     return Cont(async_block)
 
 

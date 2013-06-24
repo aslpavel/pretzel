@@ -166,10 +166,14 @@ def result_excepthook(et, eo, tb, file=None, banner=None):  # pragma: no cover
 sys.excepthook = result_excepthook
 
 
-def callsite_banner(msg=None, depth=2):
+def callsite_banner(message=None, depth=2):
     """Call site banner
 
-    Returns banner function from current call site
+    Arguments:
+        message: either string, or callable returning string
+        depth: current frame depth from captured frame
+
+    Returns banner function for current call site.
     """
     frame = sys._getframe(depth)
     code = frame.f_code
@@ -182,10 +186,16 @@ def callsite_banner(msg=None, depth=2):
         line = linecache.getline(filename, lineno, globals)
         if line:
             line = '\n    {}'.format(line.strip())
+        if message is None:
+            header = '[callsite] error caused by call'
+        elif hasattr(message, '__call__'):
+            header = message()
+        else:
+            header = message
         return textwrap.dedent("""\
-            {msg}
+            {header}
               File "{filename}", line {lineno}, in {name}{line}\
-            """).format(msg=msg or 'Error caused by call:',
+            """).format(header=header,
                         filename=filename,
                         lineno=lineno,
                         name=code.co_name,

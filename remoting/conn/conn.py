@@ -175,7 +175,7 @@ class Connection(object):
                         src.send(err)
                     else:
                         err.trace(banner=lambda: textwrap.dedent("""\
-                            Impossible to send error response to message:
+                            [connection] impossible to send error response to message:
                               {} -> {}""").format(msg, dst))
                 break
 
