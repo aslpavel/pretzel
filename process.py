@@ -120,6 +120,7 @@ class Process(object):
         self.dispose.add_action(lambda: self.state(self.STATE_DISP))
         if self.opts.kill >= 0:
             self.core.dispose.add(self)
+            self.dispose.add_action(lambda: self.core.dispose.remove(self))
 
     @async
     def __call__(self):
@@ -228,8 +229,12 @@ class Process(object):
     def __str__(self):
         """String representation of the process
         """
-        return ('Process(state:{}, pid:{}, cmd:{})'.format(self.state.state_name(),
-                self.pid, self.opts.command))
+        if self.status.completed:
+            status = ', status:{}'.format(self.status.res)
+        else:
+            status = ''
+        return ('Process(state:{}, pid:{}, cmd:{}{})'.format(self.state.state_name(),
+                self.pid, self.opts.command, status))
 
     def __repr__(self):
         return str(self)

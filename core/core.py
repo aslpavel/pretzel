@@ -10,7 +10,7 @@ from time import time
 from heapq import heappush, heappop
 if sys.version_info[0] > 2:
     from _thread import get_ident
-else:
+else:  # pragma: no cover
     from thread import get_ident
 
 from .poll import Poller, POLL_ERROR, POLL_READ, POLL_WRITE, POLL_DISCONNECT
