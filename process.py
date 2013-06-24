@@ -108,7 +108,7 @@ class Process(object):
             def kill(_):
                 if not self.status.completed:
                     try:
-                        os.kill(self.pid, signal.SIGTERM)
+                        os.killpg(self.pid, signal.SIGTERM)
                     except OSError as error:
                         if error.errno != errno.ECHILD:
                             self.opts.status(Result.from_current_error())
@@ -200,6 +200,8 @@ class Process(object):
                     stdin(0)
                     stdout(1)
                     stderr(2)
+                    if self.opts.kill > 0:
+                        os.setpgrp()
                     if self.opts.preexec is not None:
                         self.opts.preexec()
                     os.execvpe(self.opts.command[0], self.opts.command,
