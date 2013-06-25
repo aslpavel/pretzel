@@ -57,8 +57,8 @@ class ShellConnection(StreamConnection):
         # check remote python version
         version = yield self.process.stdout.read_bytes()
         if version.decode() != str(sys.version_info[0]):
-            raise ValueError('remote python major version mismatch: {}'
-                             .format(version.decode()))
+            raise RuntimeError('remote python major version mismatch local:{} remote:{}'
+                               .format(sys.version_info[0], version.decode()))
 
         # send environment data
         environ = {
