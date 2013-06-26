@@ -11,17 +11,17 @@ __all__ = ('async_test',)
 def async_test(test):
     """Run asynchronous test in context of newly create core object
     """
-    @async
-    def timeout():
-        yield sleep(PRETZEL_TEST_TIMEOUT)
-        raise CanceledError('test timeout')
-
     @functools.wraps(test)
-    def test_async(*args):
+    def test_async(*args, **kwargs):
         core_prev = Core.local()
         try:
             with Core.local(Core()) as core:
-                test_future = (async(test)(*args) | timeout()).future()
+                @async
+                def timeout():
+                    yield core.sleep(PRETZEL_TEST_TIMEOUT)
+                    raise CanceledError('test timeout')
+
+                test_future = (async(test)(*args, **kwargs) | timeout()).future()
                 test_future(lambda _: core.dispose())
                 if not core.disposed:
                     core()

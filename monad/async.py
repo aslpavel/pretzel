@@ -8,7 +8,7 @@ from collections import deque
 from .do import do
 from .do_green import do_green
 from .cont import Cont
-from .result import Result
+from .result import Result, callsite_banner
 from ..event import Event
 
 __all__ = ('async', 'async_green', 'async_block', 'async_any', 'async_all',
@@ -47,22 +47,21 @@ def async_block(block):
     def async_block(ret):
         def block_ret(val=None):
             try:
-                if returned[0]:  # pragma: no cover
+                if block_done[0]:  # pragma: no cover
                     raise RuntimeError('return handler has been called twice')
-                returned[0] = True
+                block_done[0] = True
                 ret(val if isinstance(val, Result) else Result.from_value(val))
             except Exception:  # pragma: no cover
-                banner = lambda: '[async_block] return function failed'
                 Result.from_current_error().trace(banner=banner)
         try:
-            returned = [False]
+            block_done = [False]
             block(block_ret)
         except Exception:
-            if returned[0]:
-                banner = lambda: '[async_block] block failed after returning'
+            if block_done[0]:
                 Result.from_current_error().trace(banner=banner)
             else:
                 block_ret(Result.from_current_error())
+    banner = callsite_banner('[async_block] return function failed')
     return Cont(async_block)
 
 
