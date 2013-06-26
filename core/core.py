@@ -66,7 +66,8 @@ class Core(object):
         self.waker = Waker(self)
 
         def dispose_core():
-            self.state(self.STATE_DISP)
+            if not self.state(self.STATE_DISP):
+                return
             try:
                 exc = CanceledError('core has been disposed')
                 files_queue, self.files_queue = self.files_queue, {}
@@ -112,15 +113,21 @@ class Core(object):
 
         Interrupt current coroutine for specified amount of time
         """
+        if self.state.state == self.STATE_DISP:
+            raise CanceledError('core is disposed')
         do_done(self.time_queue.on(time() + delay))
 
+    @async
     def sleep_until(self, when):
         """Sleep until
 
         Interrupt current coroutine until specified time is reached
         """
-        return self.time_queue.on(when)
+        if self.state.state == self.STATE_DISP:
+            raise CanceledError('core is disposed')
+        do_done(self.time_queue.on(when))
 
+    @async
     def poll(self, fd, mask):
         """Poll file descriptor
 
@@ -129,29 +136,38 @@ class Core(object):
         with BrokenPipeError, otherwise future is resolved with bitmap of the
         events happened on file descriptor or error if any.
         """
+        if mask is not None and self.state.state == self.STATE_DISP:
+            raise CanceledError('core is disposed')
         file = self.files_queue.get(fd)
         if file is None:
             file = FileQueue(fd, self.poller)
             self.files_queue[fd] = file
-        return file.on(mask)
+        do_done(file.on(mask))
 
+    @async
     def schedule(self):
         """Schedule continuation to be executed on this core
 
         Scheduled continuation will be executed on next iteration circle. This
-        function can be called from different thread. Returns this core object.
+        function can be called from different thread, but not from signal handler
+        as heappush used by time_queue is not reentrant. Returns this core object.
         """
+        if self.state.state == self.STATE_DISP:
+            raise CanceledError('core is disposed')
         if self.thread_ident == get_ident():
-            return self.time_queue.on(0).then_val(self)
+            do_done(self.time_queue.on(0).then_val(self))
         else:
-            return self.sched_queue.on()
+            do_done(self.sched_queue.on())
 
+    @async
     def waitpid(self, pid):
         """Wait pid
 
         Schedule continuation to be executed when process with pid is terminated.
         """
-        return self.proc_queue.on(pid)
+        if self.state.state == self.STATE_DISP:
+            raise CanceledError('core is disposed')
+        do_done(self.proc_queue.on(pid))
 
     def wake(self):
         if self.thread_ident != get_ident():
@@ -186,6 +202,8 @@ class Core(object):
         Starts new iteration loop. Returns generator object which yield at the
         beginning of each iteration.
         """
+        if self.state.state == self.STATE_DISP:
+            raise RuntimeError('core is disposed')
 
         top_level = False
         try:
@@ -202,6 +220,7 @@ class Core(object):
             timer = self.time_queue
             files = self.files_queue
             sched = self.sched_queue
+            proc = self.proc_queue
             poll = self.poller.poll
 
             events = tuple()
@@ -210,6 +229,7 @@ class Core(object):
                     files[fd](event)
                 timer(time())
                 sched()
+                proc()
 
                 # Yield control to check conditions before blocking (Core has been
                 # stopped or desired future resolved). If there is no file
@@ -258,20 +278,20 @@ class TimeQueue(object):
         self.queue = []
 
     def on(self, when):
-        return async_block(lambda ret: heappush(self.queue, (when, next(self.uid), ret)))
+        return async_block(lambda ret:
+                           heappush(self.queue, (when, next(self.uid), ret)))
 
-    def __call__(self, now):
+    def __call__(self, time_now):
         if not self.queue:
             return
-
-        queue = []
+        expired = []
         while self.queue:
-            when, _, ret = self.queue[0]
-            if when > now:
+            time_when, _, ret = self.queue[0]
+            if time_when > time_now:
                 break
-            queue.append(heappop(self.queue))
-        for when, _, ret in queue:
-            ret(when)
+            expired.append(heappop(self.queue))
+        for time_when, _, ret in expired:
+            ret(time_when)
 
     def timeout(self, now):
         if self.queue:
@@ -447,6 +467,7 @@ class ProcQueue(object):
     def __init__(self, core):
         self.core = core
         self.pids = {}
+        self.pending = False
 
     def init(self):
         if self.current[0] == self:
@@ -459,10 +480,10 @@ class ProcQueue(object):
                     def signal_handler(sig, frame):
                         # Call waker explicitly, otherwise signal may be received
                         # right before poll, and schedule continuation will not
-                        # be called
+                        # be called.
+                        self.pending = True
                         if not self.core.disposed:
                             self.core.waker()
-                            self.core.schedule()(lambda _: self())
                     signal.signal(signal.SIGCHLD, signal_handler)
                     return
         raise ValueError('process queue can only be used by single core')
@@ -481,15 +502,17 @@ class ProcQueue(object):
         return cont
 
     def __call__(self):
-        for pid, ret in tuple(self.pids.items()):
-            try:
-                pid_done, status = os.waitpid(pid, os.WNOHANG)
-                if pid_done == pid:
+        if self.pending:
+            self.pending = False
+            for pid, ret in tuple(self.pids.items()):
+                try:
+                    pid_done, status = os.waitpid(pid, os.WNOHANG)
+                    if pid_done == pid:
+                        self.pids.pop(pid, None)
+                        ret(os.WEXITSTATUS(status))
+                except Exception:
                     self.pids.pop(pid, None)
-                    ret(os.WEXITSTATUS(status))
-            except Exception:
-                self.pids.pop(pid, None)
-                ret(Result.from_current_error())
+                    ret(Result.from_current_error())
 
     def dispose(self, exc=None):
         if self.current[0] == self:
