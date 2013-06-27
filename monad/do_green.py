@@ -62,5 +62,5 @@ else:
         """
         curr = greenlet.getcurrent()
         if not isinstance(curr, _do_greenlet) or curr.parent is None:
-            raise RuntimeError('bind outside of do_greenelt')
+            raise RuntimeError('bind outside of do_greenlet')
         return curr.parent.switch(monad)
