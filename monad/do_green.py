@@ -20,7 +20,7 @@ if greenlet is None:
         return do
 
     def bind_green(monad):
-        raise NotImplementedError('greenelt module was not found')
+        raise NotImplementedError('greenlet module was not found')
 
 else:
     def do_green(Monad):
