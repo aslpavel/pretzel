@@ -38,9 +38,9 @@ class Cont(Monad):
     def __monad__(self):
         return self
 
-    @staticmethod
-    def unit(val):
-        return Cont(lambda ret: ret(val))
+    @classmethod
+    def unit(cls, val):
+        return cls(lambda ret: ret(val))
 
     def bind(self, func):
         return Cont(lambda ret: self.run(

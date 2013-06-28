@@ -17,8 +17,8 @@ class Monad(object):
     def __monad__(self):
         return self
 
-    @staticmethod
-    def unit(val):
+    @classmethod
+    def unit(cls, val):
         """Create primitive monad from value
 
         unit :: (Monad m) => a -> m a
@@ -50,8 +50,8 @@ class Monad(object):
     def __irshift__(self, func):
         return self.bind(func)
 
-    @staticmethod
-    def zero(self):
+    @classmethod
+    def zero(cls):
         """Zero monad
 
         zero :: (Monad m) => () -> m a

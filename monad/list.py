@@ -20,9 +20,9 @@ class List(tuple, Monad):
     def from_iter(cls, iter):
         return cls(*iter)
 
-    @staticmethod
-    def unit(val):
-        return List(val)
+    @classmethod
+    def unit(cls, val):
+        return cls(val)
 
     def bind(self, func):
         return List.from_iter(tuple(fval
@@ -33,9 +33,9 @@ class List(tuple, Monad):
     def value(self):
         return tuple(self)
 
-    @staticmethod
-    def zero():
-        return List()
+    @classmethod
+    def zero(cls):
+        return cls()
 
     def plus(self, monad):
         return List.from_iter(self + monad.__monad__())
