@@ -284,13 +284,13 @@ class TimeQueue(object):
     def __call__(self, time_now):
         if not self.queue:
             return
-        expired = []
+        resolved = []
         while self.queue:
             time_when, _, ret = self.queue[0]
             if time_when > time_now:
                 break
-            expired.append(heappop(self.queue))
-        for time_when, _, ret in expired:
+            resolved.append(heappop(self.queue))
+        for time_when, _, ret in resolved:
             ret(time_when)
 
     def timeout(self, now):
@@ -502,17 +502,22 @@ class ProcQueue(object):
         return cont
 
     def __call__(self):
-        if self.pending:
-            self.pending = False
-            for pid, ret in tuple(self.pids.items()):
-                try:
-                    pid_done, status = os.waitpid(pid, os.WNOHANG)
-                    if pid_done == pid:
-                        self.pids.pop(pid, None)
-                        ret(os.WEXITSTATUS(status))
-                except Exception:
+        pending, self.pending = self.pending, False
+        if not pending:
+            return
+
+        resolved = []
+        for pid, ret in tuple(self.pids.items()):
+            try:
+                pid_done, status = os.waitpid(pid, os.WNOHANG)
+                if pid_done == pid:
                     self.pids.pop(pid, None)
-                    ret(Result.from_current_error())
+                    resolved.append((ret, os.WEXITSTATUS(status)))
+            except OSError:
+                self.pids.pop(pid, None)
+                resolved.append((ret, Result.from_current_error()))
+        for ret, status in resolved:
+            ret(status)
 
     def dispose(self, exc=None):
         if self.current[0] == self:
