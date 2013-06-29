@@ -206,6 +206,7 @@ class Core(object):
             raise RuntimeError('core is disposed')
 
         top_level = False
+        wakeup_fd = None
         try:
             # Thread identity is used by wake() to make sure call to waker is
             # really needed. And it also used to make sure core is iterating only
@@ -216,6 +217,12 @@ class Core(object):
                     top_level = True
                 elif self.thread_ident != get_ident():
                     raise ValueError('core has already being run on a different thread')
+
+            # Install signal wakeup file descriptor
+            try:
+                wakeup_fd = signal.set_wakeup_fd(self.waker.fileno())
+            except ValueError:
+                pass # non-main thread
 
             timer = self.time_queue
             files = self.files_queue
@@ -241,6 +248,8 @@ class Core(object):
                           poll(min(timer.timeout(time()), sched.timeout())))
                 self.tick += 1
         finally:
+            if wakeup_fd is not None:
+                signal.set_wakeup_fd(wakeup_fd)
             if top_level:
                 self.thread_ident = None
 
@@ -476,15 +485,8 @@ class ProcQueue(object):
             with self.current_lock:
                 if self.current[0] is None:
                     self.current[0] = self
-
-                    def signal_handler(sig, frame):
-                        # Call waker explicitly, otherwise signal may be received
-                        # right before poll, and schedule continuation will not
-                        # be called.
-                        self.pending = True
-                        if not self.core.disposed:
-                            self.core.waker()
-                    signal.signal(signal.SIGCHLD, signal_handler)
+                    signal.signal(signal.SIGCHLD,
+                                  lambda *_: setattr(self, 'pending', True))
                     return
         raise ValueError('process queue can only be used by single core')
 
@@ -576,6 +578,9 @@ class Waker(object):
             finally:
                 self.dispose()
         consumer()()
+
+    def fileno(self):
+        return self.writer
 
     def __call__(self):
         try:
