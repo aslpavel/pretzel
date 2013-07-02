@@ -96,9 +96,6 @@ class Console(object):
         """
         return ConsoleLabel(self)
 
-    def flush(self):
-        return self.stream.flush()
-
     @property
     def size(self):
         """Get console size
@@ -110,7 +107,13 @@ class Console(object):
                          termios.TIOCGWINSZ, ioctl_arg)))[:2]
         return rows, columns
 
+    def flush(self):
+        return self.stream.flush()
+
     def dispose(self):
+        labels, self.labels_stack = self.labels_stack, []
+        for label in labels:
+            label.dispose()
         self.stream.write(visibility_csi(True))
         self.stream.write(color_reset_csi())
         self.stream.flush()
@@ -386,10 +389,12 @@ def color_csi(fg=None, bg=None, attrs=None):
     csi = []
     if attrs:
         csi.append(CSI)
-        for attr in attrs:
+        for index, attr in enumerate(attrs):
             attr_code = ATTR_BY_NAME.get(attr)
             if attr_code is None:
                 raise ValueError('unknown attribute: {}'.format(attr))
+            if index != 0:
+                csi.append(b';')
             csi.append(attr_code)
         csi.append(b'm')
     if fg:
