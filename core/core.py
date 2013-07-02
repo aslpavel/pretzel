@@ -206,7 +206,6 @@ class Core(object):
             raise RuntimeError('core is disposed')
 
         top_level = False
-        wakeup_fd = None
         try:
             # Thread identity is used by wake() to make sure call to waker is
             # really needed. And it also used to make sure core is iterating only
@@ -217,12 +216,6 @@ class Core(object):
                     top_level = True
                 elif self.thread_ident != get_ident():
                     raise ValueError('core has already being run on a different thread')
-
-            # Install signal wakeup file descriptor
-            try:
-                wakeup_fd = signal.set_wakeup_fd(self.waker.fileno())
-            except ValueError:
-                pass # non-main thread
 
             timer = self.time_queue
             files = self.files_queue
@@ -248,8 +241,6 @@ class Core(object):
                           poll(min(timer.timeout(time()), sched.timeout())))
                 self.tick += 1
         finally:
-            if wakeup_fd is not None:
-                signal.set_wakeup_fd(wakeup_fd)
             if top_level:
                 self.thread_ident = None
 
@@ -485,6 +476,7 @@ class ProcQueue(object):
             with self.current_lock:
                 if self.current[0] is None:
                     self.current[0] = self
+                    signal.set_wakeup_fd(self.core.waker.fileno())
                     signal.signal(signal.SIGCHLD,
                                   lambda *_: setattr(self, 'pending', True))
                     return
@@ -524,6 +516,7 @@ class ProcQueue(object):
     def dispose(self, exc=None):
         if self.current[0] == self:
             signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+            signal.set_wakeup_fd(-1)
             self.current[0] = None
         error = Result.from_exception(exc or CanceledError('process queue has been disposed'))
         pids, self.pids = self.pids, {}
