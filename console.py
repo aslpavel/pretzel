@@ -243,16 +243,16 @@ COLOR_HTML_RE = re.compile(r'#([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})')
 COLOR_RGB_RE = re.compile(r'rgb\(([0-9]+),\s?([0-9]+),\s?([0-9]+)\)')
 COLOR_RGB6_RE = re.compile(r'rgb6\(([0-5]),\s?([0-5]),\s?([0-5])\)')
 COLOR_BY_NAME = {
-    'black':   '0',
-    'red':     '1',
-    'green':   '2',
-    'yellow':  '3',
-    'brown':   '3',
-    'blue':    '4',
-    'magenta': '5',
-    'cyan':    '6',
-    'white':   '7',
-    'default': '8',
+    'black':   b'0',
+    'red':     b'1',
+    'green':   b'2',
+    'yellow':  b'3',
+    'brown':   b'3',
+    'blue':    b'4',
+    'magenta': b'5',
+    'cyan':    b'6',
+    'white':   b'7',
+    'default': b'8',
 }
 ATTR_BY_NAME = {
     'bold':      b'01',
@@ -454,6 +454,6 @@ def _color_parser_csi(color):
 
     match = COLOR_BY_NAME.get(color)
     if match:
-        return '{}m'.format(match).encode()
+        return match + b'm'
 
     raise ValueError('bad color: {}'.format(color))

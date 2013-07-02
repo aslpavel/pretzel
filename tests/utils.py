@@ -13,9 +13,8 @@ class LazyTest(unittest.TestCase):
         calls = [0]
         self.assertEqual(calls, [0])
 
-        self.assertEqual(lazy_val(), 'value') 
+        self.assertEqual(lazy_val(), 'value')
         self.assertEqual(calls, [1])
 
         self.assertEqual(lazy_val(), 'value')
         self.assertEqual(calls, [1])
-
