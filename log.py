@@ -4,10 +4,10 @@ import time
 import atexit
 import functools
 import itertools
-from pretzel.event import Event
-from pretzel.monad import Result
-from pretzel.console import Console, move_column_csi
-from pretzel.dispose import CompDisp
+from .event import Event
+from .monad import Result
+from .console import Console, move_column_csi
+from .dispose import CompDisp
 
 __all__ = ('log', 'LEVEL_DEBUG', 'LEVEL_INFO', 'LEVEL_WARNING', 'LEVEL_ERROR',)
 
