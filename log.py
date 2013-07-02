@@ -114,7 +114,7 @@ class LogScope(object):
         self.source = source
 
     def __call__(self, func):
-        @functools.wraps
+        @functools.wraps(func)
         def logged_func(*args, **kwargs):
             with self:
                 return func(*args, **kwargs)
