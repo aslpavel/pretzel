@@ -3,7 +3,7 @@ import unittest
 import tempfile
 import time
 from . import async_test
-from ..monad import Cont
+from ..monad import Cont, async_all
 from ..dispose import CompDisp
 from ..process import (Process, ProcessError, PIPE, DEVNULL,
                        process_call, process_chain_call,)
@@ -66,11 +66,16 @@ class ProcessTest(unittest.TestCase):
             print((yield process_call('does_not_exists')))
 
     @async_test
-    def test_stress(self):
+    def test_stress_seq(self):
         reference = yield process_call('uname')
         procs = yield Cont.sequence(process_call('uname') for _ in range(30))
         for proc in procs:
             self.assertEqual(proc.value, reference)
+
+    @async_test
+    def test_stress_all(self):
+        self.assertEqual((yield async_all(process_call('uname') for _ in range(30))),
+                         ((yield process_call('uname')),) * 30)
 
     @async_test
     def test_devnull(self):
