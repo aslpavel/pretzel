@@ -479,6 +479,10 @@ class ProcQueue(object):
                     signal.set_wakeup_fd(self.core.waker.fileno())
                     signal.signal(signal.SIGCHLD,
                                   lambda *_: setattr(self, 'pending', True))
+                    # Force pending flag and another tick, in case we lost
+                    # some signals before signal handler has been installed.
+                    self.pending = True
+                    self.core.schedule()()
                     return
         raise ValueError('process queue can only be used by single core')
 
