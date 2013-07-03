@@ -7,6 +7,7 @@ import math
 import fcntl
 import struct
 import termios
+import colorsys
 import functools
 
 __all__ = ('Console', 'move_up_csi', 'move_down_csi', 'move_column_csi',
@@ -240,8 +241,7 @@ def cached(func):
 ## ANSI Escape Codes
 CSI = b'\x1b['  # Control Sequence Introducer
 COLOR_HTML_RE = re.compile(r'#([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})')
-COLOR_RGB_RE = re.compile(r'rgb\(([0-9]+),\s?([0-9]+),\s?([0-9]+)\)')
-COLOR_RGB6_RE = re.compile(r'rgb6\(([0-5]),\s?([0-5]),\s?([0-5])\)')
+COLOR_VECTOR_RE = re.compile(r'([a-z]+)\(([^,]+),\s?([^,]+),\s?([^,]+)\)')
 COLOR_BY_NAME = {
     'black':   b'0',
     'red':     b'1',
@@ -417,15 +417,16 @@ def _color_parser_csi(color):
 
     Returns CSI suffix for specified color.
     """
-    def rgb(red, green, blue):
-        if red >= 1. or green >= 1. or blue >= 1.:
-            raise ValueError('color out of range rgb{}'.format
-                            ((red, green, blue)))
-        red_index = math.floor(red * 6)
-        green_index = math.floor(green * 6)
-        blue_index = math.floor(blue * 6)
+    def rgb_to_col(red, green, blue):
+        if(not (0 <= red <= 1) or
+           not (0 <= green <= 1) or
+           not (0 <= blue <= 1)):
+            raise ValueError('color out of range rgb{}'.format((red, green, blue)))
+        red_index = math.floor(red * 5.99)
+        green_index = math.floor(green * 5.99)
+        blue_index = math.floor(blue * 5.99)
         if red_index == green_index == blue_index:
-            return 232 + math.floor(red * 24)
+            return 232 + math.floor(red * 23.99)
         else:
             return 16 + 36 * red_index + 6 * green_index + blue_index
 
@@ -440,20 +441,39 @@ def _color_parser_csi(color):
     match = COLOR_HTML_RE.match(color)
     if match:
         red, green, blue = (int(val, 16) for val in match.groups())
-        return '8;5;{}m'.format(rgb(red / 256., green / 256., blue / 256.)).encode()
+        return '8;5;{}m'.format(rgb_to_col(red / 256., green / 256., blue / 256.)).encode()
 
-    match = COLOR_RGB_RE.match(color)
+    match = COLOR_VECTOR_RE.match(color)
     if match:
-        red, green, blue = (int(val) for val in match.groups())
-        return '8;5;{}m'.format(rgb(red / 256., green / 256., blue / 256.)).encode()
-
-    match = COLOR_RGB6_RE.match(color)
-    if match:
-        red, green, blue = (int(val) for val in match.groups())
-        return '8;5;{}m'.format(16 + 36 * red + 16 * green + blue).encode()
+        space = match.groups()[0]
+        vals = (float(val) for val in match.groups()[1:])
+        if space == 'rgb':
+            col = rgb_to_col(*vals)
+        elif space == 'hsv':
+            col = rgb_to_col(*colorsys.hsv_to_rgb(*vals))
+        return '8;5;{}m'.format(col).encode()
 
     match = COLOR_BY_NAME.get(color)
     if match:
         return match + b'm'
 
     raise ValueError('bad color: {}'.format(color))
+
+
+def main():
+    """Show colored squares according to passed arguments
+    """
+    import os
+    colors = sys.argv[1:]
+    if not colors:
+        sys.stderr.write('usage: {} <color> [... <color>]\n'
+                         .format(os.path.basename(sys.argv[0])))
+        sys.exit(1)
+
+    with Console(io.open(sys.stderr.fileno(), 'wb', closefd=False)) as console:
+        for color in colors:
+            console.write(b'  ', console.color(bg=color))
+        console.write(b'\n')
+
+if __name__ == '__main__':
+    main()

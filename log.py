@@ -217,42 +217,32 @@ class ConsoleLogger(Logger):
 
     Multicolor console logger with fancy progress bars.
     """
-    # Solarized colors
-    #  red:     160
-    #  green:   64
-    #  yellow:  136
-    #  blue:    33
-    #  magenta: 125
-    #  cyan:    37
-    #  base:    234
     default_bar_with = 20
     default_scheme = {
-        'debug': {'fg': 33},
-        'info': {'fg': 64},
-        'warning': {'fg': '#b58900'},
-        'error': {'fg': 160},
-        'source': {'fg': 33},
-        'wait': {'fg': 125},
-        'done': {'fg': 64},
-        'fail': {'fg': 160},
-        'bar_border': {'fg': 240},
-        'bar_body': {'fg': 244},
+        'debug':     {'fg': 'hsv(0.6,  0.7,  0.8)'},
+        'info':      {'fg': 'hsv(0.35, 0.9,  0.6)'},
+        'warning':   {'fg': 'hsv(0.1,  0.89, 0.8)'},
+        'error':     {'fg': 'hsv(1.0,  0.7,  0.8)'},
+        'source':    {'fg': 'hsv(0.6,  0.7,  0.9)'},
+        'wait':      {'fg': 'hsv(0.66, 0.45, 0.6)'},
+        'wait_dark': {'fg': 'hsv(0.66, 0.45, 0.4)'},
+        'done':      {'fg': 'hsv(0.35, 0.9,  0.6)'},
+        'fail':      {'fg': 'hsv(1.0,  0.7,  0.8)'},
     }
     default_simple_terms = [
         'linux',
-        'urxvt'
+        'rxvt',
     ]
     default_simple_scheme = {
-        'debug': {'fg': 'blue'},
-        'info': {'fg': 'green'},
-        'warning': {'fg': 'yellow'},
-        'error': {'fg': 'red'},
-        'source': {'fg': 'blue'},
-        'wait': {'fg': 'magenta'},
-        'done': {'fg': 'green'},
-        'fail': {'fg': 'red'},
-        'bar_border': {'fg': 'magenta'},
-        'bar_body': {'fg': 'magenta', 'attrs': ('bold',)},
+        'debug':     {'fg': 'blue'},
+        'info':      {'fg': 'green'},
+        'warning':   {'fg': 'yellow'},
+        'error':     {'fg': 'red'},
+        'source':    {'fg': 'blue'},
+        'wait':      {'fg': 'magenta', 'attrs': ('bold',)},
+        'wait_dark': {'fg': 'magenta'},
+        'done':      {'fg': 'green'},
+        'fail':      {'fg': 'red'},
     }
 
     def __init__(self, stream=None, scheme=None, level=None, log=None,
@@ -314,10 +304,7 @@ class ConsoleLogger(Logger):
         write = self.console.write
         write(b'[')
         write('{}'.format(tag[:4]).encode(), self.scheme[tag])
-        if elapsed:
-            write(' {}'.format(elapsed_fmt(elapsed)).encode(), self.scheme['bar_body'])
-        else:
-            write(' {}'.format(elapsed_fmt()).encode())
+        write(' {}'.format(elapsed_fmt(elapsed)).encode())
         write(b']')
         if message.source:
             write('[{}]'.format(message.source).encode(), self.scheme['source'])
@@ -325,12 +312,12 @@ class ConsoleLogger(Logger):
 
     def draw_bar(self, value):
         write = self.console.write
-        write(b'[', self.scheme['bar_border'])
+        write(b'[', self.scheme['wait_dark'])
         filled = int(round(value * (self.bar_width - 2)))
-        with self.scheme['bar_body']:
+        with self.scheme['wait']:
             write(b'#' * filled)
             write(b'-' * (self.bar_width - filled - 2))
-        write(b']', self.scheme['bar_border'])
+        write(b']', self.scheme['wait_dark'])
 
     def dispose(self):
         self.console.dispose()
