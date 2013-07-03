@@ -13,6 +13,8 @@ __all__ = ('ProcessTest',)
 
 
 class ProcessTest(unittest.TestCase):
+    stress_count = 128
+
     @async_test
     def test_call(self):
         out, err, code = yield process_call(command, b'10', check=False)
@@ -67,15 +69,18 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_stress_seq(self):
-        reference = yield process_call('uname')
-        procs = yield Cont.sequence(process_call('uname') for _ in range(30))
-        for proc in procs:
-            self.assertEqual(proc.value, reference)
+        result_ref = yield process_call('uname')
+        self.assertEqual(result_ref[-1], 0)
+        results = yield Cont.sequence((process_call('uname'),) * self.stress_count)
+        for result in results:
+            self.assertEqual(result.value, result_ref)
 
     @async_test
-    def test_stress_all(self):
-        self.assertEqual((yield async_all(process_call('uname') for _ in range(30))),
-                         ((yield process_call('uname')),) * 30)
+    def test_stress_sim(self):
+        result_ref = yield process_call('uname')
+        self.assertEqual(result_ref[-1], 0)
+        results = yield async_all((process_call('uname'),) * self.stress_count)
+        self.assertEqual(results, (result_ref,) * self.stress_count)
 
     @async_test
     def test_devnull(self):

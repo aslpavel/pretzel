@@ -500,22 +500,20 @@ class ProcQueue(object):
         return cont
 
     def __call__(self):
-        pending, self.pending = self.pending, False
-        if not pending:
-            return
-
-        resolved = []
-        for pid, ret in tuple(self.pids.items()):
-            try:
-                pid_done, status = os.waitpid(pid, os.WNOHANG)
-                if pid_done == pid:
+        if self.pending:
+            self.pending = False
+            resolved = []
+            for pid, ret in tuple(self.pids.items()):
+                try:
+                    pid_done, status = os.waitpid(pid, os.WNOHANG)
+                    if pid_done == pid:
+                        self.pids.pop(pid, None)
+                        resolved.append((ret, os.WEXITSTATUS(status)))
+                except OSError:
                     self.pids.pop(pid, None)
-                    resolved.append((ret, os.WEXITSTATUS(status)))
-            except OSError:
-                self.pids.pop(pid, None)
-                resolved.append((ret, Result.from_current_error()))
-        for ret, status in resolved:
-            ret(status)
+                    resolved.append((ret, Result.from_current_error()))
+            for ret, status in resolved:
+                ret(status)
 
     def dispose(self, exc=None):
         if self.current[0] == self:
