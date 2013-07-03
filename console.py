@@ -426,9 +426,9 @@ def _color_parser_csi(color):
         green_index = math.floor(green * 5.99)
         blue_index = math.floor(blue * 5.99)
         if red_index == green_index == blue_index:
-            return 232 + math.floor(red * 23.99)
+            return int(232 + math.floor(red * 23.99))
         else:
-            return 16 + 36 * red_index + 6 * green_index + blue_index
+            return int(16 + 36 * red_index + 6 * green_index + blue_index)
 
     try:
         index = color if isinstance(color, int) else int(color)
