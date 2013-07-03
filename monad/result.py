@@ -106,8 +106,12 @@ class Result(Monad):
         if err is None:
             return _from_value, (val,)
         else:
-            tb = (self.tb_fmt.format(name=err[0].__name__, message=str(err[1]),
-                                     tb=''.join(traceback.format_exception(*err))))
+            tb = (self.tb_fmt.format(
+                  host=socket.gethostname(),
+                  pid=os.getpid(),
+                  error_name=err[0].__name__,
+                  error_args=', '.join(repr(arg) for arg in err[1].args),
+                  traceback=''.join(traceback.format_exception(*err))))
             tb += getattr(err[1], '_saved_traceback', '')
             exc = err[1]
             exc._saved_traceback = tb
@@ -115,10 +119,11 @@ class Result(Monad):
 
     tb_fmt = textwrap.dedent("""\
         `-------------------------------------------------------------------------------
-        Location : {host}/{pid}
-        Error    : {{name}}: {{message}}
+        Host   : {host}
+        Process: {pid}
+        Error  : {error_name}({error_args})
 
-        {{tb}}""".format(host=socket.gethostname(), pid=os.getpid()))
+        {traceback}""")
 
     def __str__(self):
         return ('Result({})'.format(
