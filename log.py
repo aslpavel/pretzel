@@ -314,9 +314,8 @@ class ConsoleLogger(Logger):
         write = self.console.write
         write(b'[', self.scheme['wait_dark'])
         filled = int(round(value * (self.bar_width - 2)))
-        with self.scheme['wait']:
-            write(b'#' * filled)
-            write(b'-' * (self.bar_width - filled - 2))
+        write(b'#' * filled, self.scheme['wait'])
+        write(b'-' * (self.bar_width - filled - 2), self.scheme['wait_dark'])
         write(b']', self.scheme['wait_dark'])
 
     def dispose(self):
