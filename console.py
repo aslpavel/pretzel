@@ -470,7 +470,7 @@ def main():
                          .format(os.path.basename(sys.argv[0])))
         sys.exit(1)
 
-    with Console(io.open(sys.stderr.fileno(), 'wb', closefd=False)) as console:
+    with Console(io.open(sys.stdout.fileno(), 'wb', closefd=False)) as console:
         for color in colors:
             console.write(b'  ', console.color(bg=color))
         console.write(b'\n')
