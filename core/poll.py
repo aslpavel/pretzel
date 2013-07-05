@@ -104,8 +104,9 @@ class EPollPoller (Poller):
         self.epoll.close()
 
     def __str__(self):
-        return '{}(fds:{}, fd:{})'.format(type(self).__name__, len(self.fds),
-                                          self.epoll.fileno())
+        return '{}(fds:({}), fd:{})'.format(type(self).__name__,
+                                            ', '.join(map(str, self.fds)),
+                                            self.epoll.fileno())
 
 
 class SelectPoller(Poller):
@@ -164,8 +165,9 @@ class SelectPoller(Poller):
         return events.items()
 
     def __str__(self):
-        return '{}(read:{}, write:{})'.format(type(self).__name__,
-                                              len(self.read), len(self.write))
+        return '{}(read:({}), write:({}))'.format(type(self).__name__,
+                                                  ', '.join(map(str, self.read)),
+                                                  ', '.join(map(str, self.write)))
 
 
 class KQueuePoller(SelectPoller):
