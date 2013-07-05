@@ -15,6 +15,7 @@ from ..monad import Result, async, async_any, async_green, bind_green
 from ..core import Core, schedule
 from ..event import Event
 from ..stream import BufferedFile
+from ..process import process_call
 from ..uniform import BrokenPipeError, CanceledError
 from ..remoting import ForkConnection, SSHConnection, pair
 from ..state_machine import StateMachine
@@ -66,9 +67,10 @@ class Shell(ShellBase):
             bind   - bind value associated with continuation monad
             bound  - create bound version of asynchronous function
             monad  - get associated monad
-            attach - attach shell to specified connection
+            proc   - process call
             fork   - create fork connection
             ssh    - create ssh connection
+            attach - attach shell to specified connection
             core   - application's core object
 
         -> host:{{host}} pid:{{pid}}""").format('')
@@ -191,6 +193,7 @@ class Shell(ShellBase):
                 'bind': bind,
                 'bound': bound,
                 'monad': monad,
+                'proc': bound(functools.partial(process_call, check=False)),
                 'fork': bound(ForkConnection),
                 'ssh': bound(SSHConnection),
                 'attach': bound(attach),
