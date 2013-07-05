@@ -422,11 +422,11 @@ def _color_parser_csi(color):
            not (0 <= green <= 1) or
            not (0 <= blue <= 1)):
             raise ValueError('color out of range rgb{}'.format((red, green, blue)))
-        red_index = math.floor(red * 5.99)
-        green_index = math.floor(green * 5.99)
-        blue_index = math.floor(blue * 5.99)
+        red_index = math.floor(red * 5)
+        green_index = math.floor(green * 5)
+        blue_index = math.floor(blue * 5)
         if red_index == green_index == blue_index:
-            return int(232 + math.floor(red * 23.99))
+            return int(232 + math.floor(red * 23))
         else:
             return int(16 + 36 * red_index + 6 * green_index + blue_index)
 
@@ -441,7 +441,7 @@ def _color_parser_csi(color):
     match = COLOR_HTML_RE.match(color)
     if match:
         red, green, blue = (int(val, 16) for val in match.groups())
-        return '8;5;{}m'.format(rgb_to_col(red / 256., green / 256., blue / 256.)).encode()
+        return '8;5;{}m'.format(rgb_to_col(red / 255., green / 255., blue / 255.)).encode()
 
     match = COLOR_VECTOR_RE.match(color)
     if match:
