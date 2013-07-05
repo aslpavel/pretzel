@@ -1,11 +1,15 @@
+import os
+import time
+import errno
+import json
 import textwrap
 import unittest
 import tempfile
-import time
 from . import async_test
 from ..monad import Cont, async_all
+from ..boot import boot_pack
 from ..dispose import CompDisp
-from ..process import (Process, ProcessError, PIPE, DEVNULL,
+from ..process import (Process, ProcessPipe, ProcessError, PIPE, DEVNULL,
                        process_call, process_chain_call,)
 from .. import PRETZEL_TEST_TIMEOUT
 
@@ -14,6 +18,45 @@ __all__ = ('ProcessTest',)
 
 class ProcessTest(unittest.TestCase):
     stress_count = 128
+
+    @async_test
+    def test_pipe(self):
+        def check_fd(fd):
+            try:
+                os.fstat(fd)
+                return True
+            except OSError as error:
+                if error.errno != errno.EBADF:
+                    raise
+                return False
+        check_fds = boot_pack(textwrap.dedent("""\
+            import os
+            import sys
+            import errno
+            import json
+            result = []
+            for fd in sys.argv[1:]:
+                try:
+                    os.fstat(int(fd))
+                    result.append(True)
+                except OSError as error:
+                    if error.errno != errno.EBADF:
+                        raise
+                    result.append(False)
+            sys.stdout.write(json.dumps(result))
+            """))
+        pipe = ProcessPipe(reader=True)
+        result = yield process_call(('python', '-c', check_fds,
+                                    str(pipe.parent_fd).encode(),
+                                    str(pipe.child_fd).encode()),
+                                    preexec=lambda: pipe(), check=False)
+        # child's fds
+        self.assertEqual(result[1:], (b'', 0))
+        self.assertEqual(json.loads(result[0].decode()), [False, True])
+        # parent's fds
+        pipe()
+        self.assertEqual(check_fd(pipe.parent_fd), True)
+        self.assertEqual(check_fd(pipe.child_fd), False)
 
     @async_test
     def test_call(self):
