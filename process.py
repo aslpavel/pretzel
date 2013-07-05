@@ -8,8 +8,8 @@ import pickle
 import signal
 import atexit
 from .event import Event
-from .dispose import CompDisp, FuncDisp
-from .monad import Result, Cont, async, async_all, do_return, do_done
+from .dispose import CompDisp
+from .monad import Result, Cont, async, async_all, do_return
 from .core import Core
 from .stream import BufferedFile, fd_close_on_exec
 from .uniform import BrokenPipeError
@@ -353,34 +353,18 @@ def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_op
         # standard error stream (common for all commands in pipe)
         err_cont = Cont.unit(None)
         if stderr in (PIPE, None):
-            stderr_fd, stderr = os.pipe()
-            stderr_stream = dispose.add(BufferedFile(stderr_fd,
-                                                     bufsize=proc_opts.get('bufsize'),
-                                                     core=proc_opts.get('core')))
-            stderr_stream.close_on_exec(True)
-            stderr_close = dispose.add(FuncDisp(lambda: os.close(stderr)))
-
-            @async
-            def err_coro():
-                stderr_close()
-                do_done(stderr_stream.read_until_eof())
-            err_cont = err_coro()
+            stderr_pipe = dispose.add(ProcessPipe(reader=True))
+            stderr = stderr_pipe.child_fd
+            err_cont = Cont(lambda ret: stderr_pipe().read_until_eof()(ret))
 
         # start processes
-        def disp_fd(fd):
-            """Register descriptor for disposal
-
-            Needed to correctly capture descriptor inside loop.
-            """
-            dispose.add(FuncDisp(lambda: os.close(fd)))
-            return fd
-
         procs = []
+        dispose_fd = lambda fd: (dispose.add_action(lambda: os.close(fd)), fd)[-1]
         for command in commands[:-1]:
             proc = yield dispose.add(Process(command, stdin=stdin, stdout=PIPE,
                                              stderr=stderr, **proc_opts))
             procs.append(proc)
-            stdin = disp_fd(proc.stdout.detach())
+            stdin = dispose_fd(proc.stdout.detach())
         proc = yield dispose.add(Process(commands[-1], stdin=stdin, stdout=stdout,
                                          stderr=stderr, **proc_opts))
         procs.append(proc)
