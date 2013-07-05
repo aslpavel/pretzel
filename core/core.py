@@ -587,12 +587,12 @@ class Waker(object):
     def dispose(self):
         reader, self.reader = self.reader, -1
         if reader >= 0:
-            os.close(reader)
             self.core.poll(reader, None)
+            os.close(reader)
         writer, self.writer = self.writer, -1
         if writer >= 0:
-            os.close(writer)
             self.core.poll(writer, None)
+            os.close(writer)
 
     def __enter__(self):
         return self
@@ -600,3 +600,9 @@ class Waker(object):
     def __exit__(self, et, eo, tb):
         self.dispose()
         return False
+
+    def __str__(self):
+        return 'Waker(reader:{}, writer:{})'.format(self.reader, self.writer)
+
+    def __repr__(self):
+        return str(self)
