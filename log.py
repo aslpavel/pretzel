@@ -104,6 +104,10 @@ class LogMessage(object):
 
 
 class LogScope(object):
+    """Log scope
+
+    Last message of the scope is identified by its uid, which will be negative.
+    """
     __slots__ = ('log', 'uid', 'message', 'source', 'level',)
 
     def __init__(self, log, uid, message, source, level):
@@ -130,8 +134,9 @@ class LogScope(object):
         return self.report
 
     def __exit__(self, et, eo, tb):
-        self.report(Result.from_value(None) if et is None else
-                    Result.from_error((et, eo, tb)))
+        self.log.event(LogMessage(-self.uid, self.message, self.source, self.level,
+                                  Result.from_value(None) if et is None else
+                                  Result.from_error((et, eo, tb))))
         return False
 
     def __str__(self):
@@ -176,33 +181,42 @@ class StreamLogger(Logger):
     """
     def __init__(self, stream=None, level=None, log=None):
         self.stream = stream or sys.stderr
+        self.scopes = set()
         Logger.__init__(self, level, log)
 
     def __call__(self, message):
+        """Process log message
+        """
         if message.level < self.level:
             return True
 
-        text = message.message
-        level = LEVEL_TO_NAME[message.level][:4]
-        value = message.value
-        if message.uid != 0:
-            if value is None:
-                level = 'wait'
-            elif isinstance(value, Result):
+        if message.uid == 0:
+            self.draw_message(message, LEVEL_TO_NAME[message.level][:4])
+        else:
+            if message.uid > 0:
+                if message.uid in self.scopes:
+                    # report only first message for scope
+                    return True
+                self.scopes.add(message.uid)
+                self.draw_message(message, 'wait')
+            else:
+                self.scopes.discard(-message.uid)
+                value = message.value
                 if value.pair == (None, None):
-                    level = 'done'
+                    self.draw_message(message, 'done')
                 else:
-                    level = 'fail'
+                    self.draw_message(message, 'fail')
                     error_name = value.pair[1][0].__name__
                     error_args = ', '.join(repr(arg) for arg in value.pair[1][1].args)
-                    text += ' (error: {}({}))'.format(error_name, error_args)
-            else:
-                # ignore progress messages
-                return True
-        source = '[{}]'.format(message.source) if message.source else ''
-        self.stream.write('[{} {}]{} {}\n'.format(level, elapsed_fmt(), source, text))
+                    self.stream.write(' (error: {}({}))'.format(error_name, error_args))
+        self.stream.write('\n')
         self.stream.flush()
         return True
+
+    def draw_message(self, message, tag):
+        source = '[{}]'.format(message.source) if message.source else ''
+        self.stream.write('[{} {}]{} {}'.format(tag, elapsed_fmt(), source,
+                                                message.source, message.message))
 
     def __str__(self):
         level = LEVEL_TO_NAME[self.level]
@@ -219,36 +233,38 @@ class ConsoleLogger(Logger):
     """
     default_bar_with = 20
     default_scheme = {
-        'debug':     {'fg': 'hsv(0.6,  0.7,  0.8)'},
-        'info':      {'fg': 'hsv(0.35, 0.9,  0.6)'},
-        'warning':   {'fg': 'hsv(0.1,  0.89, 0.8)'},
-        'error':     {'fg': 'hsv(1.0,  0.7,  0.8)'},
-        'source':    {'fg': 'hsv(0.6,  0.7,  0.9)'},
-        'wait':      {'fg': 'hsv(0.66, 0.45, 0.6)'},
-        'wait_dark': {'fg': 'hsv(0.66, 0.45, 0.4)'},
-        'done':      {'fg': 'hsv(0.35, 0.9,  0.6)'},
-        'fail':      {'fg': 'hsv(1.0,  0.7,  0.8)'},
+        'debug':      {'fg': 'hsv(0.6,  0.7,  0.8)'},
+        'info':       {'fg': 'hsv(0.35, 0.9,  0.6)'},
+        'warning':    {'fg': 'hsv(0.1,  0.89, 0.8)'},
+        'error':      {'fg': 'hsv(1.0,  0.7,  0.8)'},
+        'error_repr': {'fg': 'white', 'bg': 'hsv(1.0,  0.7,  0.8)'},
+        'source':     {'fg': 'hsv(0.6,  0.7,  0.9)'},
+        'wait':       {'fg': 'hsv(0.66, 0.45, 0.6)'},
+        'wait_dark':  {'fg': 'hsv(0.66, 0.45, 0.4)'},
+        'done':       {'fg': 'hsv(0.35, 0.9,  0.6)'},
+        'fail':       {'fg': 'hsv(1.0,  0.7,  0.8)'},
     }
     default_simple_terms = [
         'linux',
         'rxvt',
     ]
     default_simple_scheme = {
-        'debug':     {'fg': 'blue'},
-        'info':      {'fg': 'green'},
-        'warning':   {'fg': 'yellow'},
-        'error':     {'fg': 'red'},
-        'source':    {'fg': 'blue'},
-        'wait':      {'fg': 'magenta', 'attrs': ('bold',)},
-        'wait_dark': {'fg': 'magenta'},
-        'done':      {'fg': 'green'},
-        'fail':      {'fg': 'red'},
+        'debug':      {'fg': 'blue'},
+        'info':       {'fg': 'green'},
+        'warning':    {'fg': 'yellow'},
+        'error':      {'fg': 'red'},
+        'error_repr': {'fg': 'white', 'bg': 'red'},
+        'source':     {'fg': 'blue'},
+        'wait':       {'fg': 'magenta', 'attrs': ('bold',)},
+        'wait_dark':  {'fg': 'magenta'},
+        'done':       {'fg': 'green'},
+        'fail':       {'fg': 'red'},
     }
 
     def __init__(self, stream=None, scheme=None, level=None, log=None,
                  bar_width=None):
         self.console = Console(stream)
-        self.labels = {}
+        self.scopes = {}
         self.bar_width = bar_width or self.default_bar_with
 
         if os.environ.get('TERM') in self.default_simple_terms:
@@ -261,46 +277,60 @@ class ConsoleLogger(Logger):
         Logger.__init__(self, level, log)
 
     def __call__(self, message):
+        """Process log message
+        """
         if message.level < self.level:
             return True
 
         if message.uid == 0:
+            # plain log message
             with self.console.line():
                 self.draw_message(message, LEVEL_TO_NAME[message.level])
         else:
-            label, start_time = self.labels.get(message.uid, (None, None))
+            # scope log message
+            label, start_time = self.scopes.get(abs(message.uid), (None, None))
             if label is None:
                 label, start_time = self.console.label(), time.time()
-                self.labels[message.uid] = label, start_time
+                self.scopes[message.uid] = label, start_time
+
             value = message.value
-            if value is None:
-                with label.update(erase=True):
-                    self.draw_message(message, 'wait')
-            elif isinstance(value, Result):
-                self.labels.pop(message.uid)
+            if message.uid < 0:
+                # last message for this scope
+                self.scopes.pop(-message.uid)
                 label.dispose()
+
                 if value.pair[1] is None:
                     with self.console.line():
                         self.draw_message(message, 'done')
                 else:
                     with self.console.line():
                         self.draw_message(message, 'fail')
+                        self.console.write(b' ')
+                        # error representation
                         error = value.pair[1][1]
                         error_name = type(error).__name__
                         error_args = ', '.join(repr(arg) for arg in error.args)
-                        self.console.write(' (error: {}({}))'
-                                           .format(error_name, error_args).encode())
+                        self.console.write(' error: {}({}) '.format(error_name, error_args).encode(),
+                                           self.scheme['error_repr'])
             else:
-                assert 0 <= value <= 1
-                with label.update(erase=True):
-                    elapsed = (None if value == 0 else
-                               (time.time() - start_time) * (1 / value - 1))
-                    self.draw_message(message, 'wait', elapsed)
-                    self.console.write(move_column_csi(self.console.size[1] - self.bar_width))
-                    self.draw_bar(value)
+                if value is None:
+                    # progress is not reported
+                    with label.update(erase=True):
+                        self.draw_message(message, 'wait')
+                else:
+                    # progress is reported
+                    assert 0 <= value <= 1
+                    with label.update(erase=True):
+                        elapsed = (None if value == 0 else
+                                   (time.time() - start_time) * (1 / value - 1))
+                        self.draw_message(message, 'wait', elapsed)
+                        self.console.write(move_column_csi(self.console.size[1] - self.bar_width))
+                        self.draw_bar(value)
         return True
 
     def draw_message(self, message, tag, elapsed=None):
+        """Draw message with tag and elapsed time
+        """
         write = self.console.write
         write(b'[')
         write('{}'.format(tag[:4]).encode(), self.scheme[tag])
@@ -311,6 +341,10 @@ class ConsoleLogger(Logger):
         write(' {}'.format(message.message).encode())
 
     def draw_bar(self, value):
+        """Draw progress bar
+
+        Value is a float value representing progress, must be within [0..1].
+        """
         write = self.console.write
         write(b'[', self.scheme['wait_dark'])
         filled = int(round(value * (self.bar_width - 2)))
