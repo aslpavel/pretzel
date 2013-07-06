@@ -183,6 +183,14 @@ class Shell(ShellBase):
             """
             yield self.redirect((yield conn(Shell)(self.output)), locals)
 
+        @bound
+        @functools.wraps(process_call)
+        def proc(*args, **kwargs):
+            """Call process
+            """
+            kwargs['check'] = False
+            return process_call(*args, **kwargs)
+
         try:
             self.state(self.STATE_EXEC)
             stderr_prev, sys.stderr = sys.stderr, self.output
@@ -193,7 +201,7 @@ class Shell(ShellBase):
                 'bind': bind,
                 'bound': bound,
                 'monad': monad,
-                'proc': bound(functools.partial(process_call, check=False)),
+                'proc': proc,
                 'fork': bound(ForkConnection),
                 'ssh': bound(SSHConnection),
                 'attach': bound(attach),
