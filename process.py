@@ -70,12 +70,9 @@ class Process(object):
                  preexec=None, shell=None, environ=None, check=None,
                  bufsize=None, kill=None, core=None):
         # options
-        class options(object):
-            def __getattr__(self, name):
-                return opts[name]
         if isinstance(command, str):
             command = [command]
-        opts = {
+        self.opts = type('opts', (dict,), {'__getattr__': lambda s, n: s[n]})({
             'stdin': stdin,
             'stdout': stdout,
             'stderr': stderr,
@@ -86,8 +83,7 @@ class Process(object):
             'bufsize': bufsize,
             'preexec': preexec,
             'status': Event(),
-        }
-        self.opts = options()
+        })
 
         # properties
         self.pid = None
