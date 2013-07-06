@@ -339,7 +339,7 @@ class ConsoleLogger(Logger):
     def draw_from_left(self, size):
         """Move drawing cursor to size symbols from left
         """
-        self.console.write(move_column_csi(self.console.size[1] - size))
+        self.console.write(move_column_csi(max(self.console.size[1] - size, 0)))
 
     def draw_message(self, message, tag, time=None):
         """Draw message with tag and time
