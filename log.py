@@ -181,7 +181,7 @@ class StreamLogger(Logger):
     """
     def __init__(self, stream=None, level=None, log=None):
         self.stream = stream or sys.stderr
-        self.scopes = set()
+        self.scopes = {}
         Logger.__init__(self, level, log)
 
     def __call__(self, message):
@@ -197,18 +197,23 @@ class StreamLogger(Logger):
                 if message.uid in self.scopes:
                     # report only first message for scope
                     return True
-                self.scopes.add(message.uid)
+                self.scopes[message.uid] = time.time()
                 self.draw_message(message, 'wait')
             else:
-                self.scopes.discard(-message.uid)
+                start_time = self.scopes.pop(-message.uid)
                 value = message.value
                 if value.pair == (None, None):
                     self.draw_message(message, 'done')
+                    self.stream.write(' (in {})'.format(
+                                      elapsed_fmt(time.time() - start_time)))
                 else:
                     self.draw_message(message, 'fail')
                     error_name = value.pair[1][0].__name__
                     error_args = ', '.join(repr(arg) for arg in value.pair[1][1].args)
-                    self.stream.write(' (error: {}({}))'.format(error_name, error_args))
+                    error_msg = (' (error {}({}) in {})'.format(
+                                 error_name, error_args,
+                                 elapsed_fmt(time.time() - start_time)))
+                    self.stream.write(error_msg)
         self.stream.write('\n')
         self.stream.flush()
         return True
@@ -233,32 +238,30 @@ class ConsoleLogger(Logger):
     """
     default_bar_with = 20
     default_scheme = {
-        'debug':      {'fg': 'hsv(0.6,  0.7,  0.8)'},
-        'info':       {'fg': 'hsv(0.35, 0.9,  0.6)'},
-        'warning':    {'fg': 'hsv(0.1,  0.89, 0.8)'},
-        'error':      {'fg': 'hsv(1.0,  0.7,  0.8)'},
-        'error_repr': {'fg': 'white', 'bg': 'hsv(1.0,  0.7,  0.8)'},
-        'source':     {'fg': 'hsv(0.6,  0.7,  0.9)'},
-        'wait':       {'fg': 'hsv(0.66, 0.45, 0.6)'},
-        'wait_dark':  {'fg': 'hsv(0.66, 0.45, 0.4)'},
-        'done':       {'fg': 'hsv(0.35, 0.9,  0.6)'},
-        'fail':       {'fg': 'hsv(1.0,  0.7,  0.8)'},
+        'debug':     {'fg': 'hsv(0.6,  0.7,  0.8)'},
+        'info':      {'fg': 'hsv(0.35, 0.9,  0.6)'},
+        'warning':   {'fg': 'hsv(0.1,  0.89, 0.8)'},
+        'error':     {'fg': 'hsv(1.0,  0.7,  0.8)'},
+        'source':    {'fg': 'hsv(0.6,  0.7,  0.9)'},
+        'wait':      {'fg': 'hsv(0.66, 0.45, 0.6)'},
+        'wait_dark': {'fg': 'hsv(0.66, 0.45, 0.4)'},
+        'done':      {'fg': 'hsv(0.35, 0.9,  0.6)'},
+        'fail':      {'fg': 'hsv(1.0,  0.7,  0.8)'},
     }
     default_simple_terms = [
         'linux',
         'rxvt',
     ]
     default_simple_scheme = {
-        'debug':      {'fg': 'blue'},
-        'info':       {'fg': 'green'},
-        'warning':    {'fg': 'yellow'},
-        'error':      {'fg': 'red'},
-        'error_repr': {'fg': 'white', 'bg': 'red'},
-        'source':     {'fg': 'blue'},
-        'wait':       {'fg': 'magenta', 'attrs': ('bold',)},
-        'wait_dark':  {'fg': 'magenta'},
-        'done':       {'fg': 'green'},
-        'fail':       {'fg': 'red'},
+        'debug':     {'fg': 'blue'},
+        'info':      {'fg': 'green'},
+        'warning':   {'fg': 'yellow'},
+        'error':     {'fg': 'red'},
+        'source':    {'fg': 'blue'},
+        'wait':      {'fg': 'magenta', 'attrs': ('bold',)},
+        'wait_dark': {'fg': 'magenta'},
+        'done':      {'fg': 'green'},
+        'fail':      {'fg': 'red'},
     }
 
     def __init__(self, stream=None, scheme=None, level=None, log=None,
@@ -271,9 +274,9 @@ class ConsoleLogger(Logger):
             default_scheme = self.default_simple_scheme
         else:
             default_scheme = self.default_scheme
-        self.scheme = {name: self.console.color(**color)
-                       for name, color in (scheme or default_scheme).items()}
-
+        self.scheme = (type('scheme', (dict,), {'__getattr__': lambda s, n: s[n]})
+                           ((name, self.console.color(**color))
+                            for name, color in (scheme or default_scheme).items()))
         Logger.__init__(self, level, log)
 
     def __call__(self, message):
@@ -301,17 +304,22 @@ class ConsoleLogger(Logger):
 
                 if value.pair[1] is None:
                     with self.console.line():
+                        done_msg = '[{}]'.format(elapsed_fmt(time.time() - start_time))
                         self.draw_message(message, 'done')
+                        self.draw_from_left(len(done_msg))
+                        self.console.write(done_msg.encode())
                 else:
                     with self.console.line():
-                        self.draw_message(message, 'fail')
-                        self.console.write(b' ')
-                        # error representation
+                        # error message
                         error = value.pair[1][1]
                         error_name = type(error).__name__
                         error_args = ', '.join(repr(arg) for arg in error.args)
-                        self.console.write(' error: {}({}) '.format(error_name, error_args).encode(),
-                                           self.scheme['error_repr'])
+                        error_msg = '[{}({}) {}]'.format(error_name, error_args,
+                                                         elapsed_fmt(time.time() - start_time))
+
+                        self.draw_message(message, 'fail')
+                        self.draw_from_left(len(error_msg))
+                        self.console.write(error_msg.encode())
             else:
                 if value is None:
                     # progress is not reported
@@ -321,23 +329,28 @@ class ConsoleLogger(Logger):
                     # progress is reported
                     assert 0 <= value <= 1
                     with label.update(erase=True):
-                        elapsed = (None if value == 0 else
-                                   (time.time() - start_time) * (1 / value - 1))
-                        self.draw_message(message, 'wait', elapsed)
-                        self.console.write(move_column_csi(self.console.size[1] - self.bar_width))
+                        time_left = (None if value == 0 else
+                                    (time.time() - start_time) * (1 / value - 1))
+                        self.draw_message(message, 'wait', time_left)
+                        self.draw_from_left(self.bar_width)
                         self.draw_bar(value)
         return True
 
-    def draw_message(self, message, tag, elapsed=None):
-        """Draw message with tag and elapsed time
+    def draw_from_left(self, size):
+        """Move drawing cursor to size symbols from left
+        """
+        self.console.write(move_column_csi(self.console.size[1] - size))
+
+    def draw_message(self, message, tag, time=None):
+        """Draw message with tag and time
         """
         write = self.console.write
         write(b'[')
         write('{}'.format(tag[:4]).encode(), self.scheme[tag])
-        write(' {}'.format(elapsed_fmt(elapsed)).encode())
+        write(' {}'.format(elapsed_fmt(time)).encode())
         write(b']')
         if message.source:
-            write('[{}]'.format(message.source).encode(), self.scheme['source'])
+            write('[{}]'.format(message.source).encode(), self.scheme.source)
         write(' {}'.format(message.message).encode())
 
     def draw_bar(self, value):
@@ -346,11 +359,12 @@ class ConsoleLogger(Logger):
         Value is a float value representing progress, must be within [0..1].
         """
         write = self.console.write
-        write(b'[', self.scheme['wait_dark'])
-        filled = int(round(value * (self.bar_width - 2)))
-        write(b'#' * filled, self.scheme['wait'])
-        write(b'-' * (self.bar_width - filled - 2), self.scheme['wait_dark'])
-        write(b']', self.scheme['wait_dark'])
+        with self.scheme.wait_dark:
+            write(b'[')
+            filled = int(round(value * (self.bar_width - 2)))
+            write(b'#' * filled, self.scheme.wait)
+            write(b'-' * (self.bar_width - filled - 2))
+            write(b']')
 
     def dispose(self):
         self.console.dispose()
