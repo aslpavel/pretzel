@@ -140,7 +140,7 @@ class Process(object):
                                 return child_fd
                             else:
                                 os.dup2(child_fd, fd)
-                                os.close(child_fd)
+                                pipe_cleanup_fds.add(child_fd)
                                 return fd
                     return detach
                 pid = os.getpid()
@@ -157,6 +157,16 @@ class Process(object):
                 # from custom descriptor
                 else:
                     return fake_pipe(file if isinstance(file, int) else file.fileno())
+
+            def pipe_cleanup():
+                """Close duplicated file descriptors
+
+                Needs to be deferred as process may use same file descriptors
+                for input and output.
+                """
+                for fd in pipe_cleanup_fds:
+                    os.close(fd)
+            pipe_cleanup_fds = set()
 
             stdin = pipe(self.opts.stdin, STDIN_FD, False)
             stdout = pipe(self.opts.stdout, STDOUT_FD, True)
@@ -200,6 +210,7 @@ class Process(object):
                     stdin(0)
                     stdout(1)
                     stderr(2)
+                    pipe_cleanup()
                     if self.opts.kill > 0:
                         os.setpgrp()
                     if self.opts.preexec is not None:

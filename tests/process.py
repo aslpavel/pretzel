@@ -21,14 +21,6 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_pipe(self):
-        def check_fd(fd):
-            try:
-                os.fstat(fd)
-                return True
-            except OSError as error:
-                if error.errno != errno.EBADF:
-                    raise
-                return False
         check_fds = boot_pack(textwrap.dedent("""\
             import os
             import sys
@@ -77,17 +69,22 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(err, b'13579')
 
     @async_test
-    def test_call_fd(self):
+    def test_call_with_fd(self):
         with CompDisp() as dispose:
+            # different file descriptors
+            def preexec_diff():
+                if(check_fd(stdin.fileno()) or
+                   check_fd(stdout.fileno()) or
+                   check_fd(stderr.fileno())):
+                    raise ValueError('descriptor must be closed by pipe_cleanup')
             stdin = dispose.add(tempfile.TemporaryFile())
             stdout = dispose.add(tempfile.TemporaryFile())
             stderr = dispose.add(tempfile.TemporaryFile())
-
             stdin.write(b'10')
             stdin.seek(0)
             out, err, code = yield process_call(command, stdin=stdin, stdout=stdout,
-                                                stderr=stderr, check=False)
-
+                                                stderr=stderr, check=False,
+                                                preexec=preexec_diff)
             self.assertEqual(code, 117)
             self.assertEqual(out, None)
             self.assertEqual(err, None)
@@ -95,6 +92,22 @@ class ProcessTest(unittest.TestCase):
             self.assertEqual(stdout.read(), b'02468')
             stderr.seek(0)
             self.assertEqual(stderr.read(), b'13579')
+
+            # duplicating file descriptors
+            def preexec_same():
+                if check_fd(stream.fileno()):
+                    raise ValueError('descriptor must be closed by pipe_cleanup')
+            stream = dispose.add(tempfile.TemporaryFile())
+            stream.write(b'10')
+            stream.seek(0)
+            out, err, code = yield process_call(command, stdin=stream, stdout=stream,
+                                                stderr=stream, check=False,
+                                                preexec=preexec_same)
+            self.assertEqual(code, 117)
+            self.assertEqual(out, None)
+            self.assertEqual(err, None)
+            stream.seek(0)
+            self.assertEqual(stream.read(), b'100123456789')
 
     @async_test
     def test_cleanup(self):
@@ -179,9 +192,21 @@ command = ['python', '-c', textwrap.dedent("""\
     for value in range(int(input())):
         if value % 2 == 1:
             sys.stderr.write(str(value))
+            sys.stderr.flush()
         else:
             sys.stdout.write(str(value))
-    sys.stderr.flush()
-    sys.stdout.flush()
+            sys.stdout.flush()
     sys.exit (117)
     """)]
+
+
+def check_fd(fd):
+    """Check if descriptor is a valid one
+    """
+    try:
+        os.fstat(fd)
+        return True
+    except OSError as error:
+        if error.errno != errno.EBADF:
+            raise
+        return False
