@@ -31,17 +31,15 @@ class Log(object):
         self.dispose = CompDisp()
         self.uid = itertools.count(1)
 
-    def create(self, name, *args, **kwargs):
+    def create(self, name, **kwargs):
         if name is None:
             if sys.stderr.isatty():
                 name = 'console'
-                args = tuple()
             else:
                 name = 'stream'
-                args = (sys.stderr,)
             kwargs = {}
         kwargs['log'] = self
-        LOGGER_TO_TYPE[name](*args, **kwargs)
+        LOGGER_TO_TYPE[name](**kwargs)
 
     def scope(self, message, source=None, level=None):
         if not self.event.handlers:
@@ -80,7 +78,7 @@ class Log(object):
     def __repr__(self):
         return str(self)
 
-log = Log()
+_log = log = Log()
 atexit.register(lambda: log.dispose())
 
 
@@ -148,9 +146,9 @@ class LogScope(object):
 
 
 class Logger(object):
-    def __init__(self, level=None, _log=None):
+    def __init__(self, log=None, level=None):
         self.level = LEVEL_INFO if level is None else level
-        self.log = _log or log
+        self.log = log or _log
         self.log.event.on(self)
         self.log.dispose.add(self)
 
@@ -179,10 +177,10 @@ class StreamLogger(Logger):
 
     Plain text logger compatible with any stream.
     """
-    def __init__(self, stream=None, level=None, log=None):
+    def __init__(self, log=None, level=None, stream=None):
         self.stream = stream or sys.stderr
         self.scopes = {}
-        Logger.__init__(self, level, log)
+        Logger.__init__(self, log, level)
 
     def __call__(self, message):
         """Process log message
@@ -264,7 +262,7 @@ class ConsoleLogger(Logger):
         'fail':      {'fg': 'red'},
     }
 
-    def __init__(self, stream=None, scheme=None, level=None, log=None,
+    def __init__(self, log=None, level=None, stream=None, scheme=None,
                  bar_width=None):
         self.console = Console(stream)
         self.scopes = {}
@@ -277,7 +275,7 @@ class ConsoleLogger(Logger):
         self.scheme = (type('scheme', (dict,), {'__getattr__': lambda s, n: s[n]})
                            ((name, self.console.color(**color))
                             for name, color in (scheme or default_scheme).items()))
-        Logger.__init__(self, level, log)
+        Logger.__init__(self, log, level)
 
     def __call__(self, message):
         """Process log message
