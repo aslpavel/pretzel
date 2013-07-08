@@ -218,8 +218,8 @@ class StreamLogger(Logger):
 
     def draw_message(self, message, tag):
         source = '[{}]'.format(message.source) if message.source else ''
-        self.stream.write('[{} {}]{} {}'.format(tag, elapsed_fmt(), source,
-                                                message.source, message.message))
+        self.stream.write('[{} {}]{} {}'.format(tag, elapsed_fmt(),
+                                                source, message.message))
 
     def __str__(self):
         level = LEVEL_TO_NAME[self.level]
