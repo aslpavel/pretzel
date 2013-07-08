@@ -33,11 +33,7 @@ class Log(object):
 
     def create(self, name, **kwargs):
         if name is None:
-            if sys.stderr.isatty():
-                name = 'console'
-            else:
-                name = 'stream'
-            kwargs = {}
+            name = 'console' if sys.stderr.isatty() else 'stream'
         kwargs['log'] = self
         LOGGER_TO_TYPE[name](**kwargs)
 
