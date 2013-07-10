@@ -78,7 +78,7 @@ class Process(object):
             'stderr': stderr,
             'environ': environ,
             'command': ['/usr/bin/env', 'sh', '-c', ' '.join(command)] if shell else command,
-            'kill': kill or -1,  # don't kill process by default
+            'kill': -1 if kill is None else kill,  # don't kill process by default
             'check': check is None or check,
             'bufsize': bufsize,
             'preexec': preexec,
@@ -207,7 +207,7 @@ class Process(object):
                     stdout(1)
                     stderr(2)
                     pipe_cleanup()
-                    if self.opts.kill > 0:
+                    if self.opts.kill >= 0:
                         os.setpgrp()
                     if self.opts.preexec is not None:
                         self.opts.preexec()
