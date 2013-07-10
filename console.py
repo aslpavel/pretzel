@@ -1,5 +1,6 @@
 """Console utility functions
 """
+from __future__ import division
 import io
 import re
 import sys
@@ -440,9 +441,9 @@ def color_rgb_to_idx():
                     color_idx[bisect(color_val, r)] * 36 +
                     color_idx[bisect(color_val, g)] * 6 +
                     color_idx[bisect(color_val, b)])
-    color_val = tuple(i / 6.0 for i in range(1, 6))
+    color_val = tuple(i / 6 for i in range(1, 6))
     color_idx = tuple(range(6))
-    grey_val = tuple(i / 24.0 for i in range(1, 24))
+    grey_val = tuple(i / 24 for i in range(1, 24))
     grey_idx = tuple(range(232, 232 + 24))
     return rgb_to_col
 color_rgb_to_idx = color_rgb_to_idx()
@@ -455,12 +456,12 @@ def color_idx_to_rgb():
         if not (0 <= col <= 255):
             raise ValueError('invalid color index: {}'.format(col))
         elif col > 231:
-            val = (col - 232) / 23.0
+            val = (col - 232) / 23
             return (val, val, val)
         elif col > 15:
             r, col = divmod(col - 16, 36)
             g, b = divmod(col, 6)
-            return (r / 5.0, g / 5.0, b / 5.0)
+            return (r / 5, g / 5, b / 5)
         else:
             return ansi_col[col]
     ansi_col = ((0, 0, 0), (0.5, 0, 0), (0, 0.5, 0), (0, 0, 0.5), (0.5, 0.5, 0),
@@ -485,7 +486,7 @@ def color_str_to_idx(color):
     match = COLOR_HTML_RE.match(color)
     if match:
         r, g, b = (int(val, 16) for val in match.groups())
-        return color_rgb_to_idx(r / 255.0, g / 255.0, b / 255.0)
+        return color_rgb_to_idx(r / 255, g / 255, b / 255)
 
     match = COLOR_VECTOR_RE.match(color)
     if match:
