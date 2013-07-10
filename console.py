@@ -518,9 +518,14 @@ def main():
     with Console(io.open(sys.stdout.fileno(), 'wb', closefd=False)) as console:
         for color in colors:
             index = color_str_to_idx(color)
-            r, g, b = (int(val * 255) for val in color_idx_to_rgb(index))
+            r, g, b = color_idx_to_rgb(index)
             console.write(b'  ', console.color(bg=color))
-            console.write(' {:>03} #{:>02x}{:>02x}{:>02x}\n'.format(index, r, g, b).encode())
+            console.write(' {:>03}'.format(index).encode())
+            console.write(' #{:>02x}{:>02x}{:>02x}'.format(
+                          *(int(v * 255) for v in (r, g, b))).encode())
+            console.write(' hsv({:.3f}, {:.3f}, {:.3f})'.format(
+                          *colorsys.rgb_to_hsv(r, g, b)).encode())
+            console.write(b'\n')
 
 if __name__ == '__main__':
     main()
