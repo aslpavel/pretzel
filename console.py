@@ -3,12 +3,12 @@
 import io
 import re
 import sys
-import math
 import fcntl
 import struct
 import termios
 import colorsys
 import functools
+from bisect import bisect
 
 __all__ = ('Console', 'move_up_csi', 'move_down_csi', 'move_column_csi',
            'delete_csi', 'insert_csi', 'erase_csi', 'save_csi', 'restore_csi',
@@ -235,6 +235,7 @@ def cached(func):
         return val
     cache = {}
     cache_tag = object()
+    cached_func.cache = cache
     return cached_func
 
 
@@ -243,16 +244,16 @@ CSI = b'\x1b['  # Control Sequence Introducer
 COLOR_HTML_RE = re.compile(r'#([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})')
 COLOR_VECTOR_RE = re.compile(r'([a-z]+)\(([^,]+),\s?([^,]+),\s?([^,]+)\)')
 COLOR_BY_NAME = {
-    'black':   b'0',
-    'red':     b'1',
-    'green':   b'2',
-    'yellow':  b'3',
-    'brown':   b'3',
-    'blue':    b'4',
-    'magenta': b'5',
-    'cyan':    b'6',
-    'white':   b'7',
-    'default': b'8',
+    'black':   0,
+    'red':     1,
+    'green':   2,
+    'yellow':  3,
+    'brown':   3,
+    'blue':    4,
+    'magenta': 5,
+    'cyan':    6,
+    'white':   7,
+    'default': 8,
 }
 ATTR_BY_NAME = {
     'bold':      b'01',
@@ -404,6 +405,19 @@ def color_csi(fg=None, bg=None, attrs=None):
     return b''.join(csi)
 
 
+@cached
+def _color_parser_csi(color):
+    """Parse color
+
+    Returns CSI suffix for specified color.
+    """
+    index = color_str_to_idx(color)
+    if index < 8:
+        return '{}m'.format(index).encode()
+    else:
+        return '8;5;{}m'.format(index).encode()
+
+
 @cached_csi
 def color_reset_csi():
     """Reset color settings
@@ -411,51 +425,80 @@ def color_reset_csi():
     return b'm'
 
 
-@cached
-def _color_parser_csi(color):
-    """Parse color
-
-    Returns CSI suffix for specified color.
-    """
-    def rgb_to_col(red, green, blue):
-        if(not (0 <= red <= 1) or
-           not (0 <= green <= 1) or
-           not (0 <= blue <= 1)):
-            raise ValueError('color out of range rgb{}'.format((red, green, blue)))
-        red_index = math.floor(red * 5)
-        green_index = math.floor(green * 5)
-        blue_index = math.floor(blue * 5)
-        if red_index == green_index == blue_index:
-            return int(232 + math.floor(red * 23))
+def color_rgb_to_idx():
+    def rgb_to_col(r, g, b):
+        """Convert rgb color to color index
+        """
+        if(not (0 <= r <= 1) or
+           not (0 <= g <= 1) or
+           not (0 <= b <= 1)):
+            raise ValueError('color out of range rgb{}'.format((r, g, b)))
+        if r == g == b:
+            return grey_idx[bisect(grey_val, r)]
         else:
-            return int(16 + 36 * red_index + 6 * green_index + blue_index)
+            return (16 +
+                    color_idx[bisect(color_val, r)] * 36 +
+                    color_idx[bisect(color_val, g)] * 6 +
+                    color_idx[bisect(color_val, b)])
+    color_val = tuple(i / 6.0 for i in range(1, 6))
+    color_idx = tuple(range(6))
+    grey_val = tuple(i / 24.0 for i in range(1, 24))
+    grey_idx = tuple(range(232, 232 + 24))
+    return rgb_to_col
+color_rgb_to_idx = color_rgb_to_idx()
 
+
+def color_idx_to_rgb():
+    def idx_to_rgb(col):
+        """Convert color index to rgb
+        """
+        if not (0 <= col <= 255):
+            raise ValueError('invalid color index: {}'.format(col))
+        elif col > 231:
+            val = (col - 232) / 23.0
+            return (val, val, val)
+        elif col > 15:
+            r, col = divmod(col - 16, 36)
+            g, b = divmod(col, 6)
+            return (r / 5.0, g / 5.0, b / 5.0)
+        else:
+            return ansi_col[col]
+    ansi_col = ((0, 0, 0), (0.5, 0, 0), (0, 0.5, 0), (0, 0, 0.5), (0.5, 0.5, 0),
+                (0.5, 0, 0.5), (0, 0.5, 0.5), (0.75, 0.75, 0.75), (0.5, 0.5, 0.5),
+                (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1),
+                (1, 1, 1))
+    return idx_to_rgb
+color_idx_to_rgb = color_idx_to_rgb()
+
+
+def color_str_to_idx(color):
+    """Convert color string representation to color index
+    """
     try:
         index = color if isinstance(color, int) else int(color)
         if 0 <= index <= 255:
-            return '8;5;{}m'.format(index).encode()
+            return index
     except ValueError:
         pass
 
     color = color.lower()
     match = COLOR_HTML_RE.match(color)
     if match:
-        red, green, blue = (int(val, 16) for val in match.groups())
-        return '8;5;{}m'.format(rgb_to_col(red / 255., green / 255., blue / 255.)).encode()
+        r, g, b = (int(val, 16) for val in match.groups())
+        return color_rgb_to_idx(r / 255.0, g / 255.0, b / 255.0)
 
     match = COLOR_VECTOR_RE.match(color)
     if match:
         space = match.groups()[0]
         vals = (float(val) for val in match.groups()[1:])
         if space == 'rgb':
-            col = rgb_to_col(*vals)
+            return color_rgb_to_idx(*vals)
         elif space == 'hsv':
-            col = rgb_to_col(*colorsys.hsv_to_rgb(*vals))
-        return '8;5;{}m'.format(col).encode()
+            return color_rgb_to_idx(*colorsys.hsv_to_rgb(*vals))
 
     match = COLOR_BY_NAME.get(color)
     if match:
-        return match + b'm'
+        return match
 
     raise ValueError('bad color: {}'.format(color))
 
@@ -472,8 +515,10 @@ def main():
 
     with Console(io.open(sys.stdout.fileno(), 'wb', closefd=False)) as console:
         for color in colors:
+            index = color_str_to_idx(color)
+            r, g, b = (int(val * 255) for val in color_idx_to_rgb(index))
             console.write(b'  ', console.color(bg=color))
-        console.write(b'\n')
+            console.write(' {:>03} #{:>02x}{:>02x}{:>02x}\n'.format(index, r, g, b).encode())
 
 if __name__ == '__main__':
     main()
