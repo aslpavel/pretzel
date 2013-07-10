@@ -4,6 +4,7 @@ from __future__ import division
 import io
 import re
 import sys
+import math
 import fcntl
 import struct
 import termios
@@ -434,13 +435,13 @@ def color_rgb_to_idx():
            not (0 <= g <= 1) or
            not (0 <= b <= 1)):
             raise ValueError('color out of range rgb{}'.format((r, g, b)))
-        if r == g == b:
-            return grey_idx[bisect(grey_val, r)]
+        ri = color_idx[bisect(color_val, r)]
+        gi = color_idx[bisect(color_val, g)]
+        bi = color_idx[bisect(color_val, b)]
+        if ri == gi == bi:
+            return grey_idx[bisect(grey_val, math.sqrt((r*r + g*g + b*b)/3))]
         else:
-            return (16 +
-                    color_idx[bisect(color_val, r)] * 36 +
-                    color_idx[bisect(color_val, g)] * 6 +
-                    color_idx[bisect(color_val, b)])
+            return 16 + ri * 36 + gi * 6 + bi
     color_val = tuple(i / 6 for i in range(1, 6))
     color_idx = tuple(range(6))
     grey_val = tuple(i / 24 for i in range(1, 24))
