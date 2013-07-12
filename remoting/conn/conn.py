@@ -133,20 +133,21 @@ class Connection(object):
         raise NotImplementedError()
 
     @async
-    def do_recv(self, msg):
+    def do_recv(self, msg_raw):
         """Handle remote packed message
         """
         # Detachment from  current coroutine is vital here because if handler
         # tries to create nested core loop to resolve future synchronously
         # (i.g. importer proxy) it can block dispatching coroutine.
         yield self.core.schedule()
-        self.recv_ev(msg)
+        self.recv_ev(msg_raw)
 
         while True:
-            src = None
+            src, unpacked = None, False
             try:
-                msg, dst, src = self.unpickler_type(io.BytesIO(msg)).load()
+                msg, dst, src = self.unpickler_type(io.BytesIO(msg_raw)).load()
                 dst = dst.unroute()  # strip remote connection address
+                unpacked = True
 
                 if dst:
                     # After striping remote connection address, destination
@@ -176,7 +177,8 @@ class Connection(object):
                     else:
                         err.trace(banner=lambda: textwrap.dedent("""\
                             [connection] impossible to send error response to message:
-                              {} -> {}""").format(msg, dst))
+                              {}""".format('raw:{}'.format(msg_raw) if not unpacked else
+                                           'msg:{} dst:{}'.format(msg, dst))))
                 break
 
     def __monad__(self):
