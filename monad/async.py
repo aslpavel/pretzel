@@ -5,14 +5,14 @@ result monad type.
 """
 from functools import wraps
 from collections import deque
-from .do import do
+from .do import do, do_return
 from .do_green import do_green
 from .cont import Cont
 from .result import Result, callsite_banner
 from ..event import Event
 
 __all__ = ('async', 'async_green', 'async_block', 'async_any', 'async_all',
-           'async_limit', 'async_single',)
+           'async_catch', 'async_limit', 'async_single',)
 
 
 def async(block):
@@ -115,6 +115,21 @@ def async_all(conts):
         for index, cont in enumerate(conts):
             cont_register(index, cont)
     return all_cont
+
+
+@async
+def async_catch(cont, type, handler):
+    """Execute asynchronous handler in case of type of exception is in type
+
+    Returns result of handler or propagates the exception in case of
+    exception type mismatch.
+    """
+    try:
+        do_return((yield cont))
+    except Exception as error:
+        if isinstance(error, type):
+            do_return((yield handler(error)))
+        raise
 
 
 def async_limit(limit):

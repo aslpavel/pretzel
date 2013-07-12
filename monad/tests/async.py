@@ -3,9 +3,10 @@ import unittest
 import itertools
 from heapq import heappush, heappop
 from ..do import do_return
-from ..async import async, async_block, async_all, async_any, async_limit
 from ..result import Result
 from ...event import Event
+from ..async import (async, async_block, async_all, async_any,
+                     async_limit, async_catch)
 
 __all__ = ('ContTest',)
 
@@ -134,6 +135,29 @@ class ContTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             async_any(tuple())
+
+    def test_catch(self):
+        rets = []
+        e = Event()
+        w = lambda: (async_catch(e, KeyError, async(lambda _: 0))
+                     (lambda val: rets.append(val)))
+
+        w()
+        self.assertEqual(len(e.handlers), 1)
+        self.assertFalse(rets)
+        e(1)
+        self.assertEqual(rets.pop().value, 1)
+
+        w()
+        self.assertFalse(rets)
+        e(Result.from_exception(ValueError()))
+        with self.assertRaises(ValueError):
+            rets.pop().value
+
+        w()
+        self.assertFalse(rets)
+        e(Result.from_exception(KeyError()))
+        self.assertEqual(rets.pop().value, 0)
 
     def test_limit(self):
         timer = Timer()
