@@ -11,6 +11,7 @@ import termios
 import colorsys
 import functools
 from bisect import bisect
+from .utils import cached, called
 
 __all__ = ('Console', 'move_up_csi', 'move_down_csi', 'move_column_csi',
            'delete_csi', 'insert_csi', 'erase_csi', 'save_csi', 'restore_csi',
@@ -28,18 +29,8 @@ class Console(object):
     def __init__(self, stream=None):
         self.stream = (stream if stream is not None else
                        io.open(sys.stderr.fileno(), 'wb', closefd=False))
+        self.color = ConsoleColors(self)
         self.labels_stack = []
-        self.color_stack = []
-        self.flag_stack = []
-
-        # Create color scoping function here for two reasons, first caching
-        # must be applied on object level (not class level), second cached
-        # decorator cannot handle optional arguments
-        @cached
-        def _color(fg, bg, attrs):
-            color_push = lambda: self.color_push(fg, bg, attrs)
-            return ConsoleScope(color_push, self.color_pop)
-        self._color = _color
 
     def write(self, data, *scopes):
         """Write data to stream and inside provided scopes
@@ -54,27 +45,6 @@ class Console(object):
                     scope.__exit__(None, None, None)
         else:
             return self.stream.write(data)
-
-    def color(self, fg=None, bg=None, attrs=None):
-        """Returns scope which sets specified colors
-        """
-        return self._color(fg, bg, attrs)
-
-    def color_push(self, fg=None, bg=None, attrs=None):
-        """Apply color and push it on color stack
-        """
-        self.color_stack.append(color_csi(fg, bg, attrs))
-        self.stream.write(color_reset_csi())
-        self.stream.write(self.color_stack[-1])
-
-    def color_pop(self):
-        """Restore color previously stored on color stack
-        """
-        self.stream.write(color_reset_csi())
-        if self.color_stack:
-            self.color_stack.pop()
-            if self.color_stack:
-                self.stream.write(self.color_stack[-1])
 
     def line(self):
         """Returns scope which inserts line above all labels
@@ -135,33 +105,6 @@ class Console(object):
 
     def __repr__(self):
         return str(self)
-
-
-class ConsoleScope(object):
-    __slots__ = ('enter', 'exit',)
-
-    def __init__(self, enter=None, exit=None):
-        self.enter = enter
-        self.exit = exit
-
-    def __call__(self, func):
-        """Use scope as decorator
-        """
-        @functools.wraps(func)
-        def scoped_func(*args, **kwargs):
-            with self:
-                return func(*args, **kwargs)
-        return scoped_func
-
-    def __enter__(self):
-        if self.enter is not None:
-            self.enter()
-        return self
-
-    def __exit__(self, et, eo, tb):
-        if self.exit is not None:
-            self.exit()
-        return False
 
 
 class ConsoleLabel(object):
@@ -225,20 +168,83 @@ class ConsoleLabel(object):
         return str(self)
 
 
-def cached(func):
-    """Cached function
-    """
-    @functools.wraps(func)
-    def cached_func(*args):
-        val = cache.get(args, cache_tag)
-        if val is cache_tag:
-            val = func(*args)
-            cache[args] = val
-        return val
-    cache = {}
-    cache_tag = object()
-    cached_func.cache = cache
-    return cached_func
+class ConsoleColors(object):
+    def __init__(self, console):
+        self.console = console
+        self.colors = {}
+        self.stack = []
+
+        @cached
+        def color(fg, bg, attrs):
+            def enter():
+                """Apply color and push it on color stack
+                """
+                stack.append(color_csi(fg, bg, attrs))
+                write(color_reset_csi())
+                write(stack[-1])
+
+            def exit():
+                """Restore color previously stored on color stack
+                """
+                write(color_reset_csi())
+                if not stack:
+                    return
+                stack.pop()
+                if stack:
+                    write(stack[-1])
+
+            return ConsoleScope(enter, exit)
+        write = console.stream.write
+        stack = []
+        self.color = color
+
+    def __call__(self, fg=None, bg=None, attrs=None, name=None):
+        """Returns scope which sets specified colors
+        """
+        color = self.color(fg, bg, attrs)
+        if name is not None:
+            self.colors[name] = color
+        return color
+
+    def __getattr__(self, color):
+        """Get named color
+        """
+        try:
+            return self.colors[color]
+        except KeyError:
+            raise AttributeError()
+
+    def __getitem__(self, color):
+        """Get named color
+        """
+        return self.colors[color]
+
+
+class ConsoleScope(object):
+    __slots__ = ('enter', 'exit',)
+
+    def __init__(self, enter=None, exit=None):
+        self.enter = enter
+        self.exit = exit
+
+    def __call__(self, func):
+        """Use scope as decorator
+        """
+        @functools.wraps(func)
+        def scoped_func(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+        return scoped_func
+
+    def __enter__(self):
+        if self.enter is not None:
+            self.enter()
+        return self
+
+    def __exit__(self, et, eo, tb):
+        if self.exit is not None:
+            self.exit()
+        return False
 
 
 ## ANSI Escape Codes
@@ -427,6 +433,7 @@ def color_reset_csi():
     return b'm'
 
 
+@called
 def color_rgb_to_idx():
     def rgb_to_col(r, g, b):
         """Convert rgb color to color index
@@ -447,9 +454,9 @@ def color_rgb_to_idx():
     grey_val = tuple(i / 24 for i in range(1, 24))
     grey_idx = tuple(range(232, 232 + 24))
     return rgb_to_col
-color_rgb_to_idx = color_rgb_to_idx()
 
 
+@called
 def color_idx_to_rgb():
     def idx_to_rgb(col):
         """Convert color index to rgb
@@ -470,7 +477,6 @@ def color_idx_to_rgb():
                 (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1),
                 (1, 1, 1))
     return idx_to_rgb
-color_idx_to_rgb = color_idx_to_rgb()
 
 
 def color_str_to_idx(color):

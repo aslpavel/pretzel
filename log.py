@@ -264,13 +264,17 @@ class ConsoleLogger(Logger):
         self.scopes = {}
         self.bar_width = bar_width or self.default_bar_with
 
+        # load scheme
         if os.environ.get('TERM') in self.default_simple_terms:
             default_scheme = self.default_simple_scheme
         else:
             default_scheme = self.default_scheme
-        self.scheme = (type('scheme', (dict,), {'__getattr__': lambda s, n: s[n]})
-                           ((name, self.console.color(**color))
-                            for name, color in (scheme or default_scheme).items()))
+        for name, color in default_scheme.items():
+            self.console.color(name=name, **color)
+        if scheme:
+            for name, color in scheme.items():
+                self.console.color(name=name, **color)
+
         Logger.__init__(self, log, level)
 
     def __call__(self, message):
@@ -339,12 +343,13 @@ class ConsoleLogger(Logger):
         """Draw message with tag and time
         """
         write = self.console.write
+        color = self.console.color
         write(b'[')
-        write('{}'.format(tag[:4]).encode(), self.scheme[tag])
+        write('{}'.format(tag[:4]).encode(), color[tag])
         write(' {}'.format(elapsed_fmt(time)).encode())
         write(b']')
         if message.source:
-            write('[{}]'.format(message.source).encode(), self.scheme.source)
+            write('[{}]'.format(message.source).encode(), color.source)
         write(' {}'.format(message.message).encode())
 
     def draw_bar(self, value):
@@ -353,10 +358,11 @@ class ConsoleLogger(Logger):
         Value is a float value representing progress, must be within [0..1].
         """
         write = self.console.write
-        with self.scheme.wait_dark:
+        color = self.console.color
+        with color.wait_dark:
             write(b'[')
             filled = int(round(value * (self.bar_width - 2)))
-            write(b'#' * filled, self.scheme.wait)
+            write(b'#' * filled, color.wait)
             write(b'-' * (self.bar_width - filled - 2))
             write(b']')
 

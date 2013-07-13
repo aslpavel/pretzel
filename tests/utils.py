@@ -1,11 +1,11 @@
 import unittest
-from ..utils import lazy
+from ..utils import lazy, cached
 
-__all__ = ('LazyTest',)
+__all__ = ('UtilsTest',)
 
 
-class LazyTest(unittest.TestCase):
-    def test(self):
+class UtilsTest(unittest.TestCase):
+    def test_lazy(self):
         @lazy
         def lazy_val():
             calls[0] += 1
@@ -18,3 +18,22 @@ class LazyTest(unittest.TestCase):
 
         self.assertEqual(lazy_val(), 'value')
         self.assertEqual(calls, [1])
+
+    def test_cached(self):
+        @cached
+        def func(arg):
+            args.append(arg)
+            return arg
+        args = []
+
+        self.assertEqual(func(1), 1)
+        self.assertEqual(args, [1])
+
+        self.assertEqual(func(1), 1)
+        self.assertEqual(args, [1])
+
+        self.assertEqual(func(2), 2)
+        self.assertEqual(args, [1, 2])
+
+        self.assertEqual(func(1), 1)
+        self.assertEqual(args, [1, 2])
