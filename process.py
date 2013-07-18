@@ -67,8 +67,8 @@ class Process(object):
     STATE_NAMES = ('not-run', 'forking', 'running', 'disposed',)
 
     def __init__(self, command, stdin=None, stdout=None, stderr=None,
-                 preexec=None, shell=None, environ=None, check=None,
-                 bufsize=None, kill=None, core=None):
+                 preexec=None, postexec=None, shell=None, environ=None,
+                 check=None, bufsize=None, kill=None, core=None):
         # options
         if isinstance(command, str):
             command = [command]
@@ -82,6 +82,7 @@ class Process(object):
             'check': check is None or check,
             'bufsize': bufsize,
             'preexec': preexec,
+            'postexec': postexec,
             'status': Event(),
         })
 
@@ -198,6 +199,9 @@ class Process(object):
                     do_return(status)
                 check_status()(self.opts.status)
 
+                if self.opts.postexec is not None:
+                    self.opts.postexec(self)
+
             # child
             else:  # pragma: no cover
                 try:
@@ -304,8 +308,8 @@ class ProcessPipe(object):
 
 @async
 def process_call(command, stdin=None, stdout=None, stderr=None,
-                 preexec=None, shell=None, environ=None, check=None,
-                 bufsize=None, kill=None, core=None):
+                 preexec=None, postexec=None, shell=None, environ=None,
+                 check=None, bufsize=None, kill=None, core=None):
     """Run command
 
     Returns:
@@ -321,9 +325,9 @@ def process_call(command, stdin=None, stdout=None, stderr=None,
     stderr = PIPE if stderr is None else stderr
 
     with (yield Process(command=command, stdin=stdin, stdout=stdout,
-                        stderr=stderr, preexec=preexec, shell=shell,
-                        environ=environ, check=check, bufsize=bufsize,
-                        kill=kill, core=core)) as proc:
+                        stderr=stderr, preexec=preexec, postexec=postexec,
+                        shell=shell, environ=environ, check=check,
+                        bufsize=bufsize, kill=kill, core=core)) as proc:
         in_cont = Cont.unit(None)
         if stdin_data:
             proc.stdin.write_schedule(stdin_data)
