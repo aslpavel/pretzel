@@ -52,6 +52,11 @@ class ForkConnectionTest(unittest.TestCase):
             self.assertEqual((yield remote_environ.get('MYENV')), 'MYVAL')
             self.assertEqual(os.environ.get('MYENV'), None)
 
+            # big data
+            data_ref = b'0123456789' * (1 << 22)  # 40Mb
+            data = yield conn(identity)(data_ref)
+            self.assertEqual(data_ref, data)
+
     @async_test
     def test_proxy(self):
         with (yield self.conn_type()) as conn:
@@ -161,3 +166,7 @@ def clean_path():  # pragma: no cover
     import sys
     del sys.path[:]
     return sys.path
+
+
+def identity(val):
+    return val
