@@ -110,6 +110,13 @@ class ProcessTest(unittest.TestCase):
             self.assertEqual(stream.read(), b'100123456789')
 
     @async_test
+    def test_call_big(self):
+        out_ref = b'01234567890' * (1 << 22)  # 40Mb
+        out, err, code = yield process_call('cat', out_ref, check=False)
+        self.assertEqual(code, 0)
+        self.assertEqual(out_ref, out)
+
+    @async_test
     def test_cleanup(self):
         with (yield Process('cat', stdin=PIPE, stdout=PIPE, stderr=PIPE,
                             check=False)) as proc:
