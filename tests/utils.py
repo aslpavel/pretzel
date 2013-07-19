@@ -1,5 +1,5 @@
 import unittest
-from ..utils import lazy, cached
+from ..utils import lazy, cached, curry
 
 __all__ = ('UtilsTest',)
 
@@ -37,3 +37,11 @@ class UtilsTest(unittest.TestCase):
 
         self.assertEqual(func(1), 1)
         self.assertEqual(args, [1, 2])
+
+    def test_curry(self):
+        @curry(2)
+        def add(a, b):
+            return a + b
+
+        self.assertEqual(add(1)(2), 3)
+        self.assertEqual(add(1, 2), 3)

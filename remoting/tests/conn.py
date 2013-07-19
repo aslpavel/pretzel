@@ -13,6 +13,7 @@ from ...monad import Result, async_all
 from ...boot import BootLoader, boot_pack
 from ...process import process_call
 from ...tests import async_test
+from ...utils import identity
 from ... import PRETZEL_POLLER, __name__ as pretzel
 
 __all__ = ('ForkConnectionTest', 'SSHConnectionTest',)
@@ -166,7 +167,3 @@ def clean_path():  # pragma: no cover
     import sys
     del sys.path[:]
     return sys.path
-
-
-def identity(val):
-    return val

@@ -11,7 +11,7 @@ import termios
 import colorsys
 import functools
 from bisect import bisect
-from .utils import cached, called
+from .utils import cached, call
 
 __all__ = ('Console', 'move_up_csi', 'move_down_csi', 'move_column_csi',
            'delete_csi', 'insert_csi', 'erase_csi', 'save_csi', 'restore_csi',
@@ -433,7 +433,7 @@ def color_reset_csi():
     return b'm'
 
 
-@called
+@call
 def color_rgb_to_idx():
     def rgb_to_col(r, g, b):
         """Convert rgb color to color index
@@ -456,7 +456,7 @@ def color_rgb_to_idx():
     return rgb_to_col
 
 
-@called
+@call
 def color_idx_to_rgb():
     def idx_to_rgb(col):
         """Convert color index to rgb
