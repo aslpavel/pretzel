@@ -84,8 +84,7 @@ class Console(object):
         return self.stream.flush()
 
     def dispose(self):
-        labels, self.labels_stack = self.labels_stack, []
-        for label in labels:
+        for label in tuple(self.labels_stack):
             label.dispose()
         self.stream.write(visibility_csi(True))
         self.stream.write(color_reset_csi())
