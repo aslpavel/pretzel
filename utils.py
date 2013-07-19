@@ -45,19 +45,38 @@ def call(func, *args, **kwargs):
     return func(*args, **kwargs)
 
 
+class Curry(object):
+    """Curried function
+    """
+    __slots__ = ('func', 'args', 'arity',)
+
+    def __init__(self, func, args, arity):
+        self.func = func
+        self.arity = arity
+        self.args = args
+
+    def __call__(self, *args):
+        if len(args) >= self.arity:
+            return self.func(*(self.args + args))
+        else:
+            return Curry(self.func, self.args + args, self.arity - len(args))
+
+    def __reduce__(self):
+        return type(self), (self.func, self.args, self.arity,)
+
+    def __str__(self):
+        return ('{}(func:{}, args:{}, arity:{})' .format(type(self).__name__,
+                getattr(self.func, '__name__', self.func), self.arity, self.args))
+
+    def __repr__(self):
+        return str(self)
+
+
 def curry(arity):
     """Curried function decorator
 
     Returns decorator which creates carried function with specified arity.
     """
-    def curry(func, func_arity, func_args):
-        def curried(*args):
-            if len(args) >= func_arity:
-                return func(*(func_args + args))
-            else:
-                return curry(func, func_arity - len(args), func_args + args)
-        return curried
-
     def curried(func):
-        return wraps(func)(curry(func, arity, tuple()))
+        return Curry(func, tuple(), arity)
     return curried
