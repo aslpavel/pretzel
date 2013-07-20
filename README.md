@@ -43,9 +43,8 @@ but continuation monad is a sequence of computations, and this computations are
 not started. `.future()` method on instance of `Cont` can be used to create
 `Task` like object. To use this library you don't have to understand notion of
 the monad. Simple asynchronous function would look like this.
-
-```python from
-pretzel.monad import async
+```python
+from pretzel.monad import async
 from pretzel.core imoprt sleep
 
 @async
@@ -55,14 +54,12 @@ def print_after(delay, *args, **kwargs):
   yield sleep(delay)  # execution will be resumed in delay seconds
   print(*args, **kwargs)
 ```
-
 To return something meaningful in python3 you can just use `return` keyword,
 but in python2 you have to use `do_return` function (it will also work in
 python3) as `return` with value cannot be used inside a generator function.
 Result of such asynchronous function is again a continuation monad, if exception
 is thrown during execution of its body, it is marshaled to receiver of the
 result and can be processed correctly. For example.
-
 ```python
 @async
 def process_error():
@@ -77,10 +74,8 @@ def process_error():
     # process error in a meaningfull way
   do_return('done')  # exectly equivalent to: return 'done'
 ```
-
 Asynchronous values (continuation monads) can be composed with two helper
 functions `async_all` and `async_any`.
-
 ```python
 @async
 def composition_example():
@@ -90,12 +85,10 @@ def composition_example():
   result_all = yield async_all([func1(), func2()])  # = (result1, result2)
   reuslt_any = yield async_any([func1(), func2()])  # = result1 | result2
 ```
-
 `Cont` monad can also be called with callback function as its argument, in this
 case, on completion of asynchronous operation, callback will be called with
 `Result` monad. If callback function is not specified default, then default
 continuation callback will be used which only reports errors if any.
-
 ```python
 >>> sleep(1)(print)
 Result(val:1374307530.015137)
@@ -109,11 +102,9 @@ Traceback (most recent call last):
     do_done(self.time_queue.on(time() + delay))
 TypeError: unsupported operand type(s) for +: 'float' and 'NoneType'
 ```
-
 Inside body of asynchronous function you can `yield` not only `Cont` monad
 directly, but any object implementing `.__monad__()` method which returns `Cont`
 monad. There are many such types in this library, for example `Event`
-
 ```python
 @async
 def func():
@@ -129,10 +120,53 @@ event('e1')  # 'e1' is printed
 
 Main loop
 ---------
-`Core` class implements I/O loop, and it used internally to implement
+`Core` class implements I/O loop, and it is used internally to implement
 asynchronous streams, timers and more. Previously used `sleep` function will
-work correctly only in presence of running I/O loop.
+work correctly only in presence of running I/O loop. Simplest way to
+intialize and use `Core` object is to use `@app` decorator.
+```python
+"""Minimal pretzel application
 
+Sleeps for one second, then prints 'done' and exits.
+"""
+from pretzel.app import app
+
+@app
+def main():
+  yield sleep(1)
+  print('done')
+
+if __name__ == '__main__':
+  main()
+```
+
+Remoting
+--------
+Main reason for creation of this framework was to execute code on a set of machines via
+ssh connection. And its achieved by usege of `SSHConnection` class. Lets start with
+simple example.
+```python
+import os
+from pretzel.app import app
+from pretzel.remoting import SSHConnection
+
+@app
+def main():
+  """Connect to localhost via ssh and print remote process's pid
+  """
+  with (yield SSHConnection('localhost')) as conn:
+    print((yield conn(os.getpid)()))
+
+if __name__ == '__main__':
+  main()
+```
+`SSHConnection` object a callable object which returns proxy object for its argument.
+You can call proxy object, get its attributes or itmes (proxy[item]), result of
+such operations is again a proxy object with this embedded operations. Proxy
+implements monad interface, and to get result of embedded chain of operations you
+can yield it inside asynchronous function.
+In this example we create proxy for `os.getpid` function, call it and then execute on
+remote process by yielding it.
 
 Examples
 --------
