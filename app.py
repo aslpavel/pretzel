@@ -2,7 +2,7 @@
 """
 from functools import wraps
 from .core import Core
-from .monad import async, async_green
+from .monad import async, async_green, monad
 
 __all__ = ('app', 'app_green', 'app_run',)
 
@@ -29,7 +29,7 @@ def app_run(cont):
     Run continuation as application.
     """
     with Core.local(Core()) as core:
-        app_future = cont.__monad__().future()
+        app_future = monad(cont).future()
         app_future(lambda _: core.dispose())
         if not core.disposed:
             core()

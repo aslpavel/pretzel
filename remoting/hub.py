@@ -2,7 +2,7 @@
 """
 import threading
 import itertools
-from ..monad import Cont, async_block
+from ..monad import Cont, monad, async_block
 
 __all__ = ('Hub', 'Sender', 'Receiver', 'pair',)
 
@@ -160,7 +160,7 @@ class Receiver(object):
         self.addr = addr
 
     def future(self):
-        return self.__monad__().future()
+        return monad(self).future()
 
     def __call__(self, handler):
         return self.hub.recv(self.addr, handler)

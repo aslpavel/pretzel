@@ -3,7 +3,7 @@ import socket
 import unittest
 import itertools
 from ..sock import Socket
-from ...monad import async
+from ...monad import monad, async
 from ...uniform import BrokenPipeError
 from ...core import schedule
 from ...tests import async_test
@@ -32,7 +32,7 @@ class SockTest(unittest.TestCase):
                     except BrokenPipeError:
                         pass
         server = server_coro().future()
-        server.__monad__()()  # error trace if any
+        monad(server)()  # error trace if any
         if server.completed:
             yield server
 

@@ -1,6 +1,7 @@
 """Different kinds of monads and do block notation
 """
-from . import monad, ident, result, list, cont, proxy
+from . import ident, result, list, cont, proxy
+from . import monad as _monad
 from . import async as _async
 from . import do as _do
 from . import do_green as _do_green
@@ -14,7 +15,7 @@ from .cont import *
 from .async import *
 from .proxy import *
 
-__all__ = (monad.__all__ + _do.__all__ + _do_green.__all__ + ident.__all__ +
+__all__ = (_monad.__all__ + _do.__all__ + _do_green.__all__ + ident.__all__ +
            result.__all__ + list.__all__ + cont.__all__ + _async.__all__ +
            proxy.__all__)
 

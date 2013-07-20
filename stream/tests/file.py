@@ -3,7 +3,7 @@ import os
 import itertools
 import unittest
 from ..file import File
-from ...monad import async
+from ...monad import monad, async
 from ...uniform import BrokenPipeError
 from ...core import schedule
 from ...tests import async_test
@@ -28,7 +28,7 @@ class FileTest(unittest.TestCase):
                 except BrokenPipeError:
                     pass
         reader_future = reader_coro().future()
-        reader_future.__monad__()()  # error trace if any
+        monad(reader_future)()  # error trace if any
         if reader_future.completed:
             yield reader_future
 

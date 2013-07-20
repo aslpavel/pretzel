@@ -2,7 +2,7 @@ import unittest
 from ..hub import Hub
 from ..proxy import Proxy, proxify
 from ...event import Event
-from ...monad import async, do_return
+from ...monad import monad, async, do_return
 from ...core import schedule
 from ...tests import async_test
 
@@ -36,7 +36,7 @@ class ProxyTest(unittest.TestCase):
                 yield proxy.method_error(RuntimeError())
 
             # asynchronous method
-            async_val = (~proxy.method_async()).__monad__().future()
+            async_val = monad(~proxy.method_async()).future()
             self.assertFalse(async_val.completed)
             yield proxy()
             self.assertEqual((yield async_val).value, remote.value)
@@ -80,4 +80,4 @@ class Remote (object):
         return value
 
     def __monad__(self):
-        self.event.__monad__().map_val(lambda r: r[0])
+        monad(self.event).map_val(lambda r: r[0])

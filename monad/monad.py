@@ -3,7 +3,7 @@
 from .proxy import Proxy
 from functools import wraps, reduce
 
-__all__ = ('Monad',)
+__all__ = ('Monad', 'monad',)
 
 
 class Monad(object):
@@ -182,3 +182,9 @@ class Monad(object):
         ap :: m (a -> b) -> m a -> m b
         """
         return lambda ma: mfunc.bind(lambda func: ma.bind(lambda a: Monad.unit(func(a))))
+
+
+def monad(target):
+    """Get associated monad
+    """
+    return target.__monad__()

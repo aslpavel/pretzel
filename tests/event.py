@@ -1,7 +1,7 @@
 import unittest
 from collections import deque
 from ..event import Event, EventQueue
-from ..monad import Cont
+from ..monad import Cont, monad
 
 __all__ = ('EvetTest', 'EventQueueTest',)
 
@@ -39,10 +39,10 @@ class EventTest(unittest.TestCase):
         event = Event()
         event(0)
 
-        monad = event.__monad__()
-        self.assertTrue(isinstance(monad, Cont))
-        monad(ret('1'))
-        monad(ret('2'))
+        mon = monad(event)
+        self.assertTrue(isinstance(mon, Cont))
+        mon(ret('1'))
+        mon(ret('2'))
 
         event(1)
         self.assertEqual(queue.popleft(), ('1', 1))
@@ -73,7 +73,7 @@ class EventTest(unittest.TestCase):
 
     def test_reduce(self):
         items = []
-        get = lambda: event.__monad__()(lambda val: items.append(val))
+        get = lambda: monad(event)(lambda val: items.append(val))
         event = Event()
 
         with event.reduce() as revent:
@@ -93,7 +93,7 @@ class EventTest(unittest.TestCase):
 class EventQueueTest(unittest.TestCase):
     def test(self):
         items = []
-        get = lambda: queue.__monad__()(lambda val: items.append(val))
+        get = lambda: monad(queue)(lambda val: items.append(val))
         queue = EventQueue()
 
         get()

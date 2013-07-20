@@ -9,7 +9,7 @@ from ..conn import ForkConnection, SSHConnection
 from ..conn.conn import ConnectionProxy
 from ..proxy import Proxy, proxify
 from ...core import schedule
-from ...monad import Result, async_all
+from ...monad import Result, monad, async_all
 from ...boot import BootLoader, boot_pack
 from ...process import process_call
 from ...tests import async_test
@@ -83,7 +83,7 @@ class ForkConnectionTest(unittest.TestCase):
                     yield proxy.method_error(RuntimeError())
 
                 # asynchronous method
-                async_val = (~proxy.method_async()).__monad__().future()
+                async_val = monad(~proxy.method_async()).future()
                 self.assertFalse(async_val.completed)
                 yield proxy()
                 self.assertEqual((yield async_val).value, (yield proxy.value))

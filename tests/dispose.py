@@ -2,7 +2,7 @@ import unittest
 import operator
 import itertools
 from ..dispose import FuncDisp, CompDisp
-from ..monad import async
+from ..monad import async, monad
 
 __all__ = ('FuncDispTest', 'CompDispTest',)
 
@@ -67,7 +67,7 @@ class CompDispTest(unittest.TestCase):
 
     def test_async(self):
         with CompDisp() as d:
-            future = d.__monad__().future()
+            future = monad(d).future()
             self.assertFalse(future.completed)
         self.assertTrue(future.completed)
-        self.assertTrue(d.__monad__().future().completed)
+        self.assertTrue(monad(d).future().completed)
