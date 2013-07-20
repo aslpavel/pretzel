@@ -242,10 +242,10 @@ def main():
 if __name__ == '__main__':
   main()
 ```
-Remoting submodule cat be used as workaround for python's GIL, in a similar
+Remoting submodule can be used as workaround for python's GIL, in a similar
 fashion to `multiprocessing` module. You can use `ForkConnection` (or
 `composite_fork_conn`) which behaves as `SSHConnection` but instead of
-connection via ssh, just spawns new process.
+connecting via ssh, it just spawns new process.
 ```python
 import time
 from pretzel.app import app
