@@ -33,15 +33,19 @@ pip install pretzel
 
 Approach
 --------
-Usage of asynchronous functions is similar to C# async/await but instead of `async` attribute it uses `@async`
-decorator and instead of `await` keyword, `yield` is used. Internaly unit of asynchrocity is implemented
-as continuation monad `Cont` with embeded `Result` monad (similar to Haskell's `Cont` and `Either` monads)
-as its value. One important difference of `Cont` monad from C# `Task` object, is that `Task` represents
-already running asynchronous operation, but continuation monad is a sequence of computations, and this computations
-are not started. `.future()` method on instance of `Cont` can be used to create `Task` like object. To use this
-library you don't have to understand notion of the monad. Simple asynchronous function would look like this.
-```python
-from pretzel.monad import async
+Usage of asynchronous functions is similar to C# async/await but instead of
+`async` attribute it uses `@async` decorator and instead of `await` keyword,
+`yield` is used. Internally unit of asynchrony is implemented as continuation
+monad `Cont` with embedded `Result` monad (similar to Haskell's `Cont` and
+`Either` monads) as its value. One important difference of `Cont` monad from C#
+`Task` object, is that `Task` represents already running asynchronous operation,
+but continuation monad is a sequence of computations, and this computations are
+not started. `.future()` method on instance of `Cont` can be used to create
+`Task` like object. To use this library you don't have to understand notion of
+the monad. Simple asynchronous function would look like this.
+
+```python from
+pretzel.monad import async
 from pretzel.core imoprt sleep
 
 @async
@@ -51,11 +55,14 @@ def print_after(delay, *args, **kwargs):
   yield sleep(delay)  # execution will be resumed in delay seconds
   print(*args, **kwargs)
 ```
-To return something meaningfull in python3 you can just use `return` keyword, but in python2 you have to
-use `do_return` function (it will also work in python3) as `return` with value cannot be used inside a generator
-function. Result of such asynchronous function is again a continuation monad, if exception is thrown during
-execution of its body, it is marshaled to receiver of the result and can be processed correctly.
-For example.
+
+To return something meaningful in python3 you can just use `return` keyword,
+but in python2 you have to use `do_return` function (it will also work in
+python3) as `return` with value cannot be used inside a generator function.
+Result of such asynchronous function is again a continuation monad, if exception
+is thrown during execution of its body, it is marshaled to receiver of the
+result and can be processed correctly. For example.
+
 ```python
 @async
 def process_error():
@@ -63,15 +70,17 @@ def process_error():
   def trhow_after(delay, error):
     yield sleep(delay)
     raise error
-    
+
   try:
     yield throw_after(1, ValueError('test error'))
   except ValueError as error:
     # process error in a meaningfull way
   do_return('done')  # exectly equivalent to: return 'done'
 ```
-Asynchronous values (continuation monads) can be composed with two helper functions
-`async_all` and `async_any`.
+
+Asynchronous values (continuation monads) can be composed with two helper
+functions `async_all` and `async_any`.
+
 ```python
 @async
 def composition_example():
@@ -79,17 +88,20 @@ def composition_example():
   yield async_any([sleep(1), sleep(2)])  # will be resumed in 1 sedond
 
   result_all = yield async_all([func1(), func2()])  # = (result1, result2)
-  reuslt_any = yield async_any([func1(), func2()])  # = result1 | result2 
+  reuslt_any = yield async_any([func1(), func2()])  # = result1 | result2
 ```
-`Cont` monad can also be called with callback function as its argument, in this case, on completion of
-asynchronous operation, callback will be called with `Result` monad. If callback function is not specified
-default, then default continuation callback will be used which only reports errors if any.
+
+`Cont` monad can also be called with callback function as its argument, in this
+case, on completion of asynchronous operation, callback will be called with
+`Result` monad. If callback function is not specified default, then default
+continuation callback will be used which only reports errors if any.
+
 ```python
 >>> sleep(1)(print)
 Result(val:1374307530.015137)
 >>> sleep(None)()
 [continuation] error in coroutine started from
-  File "<console>", line 1, in <module>            
+  File "<console>", line 1, in <module>
 Traceback (most recent call last):
   File "pretzel/monad/do.py", line 26, in do_block
     return value(block(*a, **kw))
@@ -97,9 +109,11 @@ Traceback (most recent call last):
     do_done(self.time_queue.on(time() + delay))
 TypeError: unsupported operand type(s) for +: 'float' and 'NoneType'
 ```
-Inside body of asynchronous function you can `yield` not only `Cont` monad directly, but any object
-implementing `.__monad__()` method which returns `Cont` monad. There are many such types in this library,
-for example `Event`
+
+Inside body of asynchronous function you can `yield` not only `Cont` monad
+directly, but any object implementing `.__monad__()` method which returns `Cont`
+monad. There are many such types in this library, for example `Event`
+
 ```python
 @async
 def func():
@@ -115,8 +129,9 @@ event('e1')  # 'e1' is printed
 
 Main loop
 ---------
-`Core` class implemnts I/O loop, and it used internally to implement asynchronous streams, timers and more.
-Previously used `sleep` function will work correctly only in presence of running I/O loop.
+`Core` class implements I/O loop, and it used internally to implement
+asynchronous streams, timers and more. Previously used `sleep` function will
+work correctly only in presence of running I/O loop.
 
 
 Examples
