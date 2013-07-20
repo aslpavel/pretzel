@@ -232,6 +232,7 @@ which behaves as ordinary connection but returns set of results.
 import os
 from pretzel.app import app
 from pretzel.remoting import composite_ssh_conn
+
 @app
 def main():
   hosts = ['localhost', 'localhost']
