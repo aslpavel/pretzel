@@ -130,6 +130,7 @@ intialize and use `Core` object is to use `@app` decorator.
 Sleeps for one second, then prints 'done' and exits.
 """
 from pretzel.app import app
+from pretzel.core import sleep
 
 @app
 def main():
@@ -142,9 +143,16 @@ if __name__ == '__main__':
 
 Remoting
 --------
-Main reason for creation of this framework was to execute code on a set of machines via
-ssh connection. And its achieved by usege of `SSHConnection` class. Lets start with
-simple example.
+Main reason for creation of this framework was to execute code on a set of
+machines via ssh connection. And its achieved by usage of `SSHConnection` class.
+`SSHConnection` object a callable object which returns proxy object for its
+argument. You can call proxy object, get its attributes or items (proxy[item]),
+result of such operations is again a proxy object with this embedded operations.
+Proxy implements monad interface, and to get result of embedded chain of
+operations you can yield it inside asynchronous function. In this example we
+create proxy for `os.getpid` function, call it and then execute on remote
+process by yielding it. There is no need for pretzel to be installed on remote
+machine.
 ```python
 import os
 from pretzel.app import app
@@ -160,13 +168,53 @@ def main():
 if __name__ == '__main__':
   main()
 ```
-`SSHConnection` object a callable object which returns proxy object for its argument.
-You can call proxy object, get its attributes or itmes (proxy[item]), result of
-such operations is again a proxy object with this embedded operations. Proxy
-implements monad interface, and to get result of embedded chain of operations you
-can yield it inside asynchronous function.
-In this example we create proxy for `os.getpid` function, call it and then execute on
-remote process by yielding it.
+Connection can marshal any pickle-able object, or `Sender` object plus any object
+which is reducible to set of pickle-able and `Sender` objects. `Proxy` and
+`Connection` itself are examples of such objects. You can also create proxy
+object from any arbitrary object with `proxify` or `proxify_func`.
+```python
+import os
+from pretzel.app import app
+from pretzel.remoting import SSHConnection, proxify
+
+class Remote(object):
+  def __init__(self):
+    self.value = 0
+  def next(self):
+    self.value += 1
+    return self.value
+  def getpid(self):
+    return os.getpid()
+
+@app
+def main():
+  with (yield SSHConnection('localhost')) as conn:
+    with (yield proxify(conn(Remote)())) as o:  # remote object proxy
+      print(os.getpid(), (yield o.getpid()))    # prints two different pids
+      print((yield o.next()))  # prints 1
+      print((yield o.next()))  # prints 2
+
+if __name__ == '__main__':
+  main()
+```
+But `Cont` monad is not marshallable, that is why there is special operation on
+proxy object `~` which is equivalent to `yield` inside asynchronous function.
+```python
+from pretzel.app import app
+from pretzel.process import process_call
+from pretzel.remoting import SSHConnection
+
+@app
+def main():
+  """Execute 'ls' on remote machine and show result of the execution
+  """
+  with (yield SSHConnection('localhost')) as conn:
+    out, err, code = yield ~conn(process_call)('ls')
+    print(out.decode())
+
+if __name__ == '__main__':
+  main()
+```
 
 Examples
 --------
