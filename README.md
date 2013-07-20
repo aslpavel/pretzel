@@ -146,7 +146,7 @@ Remoting
 Main reason for creation of this framework was to execute code on a set of
 machines via ssh connection. And its achieved by usage of `SSHConnection` class.
 `SSHConnection` object a callable object which returns proxy object for its
-argument. You can call proxy object, get its attributes or items (proxy[item]),
+argument. You can call proxy object, get its attributes or items `proxy[item]`,
 result of such operations is again a proxy object with this embedded operations.
 Proxy implements monad interface, and to get result of embedded chain of
 operations you can yield it inside asynchronous function. In this example we
@@ -161,7 +161,7 @@ from pretzel.remoting import SSHConnection
 @app
 def main():
   """Connect to localhost via ssh and print remote process's pid
-  
+
   Note:
     You have to be able to login to the remote host without
     entering any password (by means of ssh keys) otherwise
@@ -187,11 +187,11 @@ class Remote(object):
   """
   def __init__(self):
     self.value = 0
-    
+
   def next(self):
     self.value += 1
     return self.value
-    
+
   def getpid(self):
     return os.getpid()
 
@@ -221,6 +221,49 @@ def main():
   with (yield SSHConnection('localhost')) as conn:
     out, err, code = yield ~conn(process_call)('ls')
     print(out.decode())
+
+if __name__ == '__main__':
+  main()
+```
+There is also a way to work with multiple connections as if it one, by means of
+`composite_ssh_conn`. It accepts list of hosts and returns composite connection,
+which behaves as ordinary connection but returns set of results.
+```python
+import os
+from pretzel.app import app
+from pretzel.remoting import composite_ssh_conn
+@app
+def main():
+  hosts = ['localhost', 'localhost']
+  with (yield composite_ssh_conn(hosts)) as conns:
+    result = yield conns(os.getpid)()
+    print(result)  # List(25163, 25162) - iterable object of pids
+
+if __name__ == '__main__':
+  main()
+```
+Remoting submodule cat be used as workaround for python's GIL, in a similar
+fashion to `multiprocessing` module. You can use `ForkConnection` (or
+`composite_fork_conn`) which behaves as `SSHConnection` but instead of
+connection via ssh, just spawns new process.
+```python
+import time
+from pretzel.app import app
+from pretzel.remoting import composite_fork_conn
+
+def computation_heavy_task():
+  """Some computation intensive task
+  """
+  start_time = time.time()
+  time.sleep(10)
+  stop_time = time.time()
+  return int(stop_time - start_time)
+
+@app
+def main():
+  with (yield composite_fork_conn(10)) as conns:  # create 10 connections
+    result = yield conns(computation_heavy_task)()
+    print(result)  # prints List(10, 10, 10, 10, 10, 10, 10, 10, 10, 10)
 
 if __name__ == '__main__':
   main()
