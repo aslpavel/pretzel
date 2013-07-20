@@ -161,6 +161,11 @@ from pretzel.remoting import SSHConnection
 @app
 def main():
   """Connect to localhost via ssh and print remote process's pid
+  
+  Note:
+    You have to be able to login to the remote host without
+    entering any password (by means of ssh keys) otherwise
+    connecition will fail.
   """
   with (yield SSHConnection('localhost')) as conn:
     print((yield conn(os.getpid)()))
@@ -178,11 +183,15 @@ from pretzel.app import app
 from pretzel.remoting import SSHConnection, proxify
 
 class Remote(object):
+  """Object which will be used remotely
+  """
   def __init__(self):
     self.value = 0
+    
   def next(self):
     self.value += 1
     return self.value
+    
   def getpid(self):
     return os.getpid()
 
@@ -199,6 +208,7 @@ if __name__ == '__main__':
 ```
 But `Cont` monad is not marshallable, that is why there is special operation on
 proxy object `~` which is equivalent to `yield` inside asynchronous function.
+Here is an example of remote execution of asynchronous function.
 ```python
 from pretzel.app import app
 from pretzel.process import process_call
