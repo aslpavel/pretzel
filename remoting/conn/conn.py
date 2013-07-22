@@ -6,11 +6,11 @@ import textwrap
 from pickle import Pickler, Unpickler
 from ..hub import Hub, Sender, pair
 from ..proxy import Proxy
-from ..expr import LoadConstExpr, LoadArgExpr
+from ..expr import ExprEnv, Const, Arg
 from ...uniform import reraise
 from ...event import Event
 from ...core import Core
-from ...monad import Result, async, do_return
+from ...monad import Result, Cont, async, do_return
 from ...state_machine import StateMachine
 from ...dispose import CompDisp
 
@@ -94,7 +94,7 @@ class Connection(object):
     def __call__(self, target):
         """Create proxy object from provided pickle-able constant.
         """
-        return Proxy(self.sender, LoadConstExpr(target))
+        return Proxy(self.sender, Const(target))
 
     @property
     def connected(self):
@@ -157,10 +157,11 @@ class Connection(object):
                     if msg is None:  # pragma: no cover (covered by remote path)
                         self.dispose()
                         return
+                    env = ExprEnv(Cont, conn=self)
                     if src is None:
-                        yield msg(self)
+                        yield msg(env)
                     else:
-                        src.send((yield msg(self)))
+                        src.send((yield msg(env)))
                 break
             except InterruptError:  # pragma: no cover (covered by remote path)
                 # Required module is being imported right now. Wait for pending
@@ -185,7 +186,7 @@ class Connection(object):
         return self.connect()
 
     def __reduce__(self):
-        return ConnectionProxy, (self.sender, LoadArgExpr(0), self.flags)
+        return ConnectionProxy, (self.sender, Arg('conn'), self.flags)
 
     @property
     def disposed(self):
@@ -217,7 +218,7 @@ class ConnectionProxy(Proxy):
         self._flags = flags
 
     def __call__(self, target):
-        return Proxy(self._sender, LoadConstExpr(target))
+        return Proxy(self._sender, Const(target))
 
     def __reduce__(self):
         return ConnectionProxy, (self._sender, self._expr, self._flags)

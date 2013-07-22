@@ -39,7 +39,7 @@ class ProxyTest(unittest.TestCase):
             async_val = monad(~proxy.method_async()).future()
             self.assertFalse(async_val.completed)
             yield proxy()
-            self.assertEqual((yield async_val).value, remote.value)
+            self.assertEqual((yield async_val), remote.value)
 
             with (yield proxify(proxy.value)) as value_proxy:
                 self.assertTrue(isinstance(value_proxy, Proxy))

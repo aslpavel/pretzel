@@ -1,91 +1,93 @@
+import pickle
+import operator
 import unittest
 
 from ..expr import *
 from ...event import Event
-from ...monad import Identity
+from ...monad import Result, Identity, Cont, do, do_return
 
 __all__ = ('ExprTest',)
 
 
 class ExprTest(unittest.TestCase):
-    def test_load_arg(self):
-        self.assertEqual(run_expr(LoadArgExpr(0), 'one', 'two'), 'one')
-        self.assertEqual(run_expr(LoadArgExpr(1), 'one', 'two'), 'two')
+    def test_arg(self):
+        self.assertEqual(run(Arg('first'), first=1), 1)
+        with self.assertRaises(KeyError):
+            run(Arg('undefined'))
 
-    def test_load_const(self):
-        self.assertEqual(run_expr(LoadConstExpr('constant')), 'constant')
+    def test_const(self):
+        self.assertEqual(run(Const('constant')), 'constant')
+
+    def test_env(self):
+        env_one_expr = GetItem(GetAttr(Env(), 'args'), Const('one'))
+        self.assertEqual(run(env_one_expr, one='ONE'), 'ONE')
 
     def test_call(self):
         fn = lambda *a, **kw: (a, kw)
-        self.assertEqual(run_expr(CallExpr(fn, 'arg')), fn('arg'))
-        self.assertEqual(run_expr(CallExpr(fn, 0, 1, 2, one=1, two=2)),
-                         fn(0, 1, 2, one=1, two=2))
-        self.assertEqual(run_expr(CallExpr(fn, one=1, two=2)), fn(one=1, two=2))
+        self.assertEqual(run(Call(Const(fn), Const('arg'))), fn('arg'))
+        self.assertEqual(run(Call(Const(fn), Const(0), one=Const(1))), fn(0, one=1))
+        self.assertEqual(run(Call(Const(fn), two=Const(2))), fn(two=2))
 
     def test_attr(self):
         class A(object):
             pass
         a = A()
 
-        get_attr = GetAttrExpr(LoadConstExpr(a), 'key').code()
-        set_attr = SetAttrExpr(LoadConstExpr(a), 'key', LoadArgExpr(0)).code()
-
         with self.assertRaises(AttributeError):
-            run(get_attr)
-        self.assertEqual(run(set_attr, 'value'), None)
-        self.assertEqual(a.key, 'value')
-        self.assertEqual(run(get_attr), 'value')
+            run(GetAttr(Const(a), 'key'))
+
+        run(Call(Const(setattr), Const(a), Const('value'), Const('value')))
+        self.assertEqual(a.value, 'value')
+        self.assertEqual(run(GetAttr(Const(a), 'value')), 'value')
 
     def test_item(self):
         d = {}
-        get_item = GetItemExpr(LoadConstExpr(d), LoadArgExpr(0)).code()
-        set_item = SetItemExpr(LoadConstExpr(d), LoadArgExpr(0), LoadArgExpr(1)).code()
 
         with self.assertRaises(KeyError):
-            run(get_item, 'key')
-        self.assertEqual(run(set_item, 'key', 'value'), None)
-        self.assertEqual({'key': 'value'}, d)
-        self.assertEqual(run(get_item, 'key'), 'value')
+            run(GetItem(Const(d), Const('key')))
 
-    def test_raise(self):
-        with self.assertRaises(RuntimeError):
-            run_expr(RaiseExpr(LoadArgExpr(0)), RuntimeError('test'))
+        run(Call(Const(operator.setitem), Const(d), Const('key'), Const('value')))
+        self.assertEqual({'key': 'value'}, d)
+        self.assertEqual(run(GetItem(Const(d), Const('key'))), 'value')
 
     def test_bind(self):
         ev = Event()
-        ev_future = CallExpr(len, BindExpr(LoadArgExpr(0))).code()(ev).future()
+        len_expr = reload(Call(Const(len), Bind(Arg('ev'))))
+        ev_future = len_expr(ExprEnv(Cont, ev=ev)).future()
 
         self.assertFalse(ev_future.completed)
         ev('result')
         self.assertEqual(ev_future.value, len('result'))
 
     def test_if(self):
-        max_code = IfExpr(CmpExpr('>', LoadArgExpr(0), LoadArgExpr(1)),
-                          LoadArgExpr(0),
-                          LoadArgExpr(1)).code()
+        max_expr = If(Call(Const(operator.gt), Arg('a'), Arg('b')),
+                      Arg('a'), Arg('b'))
 
-        self.assertEqual(run(max_code, 3, 2), 3)
-        self.assertEqual(run(max_code, 2, 3), 3)
+        max_expr = reload(max_expr)
+        self.assertEqual(run(max_expr, a=3, b=2), 3)
+        self.assertEqual(run(max_expr, a=2, b=3), 3)
 
-    def test_while(self):
-        while_code = WhileExpr(CmpExpr('>', CallExpr(LoadArgExpr(0)), LoadConstExpr(0)),
-                               CallExpr(LoadArgExpr(1))).code()
-        ctx = [10, 0]
+    def test_do(self):
+        @do(Expr)
+        def run():
+            val = yield Bind(Arg('ev'))
+            do_return('Yes, {}!'.format(val))
 
-        def cond():
-            ctx[0] -= 2
-            return ctx[0]
-
-        def body():
-            ctx[1] += 1
-
-        run(while_code, cond, body)
-        self.assertEqual(ctx, [0, 4])
+        ev = Event()
+        ev_future = run()(ExprEnv(Cont, ev=ev)).future()
+        self.assertFalse(ev_future.completed)
+        ev('Done')
+        self.assertEqual(ev_future.value, 'Yes, Done!')
 
 
-def run(code, *args):
-    return code(*args, monad=Identity).value.value
+def run(expr, **args):
+    """Run expression with Identity monad
+    """
+    result = expr(ExprEnv(Identity, **args)).value
+    return result.value if isinstance(result, Result) else result
 
 
-def run_expr(expr, *args):
-    return run(expr.code(), *args)
+def reload(val):
+    """Reload value with pickle
+    """
+    return pickle.loads(pickle.dumps(val, -1))

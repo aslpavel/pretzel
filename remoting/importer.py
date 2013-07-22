@@ -5,8 +5,9 @@ import sys
 import socket
 import inspect
 import pkgutil
+import operator
 from .hub import pair
-from .expr import SetItemExpr, GetAttrExpr, LoadArgExpr
+from .expr import Call, Arg, Const, GetAttr
 from ..core import Core
 from ..monad import Result, async, do_return
 from ..boot import BootLoader
@@ -91,9 +92,12 @@ class Importer(object):
                     loader = BootLoader(name, source, file, False, None)
                     yield conn(loader)().__package__
 
-                # remote_conn.module_map['__main__'] = main
-                yield conn.sender(SetItemExpr(GetAttrExpr(LoadArgExpr(0),
-                                  'module_map'), '__main__', name).code())
+                # update_map == Expr(conn.module_map['__main__'] = main)
+                update_map = Call(Const(operator.setitem),
+                                  GetAttr(Arg('conn'), 'module_map'),
+                                  Const('__main__'),
+                                  Const(name))
+                yield conn.sender(update_map)
                 conn.module_map[name] = '__main__'
                 break
             do_return(importer)

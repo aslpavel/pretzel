@@ -1,9 +1,8 @@
 """Send-able lazy proxy object
 """
 from .hub import pair
-from .expr import (LoadArgExpr, LoadConstExpr, CallExpr, GetAttrExpr,
-                   GetItemExpr, BindExpr)
-from ..monad import async, do_return
+from .expr import ExprEnv, Arg, Const, Call, GetAttr, GetItem, Bind
+from ..monad import Cont, async, do_return
 
 __all__ = ('Proxy', 'proxify', 'proxify_func',)
 
@@ -11,32 +10,31 @@ __all__ = ('Proxy', 'proxify', 'proxify_func',)
 class Proxy(object):
     """Send-able lazy proxy object
     """
-    __slots__ = ('_sender', '_expr', '_code',)
+    __slots__ = ('_sender', '_expr',)
 
     def __init__(self, sender, expr):
         self._sender = sender
         self._expr = expr
-        self._code = None
 
     def __call__(self, *args, **kwargs):
-        return Proxy(self._sender, CallExpr(self._expr, *args, **kwargs))
+        args = tuple(Const(arg) for arg in args)
+        kwargs = {key: Const(val) for key, val in kwargs.items()}
+        return Proxy(self._sender, Call(self._expr, *args, **kwargs))
 
     def __getattr__(self, name):
-        return Proxy(self._sender, GetAttrExpr(self._expr, name))
+        return Proxy(self._sender, GetAttr(self._expr, name))
 
     def __getitem__(self, item):
-        return Proxy(self._sender, GetItemExpr(self._expr, item))
+        return Proxy(self._sender, GetItem(self._expr, Const(item)))
 
     def __invert__(self):
-        return Proxy(self._sender, BindExpr(self._expr))
+        return Proxy(self._sender, Bind(self._expr))
 
     def __rshift__(self, func):
-        return Proxy(self._sender, CallExpr(LoadConstExpr(func), self._expr))
+        return Proxy(self._sender, Call(Const(func), self._expr))
 
     def __monad__(self):
-        if self._code is None:
-            self._code = self._expr.code()
-        return self._sender(self._code)
+        return self._sender(self._expr)
 
     def __reduce__(self):
         return type(self), (self._sender, self._expr)
@@ -64,17 +62,23 @@ def proxify(target, dispose=None, hub=None):
     if isinstance(target, Proxy):
         return target >> proxify
 
-    def proxy_handler(code, dst, src):
-        if code is None:
+    def proxy_handler(expr, dst, src):
+        if expr is None:
             if dispose is None or dispose:
                 getattr(target, '__exit__', lambda *_: None)(None, None, None)
             return False  # unsubscribe proxy handler
-        code(target)(lambda val: val.trace() if src is None else src.send(val))
-        return True
+        else:
+            def ret(value):
+                if src is None:
+                    value.trace()
+                else:
+                    src.send(value)
+            expr(ExprEnv(Cont, target=target))(ret)
+            return True
 
     recv, send = pair(hub=hub)
     recv(proxy_handler)
-    return Proxy(send, LoadArgExpr(0))
+    return Proxy(send, Arg('target'))
 
 
 class FuncProxy(object):

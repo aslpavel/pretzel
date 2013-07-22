@@ -86,7 +86,7 @@ class ForkConnectionTest(unittest.TestCase):
                 async_val = monad(~proxy.method_async()).future()
                 self.assertFalse(async_val.completed)
                 yield proxy()
-                self.assertEqual((yield async_val).value, (yield proxy.value))
+                self.assertEqual((yield async_val), (yield proxy.value))
 
                 with (yield proxify(proxy.value)) as value_proxy:
                     self.assertTrue(isinstance(value_proxy, Proxy))
