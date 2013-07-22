@@ -151,6 +151,9 @@ if __name__ == '__main__':
   main()
 ```
 
+See [Core's init module](https://github.com/aslpavel/pretzel/blob/master/core/__init__.py)
+for full list of available functions and their descriptions.
+
 Remoting
 --------
 Main reason for creation of this framework was to execute code on a set of
