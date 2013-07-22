@@ -109,9 +109,9 @@ class Core(object):
 
     @async
     def sleep(self, delay):
-        """Sleep
+        """Sleep for delay seconds
 
-        Interrupt current coroutine for specified amount of time
+        Returns time when it supposed to be executed.
         """
         if self.state.state == self.STATE_DISP:
             raise CanceledError('core is disposed')
@@ -119,9 +119,9 @@ class Core(object):
 
     @async
     def sleep_until(self, when):
-        """Sleep until
+        """Sleep until specified unix time is reached
 
-        Interrupt current coroutine until specified time is reached
+        Returns time when it supposed to be executed.
         """
         if self.state.state == self.STATE_DISP:
             raise CanceledError('core is disposed')
@@ -129,12 +129,12 @@ class Core(object):
 
     @async
     def poll(self, fd, mask):
-        """Poll file descriptor
+        """Poll file descriptor for events
 
         Poll file descriptor for events specified by mask. If mask is None then
         specified descriptor is unregistered and all pending events are resolved
-        with BrokenPipeError, otherwise future is resolved with bitmap of the
-        events happened on file descriptor or error if any.
+        with BrokenPipeError, otherwise returns bitmap of the events happened on
+        file descriptor or error if any.
         """
         if mask is not None and self.state.state == self.STATE_DISP:
             raise CanceledError('core is disposed')
@@ -146,11 +146,11 @@ class Core(object):
 
     @async
     def schedule(self):
-        """Schedule continuation to be executed on this core
+        """Schedule execution to next iteration circle
 
-        Scheduled continuation will be executed on next iteration circle. This
-        function can be called from different thread, but not from signal handler
-        as heappush used by time_queue is not reentrant. Returns this core object.
+        This function can be called from different thread, but not from signal
+        handler as heappush used by time_queue is not reentrant. Returns associated
+        core object.
         """
         if self.state.state == self.STATE_DISP:
             raise CanceledError('core is disposed')
@@ -161,23 +161,27 @@ class Core(object):
 
     @async
     def waitpid(self, pid):
-        """Wait pid
+        """Wait for process with specified pid to be terminated
 
-        Schedule continuation to be executed when process with pid is terminated.
+        Returns status process's termination status.
         """
         if self.state.state == self.STATE_DISP:
             raise CanceledError('core is disposed')
         do_done(self.proc_queue.on(pid))
 
     def wake(self):
+        """Wake main loop
+        """
         if self.thread_ident != get_ident():
             self.waker()
 
     def __call__(self, dispose=False):
+        """Start core's execution.
+        """
         return self.start()
 
     def start(self, dispose=False):
-        """Start core execution
+        """Start core's execution.
         """
         self.state(self.STATE_EXEC)
         try:
@@ -192,7 +196,7 @@ class Core(object):
                     self.state(self.STATE_IDLE)
 
     def stop(self):
-        """Stop core execution
+        """Stop core's execution
         """
         return self.state(self.STATE_IDLE)
 
@@ -200,7 +204,7 @@ class Core(object):
         """Core's iterator
 
         Starts new iteration loop. Returns generator object which yield at the
-        beginning of each iteration.
+        beginning of each iteration circle.
         """
         if self.state.state == self.STATE_DISP:
             raise RuntimeError('core is disposed')

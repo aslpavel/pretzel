@@ -1,3 +1,5 @@
+"""Poller implementation
+"""
 import errno
 import select
 from .. import PRETZEL_POLLER
@@ -26,6 +28,8 @@ POLL_DISCONNECT = EPOLLHUP
 
 
 class Poller (object):
+    """Poller base type
+    """
     @classmethod
     def from_name(cls, name=None):
         name = name or PRETZEL_POLLER
@@ -69,7 +73,7 @@ class Poller (object):
 
 
 class EPollPoller (Poller):
-    """Poller base on epoll
+    """EPoll based poller
     """
     def __init__(self):
         self.fds = {}
@@ -110,7 +114,7 @@ class EPollPoller (Poller):
 
 
 class SelectPoller(Poller):
-    """Poller base on select
+    """Select based poller
     """
     SUPPORTED_MASK = POLL_READ | POLL_WRITE
 
@@ -171,4 +175,7 @@ class SelectPoller(Poller):
 
 
 class KQueuePoller(SelectPoller):
-    pass
+    """KQueue based poller
+
+    Currently just an alias for SelectPoller.
+    """

@@ -7,41 +7,46 @@ __all__ = (core.__all__ + poll.__all__ + ('sleep', 'sleep_until',
 
 
 def sleep(delay, core=None):
-    """Sleep for "delay" seconds
+    """Sleep for delay seconds
+
+    Returns time when it supposed to be executed.
     """
     return (core or Core.local()).sleep(delay)
 
 
 def sleep_until(when, core=None):
-    """Sleep until "when" time is reached
+    """Sleep until specified unix time is reached
+
+    Returns time when it supposed to be executed.
     """
     return (core or Core.local()).sleep_until(when)
 
 
 def poll(fd, mask, core=None):
-    """Poll file descriptor
+    """Poll file descriptor for events
 
     Poll file descriptor for events specified by mask. If mask is None then
     specified descriptor is unregistered and all pending events are resolved
-    with BrokenPipeError, otherwise future is resolved with bitmap of the
-    events happened on file descriptor or error if any.
+    with BrokenPipeError, otherwise returns bitmap of the events happened on
+    file descriptor or error if any.
     """
     return (core or Core.local()).poll(fd, mask)
 
 
 def schedule(core=None):
-    """Schedule continuation to be executed on specified core (local by default)
+    """Schedule execution to next iteration circle
 
-    Scheduled continuation will be executed on next iteration circle. This
-    function can be called from different thread.
+    This function can be called from different thread, but not from signal
+    handler as heappush used by time_queue is not reentrant. Returns associated
+    core object.
     """
     return (core or Core.local()).schedule()
 
 
 def waitpid(pid, core=None):
-    """Wait pid
+    """Wait for process with specified pid to be terminated
 
-    Schedule continuation to be executed when process with pid is terminated.
+    Returns status process's termination status.
     """
     return (core or Core.local()).waitpid(pid)
 
