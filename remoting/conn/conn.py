@@ -142,6 +142,7 @@ class Connection(object):
         yield self.core.schedule()
         self.recv_ev(msg_raw)
 
+        msg_env = ExprEnv(Cont, conn=self)
         while True:
             src, unpacked = None, False
             try:
@@ -157,11 +158,10 @@ class Connection(object):
                     if msg is None:  # pragma: no cover (covered by remote path)
                         self.dispose()
                         return
-                    env = ExprEnv(Cont, conn=self)
                     if src is None:
-                        yield msg(env)
+                        yield msg(msg_env)
                     else:
-                        src.send((yield msg(env)))
+                        src.send((yield msg(msg_env)))
                 break
             except InterruptError:  # pragma: no cover (covered by remote path)
                 # Required module is being imported right now. Wait for pending

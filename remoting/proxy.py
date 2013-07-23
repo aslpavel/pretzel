@@ -73,11 +73,12 @@ def proxify(target, dispose=None, hub=None):
                     value.trace()
                 else:
                     src.send(value)
-            expr(ExprEnv(Cont, target=target))(ret)
+            expr(expr_env)(ret)
             return True
 
     recv, send = pair(hub=hub)
     recv(proxy_handler)
+    expr_env = ExprEnv(Cont, target=target)
     return Proxy(send, Arg('target'))
 
 
