@@ -21,16 +21,16 @@ def do(Monad):
     def do(block):
         if not inspect.isgeneratorfunction(block):
             @wraps(block)
-            def do_block(*a, **kw):
+            def do_block(*args, **kwargs):
                 try:
-                    return value(block(*a, **kw))
+                    return value(block(*args, **kwargs))
                 except _return as ret:
                     return value(ret.args[1]) if ret.args[0] == 0 else ret.args[1]
                 except Exception:
                     return error()
         else:
             @wraps(block)
-            def do_block(*args, **kw):
+            def do_block(*args, **kwargs):
                 def do_next(result):
                     val, err = (result.pair if isinstance(result, Result) else
                                (result, None))
@@ -48,7 +48,7 @@ def do(Monad):
                         return error()
 
                 try:
-                    gen = block(*args, **kw)
+                    gen = block(*args, **kwargs)
                     return do_next(Result.from_value(None))
                 except Exception:
                     return error()
