@@ -31,3 +31,6 @@ class SSHConnection(ShellConnection):
         ShellConnection.__init__(self, command=command, escape=True,
                                  py_exec=py_exec, environ=environ,
                                  bufsize=bufsize, hub=hub, core=core)
+
+    def connect(self):
+        return ShellConnection.connect(self, self.host)

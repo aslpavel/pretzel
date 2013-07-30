@@ -18,6 +18,7 @@ from ...process import Process, PIPE
 from ...boot import BootImporter, boot_pack, __name__ as boot_name
 from ...core import Core
 from ...stream import BufferedFile
+from ...uniform import BrokenPipeError
 
 __all__ = ('ShellConnection',)
 
@@ -55,7 +56,10 @@ class ShellConnection(StreamConnection):
                                                bufsize=self.bufsize, core=self.core)))
 
         # check remote python version
-        version = yield self.process.stdout.read_bytes()
+        try:
+            version = yield self.process.stdout.read_bytes()
+        except BrokenPipeError:
+            raise RuntimeError('failed to connect to {}'.format(target))
         if version.decode() != str(sys.version_info[0]):
             raise RuntimeError('remote python major version mismatch local:{} remote:{}'
                                .format(sys.version_info[0], version.decode()))
