@@ -104,26 +104,12 @@ class Result(Monad):
     def __reduce__(self):
         val, err = self.pair
         if err is None:
-            return _from_value, (val,)
+            return _result_from_val, (val,)
         else:
-            tb = (self.tb_fmt.format(
-                  host=socket.gethostname(),
-                  pid=os.getpid(),
-                  error_name=err[0].__name__,
-                  error_args=', '.join(repr(arg) for arg in err[1].args),
-                  traceback=''.join(traceback.format_exception(*err))))
-            tb += getattr(err[1], '_saved_traceback', '')
-            exc = err[1]
-            exc._saved_traceback = tb
-            return _from_exc, (exc,)
-
-    tb_fmt = textwrap.dedent("""\
-        `-------------------------------------------------------------------------------
-        Host   : {host}
-        Process: {pid}
-        Error  : {error_name}({error_args})
-
-        {traceback}""")
+            et, eo, tb = err
+            eo._saved_traceback = (result_traceback(et, eo, tb) +
+                                   getattr(eo, '_saved_traceback', ''))
+            return _result_from_exc, (eo,)
 
     def __str__(self):
         return ('Result({})'.format(
@@ -134,12 +120,32 @@ class Result(Monad):
         return str(self)
 
 
-def _from_value(val):
+def _result_from_val(val):
     return Result.from_value(val)
 
 
-def _from_exc(exc):
+def _result_from_exc(exc):
     return Result.from_exception(exc)
+
+
+def result_traceback(et, eo, tb):
+    """String traceback representation with some additional information
+    """
+    error_args = ', '.join(repr(arg) for arg in getattr(eo, 'args', []))
+    trace = ''.join(traceback.format_exception(et, eo, tb))
+    return result_traceback_fmt.format(host=socket.gethostname(),
+                                       pid=os.getpid(),
+                                       error_name=et.__name__,
+                                       error_args=error_args,
+                                       trace=trace.encode('utf-8') if PY2 else trace)
+
+result_traceback_fmt = textwrap.dedent("""\
+    `-------------------------------------------------------------------------------
+    Host   : {host}
+    Process: {pid}
+    Error  : {error_name}({error_args})
+
+    {trace}""")
 
 
 def result_excepthook(et, eo, tb, file=None, banner=None):  # pragma: no cover
@@ -156,12 +162,11 @@ def result_excepthook(et, eo, tb, file=None, banner=None):  # pragma: no cover
         stream.write(banner())
         stream.write('\n')
 
-    tb = ''.join(traceback.format_exception(et, eo, tb))
-    stream.write(tb.encode('utf-8') if PY2 else tb)
-
-    tb_saved = getattr(eo, '_saved_traceback', None)
-    if tb_saved is not None:
-        stream.write(tb_saved)
+    stream.write(result_traceback(et, eo, tb))
+    saved_traceback = getattr(eo, '_saved_traceback', None)
+    if saved_traceback is not None:
+        stream.write(saved_traceback)
+    stream.write('\n')
 
     if file is None:
         sys.stderr.write(stream.getvalue())
