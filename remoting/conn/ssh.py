@@ -21,6 +21,7 @@ class SSHConnection(ShellConnection):
         command = [
             self.ssh_exec,          # command
             '-A',                   # forward ssh agent
+            '-C',                   # enable compression
             '-T',                   # disable pseudo-tty allocation
             '-o', 'BatchMode=yes',  # never ask password
             self.host,              # host
