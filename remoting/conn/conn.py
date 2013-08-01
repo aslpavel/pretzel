@@ -111,7 +111,8 @@ class Connection(object):
                 return True
             self.receiver(send)
             yield self.do_connect(target)
-            self.state(self.STATE_CONND)
+            if self.state.state != self.STATE_DISP:
+                self.state(self.STATE_CONND)
         except Exception:
             error = sys.exc_info()
             self.dispose()
