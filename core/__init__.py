@@ -46,7 +46,7 @@ def schedule(core=None):
 def waitpid(pid, core=None):
     """Wait for process with specified pid to be terminated
 
-    Returns status process's termination status.
+    Returns process's termination status.
     """
     return (core or Core.local()).waitpid(pid)
 
