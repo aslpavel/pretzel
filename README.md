@@ -102,10 +102,15 @@ Result(val:1374307530.015137)
 >>> sleep(None)()
 [continuation] error in coroutine started from
   File "<console>", line 1, in <module>
+`-------------------------------------------------------------------------------
+Host   : fiend
+Process: 13492
+Error  : TypeError("unsupported operand type(s) for +: 'float' and 'NoneType'")
+
 Traceback (most recent call last):
-  File "pretzel/monad/do.py", line 26, in do_block
-    return value(block(*a, **kw))
-  File "pretzel/core/core.py", line 118, in sleep
+  File "./pretzel/monad/do.py", line 26, in do_block
+    return value(block(*args, **kwargs))
+  File "./pretzel/core/core.py", line 118, in sleep
     do_done(self.time_queue.on(time() + delay))
 TypeError: unsupported operand type(s) for +: 'float' and 'NoneType'
 ```
