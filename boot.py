@@ -222,10 +222,10 @@ class BootLoader(object):
         stream.write(data)
         return stream
 
-    def __call__(self):
-        return self.load_module(self.name)
+    def __call__(self, globals=None):
+        return self.load_module(self.name, globals=globals)
 
-    def load_module(self, name):
+    def load_module(self, name, globals=None):
         module = sys.modules.get(name)
         if module is not None:
             return module
@@ -238,6 +238,8 @@ class BootLoader(object):
         module.__loader__ = self
         if self.ispkg:
             module.__path__ = []
+        if globals:
+            module.__dict__.update(globals)
 
         module.__initializing__ = True
         sys.modules[name] = module
