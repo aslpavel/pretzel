@@ -18,7 +18,7 @@ class TaskTest(unittest.TestCase):
             with ThreadPool.main() as pool:
                 # thread count test
                 start = time.time()
-                yield async_all((task(sleep_action),) * (pool.size + 1))
+                yield async_all((task(sleep_action),) * (pool.size() + 1))
                 stop = time.time()
                 self.assertEqual(int((stop - start) / sleep_time), 2)
 
@@ -29,7 +29,7 @@ class TaskTest(unittest.TestCase):
                     yield task(error)
 
                 # disposed task
-                pool.size = 1
+                pool.size(1)
                 task(sleep_action)(lambda _: None)
                 disp_task = task(lambda: time.sleep(100)).future()
 

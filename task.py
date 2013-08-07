@@ -39,28 +39,23 @@ class ThreadPool(object):
                 cls.inst_main = inst
         return inst
 
-    @property
-    def size(self):
-        """Size of thread pool (number of threads)
+    def size(self, count=None):
+        """Get/Set size of the thread pool
         """
+        if count is not None:
+            if count < 0:
+                raise ValueError('thread pool size must be positive')
+            with self.thread_lock:
+                self.thread_count = count
+                exit_count = len(self.threads) - count
+                if exit_count > 0:
+                    for _ in range(exit_count):
+                        self.thread_queue.appendleft(_action_exit)
+                    self.thread_cond.notify(exit_count)
         return self.thread_count
 
-    @size.setter
-    def size(self, count):
-        """Change size of thread pool (number of threads)
-        """
-        if count < 0:
-            raise ValueError('thread pool size must be positive')
-        with self.thread_lock:
-            self.thread_count = count
-            exit_count = len(self.threads) - count
-            if exit_count > 0:
-                for _ in range(exit_count):
-                    self.thread_queue.appendleft(_action_exit)
-                self.thread_cond.notify(exit_count)
-
     def __len__(self):
-        return self.size
+        return self.size()
 
     def __call__(self, act, *act_a, **act_kw):
         """Schedule action to be executed on main thread pool
