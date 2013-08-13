@@ -157,29 +157,31 @@ class StateFlagScope(object):
 
 
 class StateTransScope(object):
-    __slots__ = ('state', 'prog', 'succ', 'fail',)
+    __slots__ = ('state', 'scope_st', 'succ_st', 'fail_st',)
 
-    def __init__(self, state, prog, succ, fail):
+    def __init__(self, state, scope_st, succ_st, fail_st):
         self.state = state
-        self.prog = prog
-        self.succ = succ
-        self.fail = fail
+        self.scope_st = scope_st
+        self.succ_st = succ_st
+        self.fail_st = fail_st
 
     def __call__(self):
-        self.state(self.prog)
-        self.state(self.succ)
+        self.state(self.scope_st)
+        self.state(self.succ_st)
 
     def __enter__(self):
-        self.state(self.prog)
+        self.state(self.scope_st)
         return self
 
     def __exit__(self, et, eo, tb):
-        self.state(self.succ if et is None or not issubclass(et, Exception) else
-                   self.fail)
+        if et is None or not issubclass(et, Exception):
+            self.state(self.succ_st)
+        else:
+            self.state(self.fail_st)
         return False
 
     def __bool__(self):
-        return bool(self.state.state == self.prog)
+        return bool(self.state.state == self.scope_st)
     __nonzero__ = __bool__
 
     def __str__(self):
