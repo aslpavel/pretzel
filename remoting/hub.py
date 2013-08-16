@@ -58,7 +58,7 @@ class Hub(object):
             return True
 
     def recv(self, dst, handler):
-        if self.handlers.setdefault(dst, handler) != handler:
+        if self.handlers.setdefault(dst, handler) is not handler:
             raise ValueError('multiple receive handlers for address: {}'.format(dst))
         return handler
 
