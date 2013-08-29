@@ -8,6 +8,7 @@ from .event import Event
 from .monad import Result
 from .console import Console, move_column_csi
 from .dispose import CompDisp
+from .uniform import PY2
 
 __all__ = ('log', 'LEVEL_DEBUG', 'LEVEL_INFO', 'LEVEL_WARNING', 'LEVEL_ERROR',)
 
@@ -350,7 +351,8 @@ class ConsoleLogger(Logger):
         write(b']')
         if message.source:
             write('[{}]'.format(message.source).encode(), color.source)
-        write(' {}'.format(message.message).encode())
+        write(' {}'.format(message.message) if PY2 else
+              ' {}'.format(message.message).encode())
 
     def draw_bar(self, value):
         """Draw progress bar
