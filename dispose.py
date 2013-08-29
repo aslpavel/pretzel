@@ -66,62 +66,62 @@ class CompDisp(Disposable):
 
     Treat multiple disposables as one.
     """
-    __slots__ = ('disps',)
+    __slots__ = ('disposables',)
 
-    def __init__(self, disps=None):
-        self.disps = []
-        if disps:
+    def __init__(self, disposables=None):
+        self.disposables = []
+        if disposables:
             try:
-                for disp in disps:
-                    self.add(disp)
+                for disposable in disposables:
+                    self.add(disposable)
             except Exception:
                 self.dispose()
                 raise
 
-    def add(self, disp):
-        disp.__enter__()
-        if self.disps is None:
-            disp.__exit__(None, None, None)
+    def add(self, disposable):
+        disposable.__enter__()
+        if self.disposables is None:
+            disposable.__exit__(None, None, None)
         else:
-            self.disps.append(disp)
-        return disp
+            self.disposables.append(disposable)
+        return disposable
 
     def add_action(self, action):
         return self.add(FuncDisp(action))
 
-    def __iadd__(self, disp):
-        self.add(disp)
+    def __iadd__(self, disposable):
+        self.add(disposable)
         return self
 
-    def remove(self, disp):
+    def remove(self, disposable):
         try:
-            if self.disps is None:
+            if self.disposables is None:
                 return False
-            self.disps.remove(disp)
+            self.disposables.remove(disposable)
             return True
         except ValueError:
             return False
         finally:
-            disp.__exit__(None, None, None)
+            disposable.__exit__(None, None, None)
 
-    def __isub__(self, disp):
-        self.remove(disp)
+    def __isub__(self, disposable):
+        self.remove(disposable)
         return self
 
     def __len__(self):
-        return len(self.disps) if self.disps else 0
+        return len(self.disposables) if self.disposables else 0
 
     @property
     def disposed(self):
-        return self.disps is None
+        return self.disposables is None
 
     def dispose(self):
-        disps, self.disps = self.disps, None
-        if disps is None:
+        disposables, self.disposables = self.disposables, None
+        if disposables is None:
             return False
         else:
-            for disp in reversed(disps):
-                disp.__exit__(None, None, None)
+            for disposable in reversed(disposables):
+                disposable.__exit__(None, None, None)
             return True
 
     def __monad__(self):

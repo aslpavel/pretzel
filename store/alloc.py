@@ -7,7 +7,7 @@ from .serialize import Serializer
 __all__ = ('StoreBlock', 'StoreAllocator',)
 
 
-class StoreBlock (object):
+class StoreBlock(object):
     """Store block object
 
     Descriptor format:

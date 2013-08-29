@@ -26,13 +26,16 @@ class Store(object):
     desc_struct = struct.Struct('>Q')
 
     def __init__(self, offset=None):
-        self.disps = CompDisp()
         offset = offset or 0
         self.offset = offset + self.header_struct.size
 
         header = self.load_by_offset(offset, self.header_struct.size)
         self.alloc_desc, self.names_desc = ((0, 0) if not header else
                                             self.header_struct.unpack(header))
+
+        # dispose
+        self.dispose = CompDisp()
+        self.dispose.add_action(self.flush)
 
         # allocator
         if self.alloc_desc:
@@ -214,7 +217,7 @@ class Store(object):
         from .map import StoreMap
         cell = self.create_cell('__map:{}'.format(name))
         mapping = StoreMap(self, cell, order, key_type, value_type, compress)
-        self.disps.add(mapping)
+        self.dispose.add(mapping)
         return mapping
 
     def create_stream(self, name, bufsize=None, compress=None):
@@ -223,14 +226,8 @@ class Store(object):
         from .stream import StoreStream
         cell = self.create_cell('__stream:{}'.format(name))
         stream = StoreStream(self, cell, bufsize, compress)
-        self.disps.add(stream)
+        self.dispose.add(stream)
         return stream
-
-    def dispose(self):
-        """Flush and Close
-        """
-        self.disps()
-        self.flush()
 
     def __enter__(self):
         return self
@@ -298,4 +295,4 @@ class FileStore(StreamStore):
 
     def __str__(self):
         return ('FileStream(size:{}, names:{}, mode:{}, path:{})'.format
-               (self.size, len(self.names), self.mode, self.stream.name))
+                (self.size, len(self.names), self.mode, self.stream.name))
