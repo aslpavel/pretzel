@@ -56,7 +56,7 @@ class Monad(object):
 
         zero :: (Monad m) => () -> m a
         """
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def plus(self, monad):
         """Monad plus operation
@@ -66,7 +66,7 @@ class Monad(object):
             (m0 + m1) + m2 == m0 + (m1 + m2)
             m + zero == m
         """
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def __add__(self, monad):
         return self.plus(monad)
