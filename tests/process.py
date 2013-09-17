@@ -134,7 +134,7 @@ class ProcessTest(unittest.TestCase):
     def test_stress_seq(self):
         result_ref = yield process_call('uname')
         self.assertEqual(result_ref[-1], 0)
-        results = yield Cont.sequence((process_call('uname'),) * self.stress_count)
+        results = yield Cont.Sequence((process_call('uname'),) * self.stress_count)
         for result in results:
             self.assertEqual(result.value, result_ref)
 

@@ -109,7 +109,7 @@ def async_all(conts):
                 ctx[index] = (val if isinstance(val, Result) else Result.from_value(val))
                 ctx[-1] -= 1
                 if not ctx[-1]:
-                    ret(Result.sequence(ctx[:-1]))
+                    ret(Result.Sequence(ctx[:-1]))
             cont.run(cont_ret)
 
         for index, cont in enumerate(conts):

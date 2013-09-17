@@ -99,18 +99,18 @@ class Monad(object):
         return self.bind(lambda m: m.__monad__())
 
     @classmethod
-    def map(Monad, mapper, vals):
+    def Map(Monad, mapper, vals):
         """Map with monadic function (mapM)
 
-        map :: (Monad m) => (a -> m b) -> [a] -> m [b]
+        Map :: (Monad m) => (a -> m b) -> [a] -> m [b]
         """
-        return Monad.sequence(mapper(val) for val in vals)
+        return Monad.Sequence(mapper(val) for val in vals)
 
     @classmethod
-    def filter(Monad, pred, vals):
+    def Filter(Monad, pred, vals):
         """Filter with monadic predicate (filterM)
 
-        filter :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
+        Filter :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
         """
         def chain(mvals, val):
             return mvals.bind(lambda vals: pred(val).__monad__().bind(
@@ -118,10 +118,10 @@ class Monad(object):
         return reduce(chain, vals, Monad.unit(tuple()))
 
     @classmethod
-    def fold(Monad, folder, acc, vals):
+    def Fold(Monad, folder, acc, vals):
         """Fold with monadic function (foldM)
 
-        fold :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
+        Fold :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
         """
         def fold(acc, vals):
             if not vals:
@@ -132,12 +132,12 @@ class Monad(object):
         return fold(acc, vals)
 
     @classmethod
-    def sequence(Monad, monads):
+    def Sequence(Monad, monads):
         """Sequence monads
 
         Evaluate each action in the sequence from left to right, and collect the results.
 
-        sequence :: Monad m => [m a] -> m [a]
+        Sequence :: Monad m => [m a] -> m [a]
         """
         def chain(mvals, mval):
             return mvals.bind(lambda vals: mval.bind(lambda val: Monad.unit(vals + (val,))))
@@ -146,40 +146,40 @@ class Monad(object):
     def __and__(self, monad):
         """Compose two monads into one
 
-        Equivalent to sequence((self, monad)).
+        Equivalent to Monad.Sequence((self, monad)).
         (&) :: m a -> m b -> m (a, b)
         """
         return self.bind(lambda val: monad.__monad__().bind(
                          lambda mval: self.unit((val, mval))))
 
     @classmethod
-    def lift(Monad, monad):
+    def Lift(Monad, monad):
         """Wrap monad's value inside primitive monad of this type
         """
         monad = monad.__monad__()
         return monad.bind(lambda val: monad.unit(Monad.unit(val)))
 
     @classmethod
-    def lift_func(Monad, func):
+    def LiftFunc(Monad, func):
         """Promote function to fully monadic one (arguments and result)
 
-        lift_func :: Monad m => (a0 -> ... -> aN -> r) -> (m a0 -> ... -> m aN -> m r)
+        LiftFunc :: Monad m => (a0 -> ... -> aN -> r) -> (m a0 -> ... -> m aN -> m r)
         """
-        return wraps(func)(lambda *margs: Monad.sequence(margs).bind(lambda args: Monad.unit(func(*args))))
+        return wraps(func)(lambda *margs: Monad.Sequence(margs).bind(lambda args: Monad.unit(func(*args))))
 
     @classmethod
-    def lift_func_result(Monad, func):
+    def LiftFuncResult(Monad, func):
         """Promote function to monadic one (result only)
 
-        lift_func_result :: Monad
+        LiftFuncResult :: Monad m => (a -> b) -> a -> m b
         """
         return wraps(func)(lambda *args, **kw: Monad.unit(func(*args, **kw)))
 
     @classmethod
-    def ap(Monad, mfunc):
+    def Ap(Monad, mfunc):
         """Applicative <*> operator
 
-        ap :: m (a -> b) -> m a -> m b
+        Ap :: Monad m => m (a -> b) -> m a -> m b
         """
         return lambda ma: mfunc.bind(lambda func: ma.bind(lambda a: Monad.unit(func(a))))
 
