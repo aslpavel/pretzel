@@ -33,7 +33,12 @@ class Importer(object):
                 if module is None:
                     src.send(None)  # Module is cached as not found (python 2)
                     return True
-                loader = pkgutil.get_loader(name)
+                try:
+                    loader = pkgutil.get_loader(name)
+                except AttributeError:
+                    # this is workaround for http://http://bugs.python.org/issue14710
+                    src.send(None)
+                    return True
                 if loader is None or not hasattr(loader, 'get_source'):
                     src.send(None)
                     return True

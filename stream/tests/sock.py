@@ -29,6 +29,7 @@ class SockTest(unittest.TestCase):
                     try:
                         while True:
                             received.write((yield client.read(1024)))
+                            yield schedule()
                     except BrokenPipeError:
                         pass
         server = server_coro().future()

@@ -261,6 +261,7 @@ class ProcessPipe(object):
         self.bufsize = bufsize
         self.parent_pid = os.getpid()
         self.parent_fd, self.child_fd = os.pipe() if reader else reversed(os.pipe())
+        fd_close_on_exec(self.child_fd, False)
         fd_close_on_exec(self.parent_fd, True)
 
     def __call__(self, fd=None):

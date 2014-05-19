@@ -25,6 +25,7 @@ class FileTest(unittest.TestCase):
                 try:
                     while True:
                         received.write((yield reader.read(1024)))
+                        yield schedule()
                 except BrokenPipeError:
                     pass
         reader_future = reader_coro().future()
