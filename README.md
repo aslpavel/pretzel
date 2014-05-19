@@ -13,7 +13,7 @@ Features
 * Interact with subprocesses asynchronously
 * Greenlet support (but not required)
 * Remote code executing over ssh or in child process (with only requirements python and ssh)
-* Python 2/3, PyPy (starting from 2.0) compatible
+* Python 2/3, PyPy compatible (language version >= 2.7)
 * Asynchronous python shell `python -mpretzel.apps.shell` (requires greenlet)
 
 Installation
