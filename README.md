@@ -3,7 +3,7 @@ Pretzel
 [![Build Status][build_badge]][build_url]
 [![Coverage Status][coverage_badge]][coverage_url]
 
-Is an asynchronous application framework for python
+Is an asynchronous similar to asyncio but does not require python3.
 
 Features
 --------
@@ -161,7 +161,7 @@ for full list of available functions and their descriptions.
 
 Remoting
 --------
-Main reason for creation of this framework was to execute code on a set of
+Main reason for creation of this library was to execute code on a set of
 machines via ssh connection. It is achieved by usage of `SSHConnection` class.
 `SSHConnection` is a callable object which returns proxy object for its
 argument. You can call proxy object, get its attributes or items `proxy[item]`,
