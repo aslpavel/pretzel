@@ -3,7 +3,7 @@ Pretzel
 [![Build Status][build_badge]][build_url]
 [![Coverage Status][coverage_badge]][coverage_url]
 
-Is an asynchronous similar to asyncio but does not require python3.
+Is an asynchronous library similar in a way to asyncio but does not require python3.
 
 Features
 --------
