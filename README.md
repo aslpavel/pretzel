@@ -302,7 +302,7 @@ Examples
 * [Simple echo server](https://gist.github.com/aslpavel/5635559)
 * [Cat remote file over ssh](https://gist.github.com/aslpavel/5635610)
 
-[build_badge]: https://api.travis-ci.org/aslpavel/pretzel.png "build status"
+[build_badge]: https://travis-ci.org/aslpavel/pretzel.svg?branch=master "build status"
 [build_url]: https://travis-ci.org/aslpavel/pretzel
 [coverage_badge]: https://coveralls.io/repos/aslpavel/pretzel/badge.svg?branch=master "coverage status"
 [coverage_url]: https://coveralls.io/r/aslpavel/pretzel?branch=master
