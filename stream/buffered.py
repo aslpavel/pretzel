@@ -8,6 +8,7 @@ from collections import deque
 from .wrapped import WrappedStream
 from .. import PRETZEL_BUFSIZE
 from ..uniform import BrokenPipeError
+from ..parser import ParserResult, ParserError
 from ..monad import async, async_single, do_return
 
 __all__ = ('BufferedStream',)
@@ -45,6 +46,31 @@ class BufferedStream(WrappedStream):
             if not self.read_buffer:
                 self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(size))
+
+    @async
+    def parse(self, parser):
+        """Parse stream with specified `parser`, parser fails it does not consume data.
+
+        Return result of the parsing.
+        """
+        with self.reading:
+            chunks = [self.read_buffer.dequeue()]
+            try:
+                while True:
+                    tupe, result = parser.__monad__().run(chunks[-1])
+                    if tupe & ParserResult.DONE:
+                        value, chunk = result
+                        chunks.clear()
+                        self.read_buffer.enqueue(chunk)
+                        do_return(value)
+                    elif tupe & ParserResult.PARTIAL:
+                        parser = result
+                        chunks.append((yield self.base.read(self.bufsize)))
+                    else:
+                        raise ParserError(result)
+            finally:
+                for chunk in chunks:
+                    self.read_buffer.enqueue(chunk)
 
     @async
     def read_until_size(self, size):

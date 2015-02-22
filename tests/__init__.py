@@ -37,10 +37,10 @@ def load_tests(loader, tests, pattern):
     """Load test protocol
     """
     from unittest import TestSuite
-    from . import event, dispose, process, task, boot, utils
+    from . import event, dispose, process, task, boot, utils, parser
 
     suite = TestSuite()
-    for test in (event, dispose, process, task, boot, utils):
+    for test in (event, dispose, process, task, boot, utils, parser):
         suite.addTests(loader.loadTestsFromModule(test))
 
     return suite

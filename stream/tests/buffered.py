@@ -9,11 +9,12 @@ from ..buffered import Buffer, BufferedStream
 from ...monad import Result, async, do_return
 from ...event import Event
 from ...uniform import BrokenPipeError
+from ... import parser as P
 
 __all__ = ('BufferTest', 'BufferedStreamTest',)
 
 
-class BufferTest (unittest.TestCase):
+class BufferTest(unittest.TestCase):
     def test(self):
         buff = Buffer()
 
@@ -114,6 +115,44 @@ class BufferedStreamTest (unittest.TestCase):
         stream.read(6)(res)
         self.assertEqual(res.pop(), b'34567')
         self.assertFalse(res)
+
+    def test_parse(self):
+        res = ResultQueue()
+        stream = BufferedStream(DummyStream(), 5)
+
+        stream.parse(P.string(b'abc'))(res)
+        self.assertFalse(res)
+        stream.read_complete(b'abcd')
+        self.assertEqual(res.pop(), b'abc')
+        stream.read(5)(res)
+        self.assertEqual(res.pop(), b'd')
+        self.assertFalse(res)
+
+        stream.parse(P.string(b'abcdefg'))(res)
+        stream.read_complete(b'abcdefg')
+        stream.read_complete(b'fg|')
+        self.assertEqual(res.pop(), b'abcdefg')
+        stream.read(5)(res)
+        self.assertEqual(res.pop(), b'|')
+        self.assertFalse(res)
+
+        stream.parse(P.string(b'abc'))(res)
+        stream.read_complete(b'ab')
+        self.assertFalse(res)
+        stream.read_complete(b'c|')
+        self.assertEqual(res.pop(), b'abc')
+        stream.read(5)(res)
+        self.assertEqual(res.pop(), b'|')
+        self.assertFalse(res)
+
+        stream.parse(P.string(b'abc'))(res)
+        stream.read_complete(b'abd')
+        with self.assertRaises(P.ParserError):
+            res.pop()
+        stream.read(5)(res)
+        self.assertEqual(res.pop(), b'abd')
+        self.assertFalse(res)
+
 
     def test_read_until_size(self):
         res = ResultQueue()
