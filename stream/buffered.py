@@ -60,7 +60,7 @@ class BufferedStream(WrappedStream):
                     tupe, result = parser.__monad__().run(chunks[-1])
                     if tupe & ParserResult.DONE:
                         value, chunk = result
-                        chunks.clear()
+                        del chunks[:]
                         self.read_buffer.enqueue(chunk)
                         do_return(value)
                     elif tupe & ParserResult.PARTIAL:
