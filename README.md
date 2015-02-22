@@ -304,5 +304,5 @@ Examples
 
 [build_badge]: https://api.travis-ci.org/aslpavel/pretzel.png "build status"
 [build_url]: https://travis-ci.org/aslpavel/pretzel
-[coverage_badge]: https://coveralls.io/repos/aslpavel/pretzel/badge.png?branch=master "coverage status"
+[coverage_badge]: https://coveralls.io/repos/aslpavel/pretzel/badge.svg?branch=master "coverage status"
 [coverage_url]: https://coveralls.io/r/aslpavel/pretzel?branch=master
