@@ -54,7 +54,7 @@ class BufferedStream(WrappedStream):
         Return result of the parsing.
         """
         with self.reading:
-            chunks = [self.read_buffer.dequeue()]
+            chunks = [self.read_buffer.dequeue() or (yield self.base.read(self.bufsize))]
             try:
                 while True:
                     tupe, result = parser.__monad__().run(chunks[-1])

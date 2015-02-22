@@ -354,3 +354,6 @@ class ResultQueue(object):
     def __bool__(self):
         return bool(self.queue)
     __nonzero__ = __bool__
+
+    def __repr__(self):
+        return repr(self.queue)

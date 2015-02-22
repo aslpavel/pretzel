@@ -66,7 +66,7 @@ class Parser(Monad):
     def parse_only(self, data):
         """Parse input `data`, if `data` is incorrect or too short raise and error.
         """
-        gen = iter([data, b''])
+        gen = iter((data, data[:0]))
         return self.parse_with(lambda: next(gen))
 
     def parse_with(self, get):
@@ -76,10 +76,7 @@ class Parser(Monad):
         """
         parser = self
         while True:
-            data = get()
-            if not data:
-                raise ParserError("Not enough input")
-            tupe, value = parser.run(data)
+            tupe, value = parser.run(get())
             if tupe & ParserResult.DONE:
                 return value
             elif tupe & ParserResult.PARTIAL:
@@ -97,7 +94,8 @@ class Parser(Monad):
             t, v = r
             if t & ParserResult.DONE:
                 v, l = v
-                return fun(v).__monad__().run(l)
+                return (fun(v).__monad__().run(l) if l else
+                        ParserResult.from_partial(Parser(lambda s: fun(v).run(s))))
             elif t & ParserResult.PARTIAL:
                 return ParserResult.from_partial(v.__monad__().bind(fun))
             else:
@@ -114,18 +112,16 @@ class Parser(Monad):
     def __or__(self, other):
         """Tries this parser and if fails use other.
         """
-        def run(s):
-            r = self.run(s)
+        def run(p, c, cs):
+            r = p.run(c)
             t, v = r
             if t & ParserResult.DONE:
                 return r
             elif t & ParserResult.PARTIAL:
-                def run_other(c):
-                    return other.__monad__().run(s + c)
-                return ParserResult.from_partial(v | Parser(run_other))
+                return ParserResult.from_partial(Parser(lambda c_: run(v, c_, cs + (c,))))
             else:
-                return other.__monad__().run(s)
-        return Parser(run)
+                return other.__monad__().run(c[:0].join(cs + (c,)))
+        return Parser(lambda c: run(self, c, tuple()))
 
     def __and__(self, other):
         return self.bind(
@@ -186,37 +182,44 @@ def parser(block):
 def string(target):
     """Match specified `target` string.
     """
-    def run(s):
-        if len(s) < len(target):
-            if target.startswith(s):
-                return ParserResult.from_partial(Parser(lambda c: run(s + c)))
+    def run(c, t):
+        if not c:
+            return ParserResult.from_error("Not enough input")
+        elif len(c) < len(t):
+            if t.startswith(c):
+                return ParserResult.from_partial(Parser(lambda c_: run(c_, t[len(c):])))
             else:
                 return ParserResult.from_error("Target mismatches input")
-        elif s.startswith(target):
-            return ParserResult.from_done(target, s[len(target):])
+        elif c.startswith(t):
+            return ParserResult.from_done(target, c[len(t):])
         else:
             return ParserResult.from_error("Target mismatches input")
-    return Parser(run)
+    return Parser(lambda c: run(c, target))
 
 
 def take(count):
     """Parse `count` bytes
     """
-    def run(s):
-        if len(s) < count:
-            return ParserResult.from_partial(Parser(lambda c: run(s + c)))
-        return ParserResult.from_done(s[:count], s[count:])
-    return Parser(run)
+    def run(l, c, cs):
+        if not c:
+            return ParserResult.from_error("Not enough input")
+        elif l >= len(c):
+            return ParserResult.from_partial(Parser(lambda c_: run(l - len(c), c_, cs + (c,))))
+        else:
+            return ParserResult.from_done(c[:0].join(cs + (c[:l],)), c[l:])
+    return Parser(lambda c: run(count, c, tuple()))
 
 
 def take_while(pred):
     """Take while predicate is true
     """
-    def run(s, chunks=tuple()):
-        for i, c in enumerate(s):
-            if not pred(c):
-                return ParserResult.from_done(''.join(chunks) + s[:i], s[i:])
-        return ParserResult.from_partial(Parser(lambda c: run(c, chunks + (s,))))
+    def run(c, cs=tuple()):
+        if not c:
+            return ParserResult.from_error("Predicate was not found")
+        for i, v in enumerate(c):
+            if not pred(v):
+                return ParserResult.from_done(c[:0].join(cs + (c[:i],)), c[i:])
+        return ParserResult.from_partial(Parser(lambda c_: run(c_, cs + (c,))))
     return Parser(run)
 
 

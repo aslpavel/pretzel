@@ -49,7 +49,7 @@ class ParserTest(unittest.TestCase):
 
     def test_some(self):
         p = string("ab").some()
-        self.assertEqual(p.parse_only("ababc"), (("ab","ab"), "c"))
+        self.assertEqual(p.parse_only("ababa"), (("ab","ab"), "a"))
         for d in ("a", "ac"):
             with self.assertRaises(ParserError):
                 p.parse_only(d)
