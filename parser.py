@@ -72,7 +72,7 @@ class Parser(Monad):
     def parse_with(self, get):
         """Run parser and execute function `get` if more data is needed.
 
-        Function `get` shoud return empty streen when input is deleeted.
+        Function `get` shoud return empty streen when input is depleted.
         """
         parser = self
         while True:
