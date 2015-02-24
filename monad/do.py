@@ -31,13 +31,16 @@ def do(Monad):
         else:
             @wraps(block)
             def do_block(*args, **kwargs):
-                def do_next(result):
+                def do_next(do_world, result):
+                    if do_world != gen_world[0]:
+                        raise ValueError("Same generator based continuation called twice")
                     val, err = (result.pair if isinstance(result, Result) else
                                (result, None))
                     try:
+                        gen_world[0] += 1
                         monad = (gen.send(val) if err is None else
                                  gen.throw(*err)).__monad__()
-                        return monad.bind(do_next)
+                        return monad.bind(lambda r: do_next(do_world + 1, r))
                     except _return as ret:
                         gen.close()
                         return value(ret.args[1]) if ret.args[0] == 0 else ret.args[1]
@@ -49,7 +52,8 @@ def do(Monad):
 
                 try:
                     gen = block(*args, **kwargs)
-                    return do_next(Result.from_value(None))
+                    gen_world = [0]
+                    return do_next(0, Result.from_value(None))
                 except Exception:
                     return error()
         return do_block
