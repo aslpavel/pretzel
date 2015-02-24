@@ -118,9 +118,9 @@ class Parser(Monad):
             if t & ParserResult.DONE:
                 return r
             elif t & ParserResult.PARTIAL:
-                return ParserResult.from_partial(Parser(lambda c_: run(v, c_, cs + (c,))))
+                return ParserResult.from_partial(Parser(lambda c_: run(v, c_, (c, cs))))
             else:
-                return other.__monad__().run(c[:0].join(cs + (c,)))
+                return other.__monad__().run(_chunks_merge((c, cs)))
         return Parser(lambda c: run(self, c, tuple()))
 
     def __and__(self, other):
@@ -204,9 +204,9 @@ def take(count):
         if not c:
             return ParserResult.from_error("Not enough input")
         elif l >= len(c):
-            return ParserResult.from_partial(Parser(lambda c_: run(l - len(c), c_, cs + (c,))))
+            return ParserResult.from_partial(Parser(lambda c_: run(l - len(c), c_, (c, cs))))
         else:
-            return ParserResult.from_done(c[:0].join(cs + (c[:l],)), c[l:])
+            return ParserResult.from_done(_chunks_merge((c[:l], cs)), c[l:])
     return Parser(lambda c: run(count, c, tuple()))
 
 
@@ -218,8 +218,8 @@ def take_while(pred):
             return ParserResult.from_error("Predicate was not found")
         for i, v in enumerate(c):
             if not pred(v):
-                return ParserResult.from_done(c[:0].join(cs + (c[:i],)), c[i:])
-        return ParserResult.from_partial(Parser(lambda c_: run(c_, cs + (c,))))
+                return ParserResult.from_done(_chunks_merge((c[:i], cs)), c[i:])
+        return ParserResult.from_partial(Parser(lambda c_: run(c_, (c, cs))))
     return Parser(run)
 
 
@@ -231,3 +231,15 @@ def struct(st):
         vs = st.unpack(d)
         return vs if len(vs) != 1 else vs[0]
     return take(st.size).map_val(unpack)
+
+
+def _chunks_merge(cs):
+    """Merge reversed linked list of chunks `cs` to single chunk.
+
+    ("three", ("two-", ("one-", ()))) -> "one-two-three"
+    """
+    cs_ = []
+    while cs:
+        c, cs = cs
+        cs_.append(c)
+    return cs_[0][:0].join(reversed(cs_)) if cs_ else b""
