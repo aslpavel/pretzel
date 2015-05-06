@@ -57,9 +57,9 @@ class BufferedStream(WrappedStream):
             chunks = [self.read_buffer.dequeue() or (yield self.base.read(self.bufsize))]
             try:
                 while True:
-                    tupe, result = parser.__monad__().run(chunks[-1])
+                    tupe, result = parser.__monad__()(chunks[-1], False)
                     if tupe & ParserResult.DONE:
-                        value, chunk = result
+                        value, chunk, _ = result
                         del chunks[:]
                         self.read_buffer.enqueue(chunk)
                         do_return(value)
@@ -68,6 +68,15 @@ class BufferedStream(WrappedStream):
                         chunks.append((yield self.base.read(self.bufsize)))
                     else:
                         raise ParserError(result)
+            except BrokenPipeError:
+                # try to terminate parser with last chunk
+                tupe, result = parser.__monad__()(b'', True)
+                if tupe & ParserResult.DONE:
+                    value, chunk, _ = result
+                    del chunks[:]
+                    self.read_buffer.enqueue(chunk)
+                    do_return(value)
+                raise
             finally:
                 for chunk in chunks:
                     self.read_buffer.enqueue(chunk)

@@ -2,10 +2,11 @@
 """
 import struct    as S
 import functools as F
+from .utils import call
 from .monad import Monad, do, do_return
 
-__all__ = ('Parser', 'ParserResult', 'ParserError', 'parser', 'string',
-           'take', 'take_while', 'struct',)
+__all__ = ('Parser', 'ParserResult', 'ParserError', 'parser',
+           'at_end', 'end_of_input', 'string', 'take', 'take_while', 'struct',)
 
 
 class ParserError(Exception):
@@ -15,7 +16,7 @@ class ParserError(Exception):
 class ParserResult(tuple):
     """Parser result
 
-    ParserResult a = Error String | Done a String | Partial (Parser a)
+    ParserResult a = Error String | Done a String Bool | Partial (Parser a)
     """
     ERROR   = 0b001
     DONE    = 0b010
@@ -27,23 +28,25 @@ class ParserResult(tuple):
 
     @classmethod
     def from_error(cls, error):
+        assert isinstance(error, str), "Error must be a string"
         return cls(cls.ERROR, error)
 
     @classmethod
-    def from_done(cls, value, left):
-        return cls(cls.DONE, (value, left))
+    def from_done(cls, value, chunk, last):
+        return cls(cls.DONE, (value, chunk, last))
 
     @classmethod
     def from_partial(cls, parser):
         return cls(cls.PARTIAL, parser)
 
     def __str__(self):
-        t, v = self
-        if t & self.ERROR:
-            return "ParserError(\"{}\")".format(v)
-        elif t & self.DONE:
-            return "ParserDone({},\"{}\")".format(*v)
-        elif t & self.PARTIAL:
+        tupe, value = self
+        if tupe & self.ERROR:
+            return "ParserError(\"{}\")".format(value)
+        elif tupe & self.DONE:
+            value, chunk, last = value
+            return "ParserDone({},{}{})".format(value, repr(chunk), "$" if last else "")
+        elif tupe & self.PARTIAL:
             return "ParserPartial(...)"
 
     def __repr__(self):
@@ -53,53 +56,57 @@ class ParserResult(tuple):
 class Parser(Monad):
     """Monadic parser
 
-    Parser a = Parser { run :: String -> ParserResult a }
+    Parser a = Parser { run :: String -> Bool -> ParserResult a }
     """
     __slots__ = ('run',)
 
-    def __init__ (self, run):
-        self.run = run
+    def __init__ (self, run, *args):
+        self.run = F.partial(run, *args)
 
-    def __call__(self, s):
-        return self.run(s)
+    def __call__(self, chunk, last):
+        return self.run(chunk, last)
 
-    def parse_only(self, data):
-        """Parse input `data`, if `data` is incorrect or too short raise and error.
+    def parse_only(self, *chunks):
+        """Parse input `chunks`, if `chunks` is incorrect or too short raise and error.
         """
-        gen = iter((data, data[:0]))
-        return self.parse_with(lambda: next(gen))
+        return self.parse_only_iter(chunks)
 
-    def parse_with(self, get):
-        """Run parser and execute function `get` if more data is needed.
-
-        Function `get` shoud return empty streen when input is depleted.
+    def parse_only_iter(self, chunks):
+        """Run parser with provided `chunks`
         """
-        parser = self
-        while True:
-            tupe, value = parser.run(get())
+        parser, chunk = self, b''
+        for chunk in chunks:
+            tupe, value = parser(chunk, False)
             if tupe & ParserResult.DONE:
-                return value
-            elif tupe & ParserResult.PARTIAL:
-                parser = value
-            else: raise ParserError(value)
+                return value[:-1]
+            elif tupe & ParserResult.ERROR:
+                raise ParserError(value)
+            parser = value
+        tupe, value = parser(b'' if isinstance(chunk, bytes) else '', True)
+        if tupe & ParserResult.DONE:
+            return value[:-1]
+        elif tupe & ParserResult.ERROR:
+            raise ParserError(value)
+        raise ParserError("Partial parser after consuming last chunk")
 
     # Monad
     @classmethod
-    def unit(cls, v):
-        return Parser(lambda s: ParserResult.from_done(v, s))
+    def unit(cls, value):
+        return Parser(ParserResult.from_done, value)
 
     def bind(self, fun):
-        def run(s):
-            r = self.run(s)
-            t, v = r
-            if t & ParserResult.DONE:
-                v, l = v
-                return (fun(v).__monad__().run(l) if l else
-                        ParserResult.from_partial(Parser(lambda s: fun(v).run(s))))
-            elif t & ParserResult.PARTIAL:
-                return ParserResult.from_partial(v.__monad__().bind(fun))
+        def run(chunk, last):
+            result = self(chunk, last)
+            tupe, value = result
+            if tupe & ParserResult.DONE:
+                value, chunk, last = value
+                return fun(value).__monad__()(chunk, last)
+            elif tupe & ParserResult.PARTIAL:
+                if last:
+                    return ParserResult.error("Partial result with last chunk")
+                return ParserResult.from_partial(value.__monad__().bind(fun))
             else:
-                return r
+                return result
         return Parser(run)
 
     # Alternative | MonadPlus
@@ -107,26 +114,26 @@ class Parser(Monad):
     def zero():
         """Always failing parser.
         """
-        return Parser(lambda _: ParserResult.from_error("Zero parser"))
+        return Parser(lambda chunk, last: ParserResult.from_error("Zero parser"))
 
     def __or__(self, other):
         """Tries this parser and if fails use other.
         """
-        def run(p, c, cs):
-            r = p.run(c)
-            t, v = r
-            if t & ParserResult.DONE:
-                return r
-            elif t & ParserResult.PARTIAL:
-                return ParserResult.from_partial(Parser(lambda c_: run(v, c_, (c, cs))))
+        def run(parser, chunks, chunk, last):
+            result = parser(chunk, last)
+            tupe, value = result
+            if tupe & ParserResult.DONE:
+                return result
+            elif tupe & ParserResult.PARTIAL and not last:
+                return ParserResult.from_partial(Parser(run, value, (chunk, chunks)))
             else:
-                return other.__monad__().run(_chunks_merge((c, cs)))
-        return Parser(lambda c: run(self, c, tuple()))
+                return other.__monad__()(_chunks_merge((chunk, chunks)), last)
+        return Parser(run, self, tuple())
 
     def __and__(self, other):
         return self.bind(
-            lambda l: other.bind(
-                lambda r: self.unit((l, r))))
+            lambda left: other.bind(
+                lambda right: self.unit((left, right))))
 
     def plus(self, other):
         """Tries this parser and if fails use other.
@@ -135,24 +142,26 @@ class Parser(Monad):
 
     # Combinators
     def __lshift__(self, other):
-        return (self & other).map_val(lambda p: p[0])
+        return (self & other).map_val(lambda pair: pair[0])
 
     def __rshift__(self, other):
-        return (self & other).map_val(lambda p: p[1])
+        return (self & other).map_val(lambda pair: pair[1])
 
+    @property
     def some(self):
         """Match at least once.
         """
         return self.bind(
-            lambda x: (self.some() | self.unit(tuple())).bind(
-                lambda xs: self.unit((x,) + xs)))
+            lambda val: (self.some | self.unit(tuple())).bind(
+                lambda vals: self.unit((val,) + vals)))
 
+    @property
     def many(self):
         """Match zero or more.
         """
         return self.bind(
-            lambda x: self.many().bind(
-                lambda xs: self.unit((x,) + xs))) | self.unit(tuple())
+            lambda val: self.many.bind(
+                lambda vals: self.unit((val,) + vals))) | self.unit(tuple())
 
     def repeat(self, count):
         """Repeat this parser `count` times.
@@ -163,83 +172,107 @@ class Parser(Monad):
 def parser(block):
     """Parser do block
     """
-    def unwrap_result(r):
-        t, v = r
-        if t & ParserResult.DONE:
-            v, s = v
-            return (ParserResult.from_done(v.value, s) if v.error is None else
-                    ParserResult.from_error(v.error))
-        elif t & ParserResult.PARTIAL:
-            return ParserResult.from_partial(Parser(lambda s: unwrap_result(v.run(s))))
+    def unwrap_result(result):
+        tupe, value = result
+        if tupe & ParserResult.DONE:
+            value, chunk, last = value
+            return (ParserResult.from_done(value.value, chunk, last) if value.error is None else
+                    ParserResult.from_error(value.error))
+        elif tupe & ParserResult.PARTIAL:
+            return ParserResult.from_partial(Parser(lambda chunk, last: unwrap_result(value(chunk, last))))
         else:
-            return r
+            return result
     do_block = do(Parser)(block)
     return F.wraps(block)(
-        lambda *a, **kw: Parser(
-            lambda s: unwrap_result(do_block(*a, **kw).run(s))))
+        lambda *args, **kwargs: Parser(
+            lambda chunk, last: unwrap_result(do_block(*args, **kwargs)(chunk, last))))
+
+
+"""Return indication of weither end of input has been reached
+"""
+@call
+def at_end():
+    def run(chunk, last):
+        if chunk:
+            return ParserResult.from_done(False, chunk, last)
+        elif last:
+            return ParserResult.from_done(True, chunk, last)
+        else:
+            return ParserResult.from_partial(Parser(run))
+    return Parser(run)
+
+
+"""Matches only if all input has been consumed
+"""
+end_of_input = at_end.bind(lambda end: Parser(lambda chunk, last: ParserResult.from_error("Not end of input"))
+                           if not end else Parser.unit(None))
 
 
 def string(target):
     """Match specified `target` string.
     """
-    def run(c, t):
-        if not c:
-            return ParserResult.from_error("Not enough input")
-        elif len(c) < len(t):
-            if t.startswith(c):
-                return ParserResult.from_partial(Parser(lambda c_: run(c_, t[len(c):])))
+    def run(suffix, chunk, last):
+        if len(chunk) < len(suffix):
+            if suffix.startswith(chunk):
+                if last:
+                    return ParserResult.from_error("Not enough input")
+                else:
+                    return ParserResult.from_partial(Parser(run, suffix[len(chunk):]))
             else:
                 return ParserResult.from_error("Target mismatches input")
-        elif c.startswith(t):
-            return ParserResult.from_done(target, c[len(t):])
+        elif chunk.startswith(suffix):
+            return ParserResult.from_done(target, chunk[len(suffix):], last)
         else:
             return ParserResult.from_error("Target mismatches input")
-    return Parser(lambda c: run(c, target))
+    return Parser(run, target)
 
 
 def take(count):
     """Parse `count` bytes
     """
-    def run(l, c, cs):
-        if not c:
-            return ParserResult.from_error("Not enough input")
-        elif l >= len(c):
-            return ParserResult.from_partial(Parser(lambda c_: run(l - len(c), c_, (c, cs))))
+    def run(length, chunks, chunk, last):
+        if length > len(chunk):
+            if last:
+                return ParserResult.from_error("Not enough input")
+            else:
+                return ParserResult.from_partial(Parser(run, length - len(chunk), (chunk, chunks)))
         else:
-            return ParserResult.from_done(_chunks_merge((c[:l], cs)), c[l:])
-    return Parser(lambda c: run(count, c, tuple()))
+            return ParserResult.from_done(_chunks_merge((chunk[:length], chunks)),
+                                          chunk[length:], last)
+    return Parser(run, count, tuple())
 
 
 def take_while(pred):
     """Take while predicate is true
     """
-    def run(c, cs=tuple()):
-        if not c:
-            return ParserResult.from_error("Predicate was not found")
-        for i, v in enumerate(c):
-            if not pred(v):
-                return ParserResult.from_done(_chunks_merge((c[:i], cs)), c[i:])
-        return ParserResult.from_partial(Parser(lambda c_: run(c_, (c, cs))))
-    return Parser(run)
+    def run(chunks, chunk, last):
+        for i, c in enumerate(chunk):
+            if not pred(c):
+                return ParserResult.from_done(_chunks_merge((chunk[:i], chunks)), chunk[i:], last)
+        if last:
+            return ParserResult.from_error("Not enough input")
+        else:
+            return ParserResult.from_partial(Parser(run, (chunk, chunks)))
+    return Parser(run, tuple())
 
 
-def struct(st):
-    """Unpack from `st` struct object or struct description.
+def struct(pattern):
+    """Unpack from `pattern` struct object or struct description.
     """
-    st = S.Struct(st) if isinstance(st, (str, bytes)) else st
-    def unpack(d):
-        vs = st.unpack(d)
-        return vs if len(vs) != 1 else vs[0]
-    return take(st.size).map_val(unpack)
+    struct = S.Struct(pattern) if isinstance(pattern, (str, bytes)) else pattern
+    def unpack(data):
+        vals = struct.unpack(data)
+        return vals if len(vals) != 1 else vals[0]
+    return take(struct.size).map_val(unpack)
 
 
-def _chunks_merge(cs):
+def _chunks_merge(chunks):
     """Merge reversed linked list of chunks `cs` to single chunk.
 
     ("three", ("two-", ("one-", ()))) -> "one-two-three"
     """
-    cs_ = []
-    while cs:
-        c, cs = cs
-        cs_.append(c)
-    return cs_[0][:0].join(reversed(cs_)) if cs_ else b""
+    chunks_ = []
+    while chunks:
+        chunk, chunks = chunks
+        chunks_.append(chunk)
+    return chunks_[0][:0].join(reversed(chunks_)) if chunks_ else b""

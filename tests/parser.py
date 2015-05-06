@@ -48,14 +48,14 @@ class ParserTest(unittest.TestCase):
                 self.assertEqual(parse_from(p, "a", "bcd"), ("abc", "d"))
 
     def test_some(self):
-        p = string("ab").some()
+        p = string("ab").some
         self.assertEqual(p.parse_only("ababa"), (("ab","ab"), "a"))
         for d in ("a", "ac"):
             with self.assertRaises(ParserError):
                 p.parse_only(d)
 
     def test_many(self):
-        p = string("ab").many()
+        p = string("ab").many
         self.assertEqual(p.parse_only("ababc"), (("ab","ab"), "c"))
         self.assertEqual(p.parse_only("ac"), (tuple(), "ac"))
 
@@ -81,6 +81,7 @@ class ParserTest(unittest.TestCase):
 
     def test_take(self):
         p = take(3)
+        self.assertEqual(p.parse_only("abc"), ("abc", ""))
         self.assertEqual(p.parse_only("abcd"), ("abc", "d"))
         self.assertEqual(parse_from(p, "ab", "cd"), ("abc", "d"))
         with self.assertRaises(ParserError):
@@ -93,6 +94,7 @@ class ParserTest(unittest.TestCase):
 
     def test_struct(self):
         for p in (struct("I"), struct(S.Struct("I"))):
+            self.assertEqual(p.parse_only(S.pack("I", 42)), (42, b""))
             self.assertEqual(p.parse_only(S.pack("I", 42) + b"|"), (42, b"|"))
             with self.assertRaises(ParserError):
                 self.assertEqual(p.parse_only(b'   '))
@@ -101,18 +103,25 @@ class ParserTest(unittest.TestCase):
         @parser
         def parens():
             yield string("(")
-            yield parens().many()
+            yield parens().many
             yield string(")")
         p = (parens() >> Parser.unit(True) | Parser.unit(False))
         self.assertEqual(p.parse_only(")"), (False, ")"))
-        self.assertEqual(p.parse_only("()|"), (True, "|"))
-        self.assertEqual(p.parse_only("(()())|"), (True, "|"))
-        self.assertEqual(p.parse_only("(()|"), (False, "(()|"))
+        self.assertEqual(p.parse_only("()"), (True, ""))
+        self.assertEqual(p.parse_only("())"), (True, ")"))
+        self.assertEqual(p.parse_only("(()())"), (True, ""))
+        self.assertEqual(p.parse_only("(()"), (False, "(()"))
 
+    def test_end(self):
+        p = string("a")
+        self.assertEqual((p >> at_end).parse_only("a"), (True, ""))
+        self.assertEqual((p >> at_end).parse_only("ab"), (False, "b"))
+        self.assertEqual((p << end_of_input).parse_only("a"), ("a", ""))
+        with self.assertRaises(ParserError):
+            (p << end_of_input).parse_only("ab")
 
-def parse_from(p, *a):
+def parse_from(parser, *chunks):
     """Use iterator 'it' as source of chunks
     """
-    gen = iter(a + (b'',))
-    return p.parse_with(lambda: next(gen))
+    return parser.parse_only_iter(chunks)
 
