@@ -118,6 +118,9 @@ class BufferedSocket (BufferedStream):
     def detach(self):
         return BufferedStream.detach(self).detach()
 
+    def connect(self, addr):
+        return self.base.connect(addr).map_val(lambda _: self)
+
     @async
     def accept(self):
         with self.reading:
