@@ -6,7 +6,7 @@ from .utils import call
 from .monad import Monad, do, do_return
 
 __all__ = ('Parser', 'ParserResult', 'ParserError', 'parser',
-           'at_end', 'end_of_input', 'string', 'take', 'take_while', 'struct',)
+           'at_end', 'end_of_input', 'match', 'string', 'take', 'take_while', 'struct',)
 
 
 class ParserError(Exception):
@@ -64,15 +64,23 @@ class Parser(Monad):
         self.run = F.partial(run, *args)
 
     def __call__(self, chunk, last):
+        """Execute parser
+
+        () :: Parser a -> String -> Bool -> ParserResult a
+        """
         return self.run(chunk, last)
 
     def parse_only(self, *chunks):
         """Parse input `chunks`, if `chunks` is incorrect or too short raise and error.
+
+        parse_only :: Parser a -> String -> (a, String) | Exception
         """
         return self.parse_only_iter(chunks)
 
     def parse_only_iter(self, chunks):
         """Run parser with provided `chunks`
+
+        parse_only_iter :: Parser a -> [String] -> (a, String) | Exception
         """
         parser, chunk = self, b''
         for chunk in chunks:
@@ -92,9 +100,17 @@ class Parser(Monad):
     # Monad
     @classmethod
     def unit(cls, value):
+        """Unit parser
+
+        unit :: a -> Parser a
+        """
         return Parser(ParserResult.from_done, value)
 
     def bind(self, fun):
+        """Bind parser with parser producing function
+
+        bind :: Parser a -> (a -> Parser b) -> Parser b
+        """
         def run(chunk, last):
             result = self(chunk, last)
             tupe, value = result
@@ -113,11 +129,15 @@ class Parser(Monad):
     @staticmethod
     def zero():
         """Always failing parser.
+
+        zero :: Parser a
         """
         return Parser(lambda chunk, last: ParserResult.from_error("Zero parser"))
 
     def __or__(self, other):
         """Tries this parser and if fails use other.
+
+        (|) :: Parser a -> Parser a -> Parser a
         """
         def run(parser, chunks, chunk, last):
             result = parser(chunk, last)
@@ -131,12 +151,18 @@ class Parser(Monad):
         return Parser(run, self, tuple())
 
     def __and__(self, other):
+        """Collect result of two parser in a tuple
+
+        (&) :: Parser a -> Parser b -> Parser (a, b)
+        """
         return self.bind(
             lambda left: other.bind(
                 lambda right: self.unit((left, right))))
 
     def plus(self, other):
         """Tries this parser and if fails use other.
+
+        plus :: Parser a -> Parser a -> Parser a
         """
         return self | other
 
@@ -150,6 +176,8 @@ class Parser(Monad):
     @property
     def some(self):
         """Match at least once.
+
+        some :: Parser a -> Parser [a]
         """
         return self.bind(
             lambda val: (self.some | self.unit(tuple())).bind(
@@ -158,6 +186,8 @@ class Parser(Monad):
     @property
     def many(self):
         """Match zero or more.
+
+        match :: Parser a -> Parser [a]
         """
         return self.bind(
             lambda val: self.many.bind(
@@ -189,6 +219,8 @@ def parser(block):
 
 
 """Return indication of weither end of input has been reached
+
+at_end :: Parser Bool
 """
 @call
 def at_end():
@@ -203,13 +235,37 @@ def at_end():
 
 
 """Matches only if all input has been consumed
+
+end_on_input :: Parser None
 """
 end_of_input = at_end.bind(lambda end: Parser(lambda chunk, last: ParserResult.from_error("Not end of input"))
                            if not end else Parser.unit(None))
 
 
+def match(parser):
+    """Returns result of a parse and the portion of input that was consumed
+
+    match :: Parser a -> Parser (String, a)
+    """
+    def run(parser, chunks, chunk, last):
+        chunks = (chunk, chunks)
+        result = parser.__monad__()(chunk, last)
+        tupe, value = result
+        if tupe & ParserResult.DONE:
+            value, chunk, last = value
+            match = _chunks_merge(chunks)[:-len(chunk)] if chunk else _chunks_merge(chunks)
+            return ParserResult.from_done((match, value), chunk, last)
+        elif tupe & ParserResult.PARTIAL:
+            return ParserResult.from_partial(Parser(run, value, chunks))
+        else:
+            return result
+    return Parser(run, parser, tuple())
+
+
 def string(target):
     """Match specified `target` string.
+
+    string :: String -> Parser String
     """
     def run(suffix, chunk, last):
         if len(chunk) < len(suffix):
@@ -229,6 +285,8 @@ def string(target):
 
 def take(count):
     """Parse `count` bytes
+
+    take :: Int -> Parser String
     """
     def run(length, chunks, chunk, last):
         if length > len(chunk):
@@ -244,6 +302,8 @@ def take(count):
 
 def take_while(pred):
     """Take while predicate is true
+
+    take_white :: (Char -> Bool) -> Parser String
     """
     def run(chunks, chunk, last):
         for i, c in enumerate(chunk):
@@ -258,6 +318,8 @@ def take_while(pred):
 
 def struct(pattern):
     """Unpack from `pattern` struct object or struct description.
+
+    struct :: (String | Struct a) -> Parser a
     """
     struct = S.Struct(pattern) if isinstance(pattern, (str, bytes)) else pattern
     def unpack(data):

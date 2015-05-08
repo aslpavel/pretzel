@@ -120,6 +120,12 @@ class ParserTest(unittest.TestCase):
         with self.assertRaises(ParserError):
             (p << end_of_input).parse_only("ab")
 
+    def test_match(self):
+        self.assertEqual(match(take(5)).parse_only("ab", "cd", "efg"), (("abcde",) * 2, "fg"))
+        self.assertEqual(match(take(2).many).parse_only("a", "bcd", "e"), (("abcd", ("ab", "cd")), "e"))
+        self.assertEqual(match(take(3)).parse_only("abc"), (("abc",) * 2, ""))
+
+
 def parse_from(parser, *chunks):
     """Use iterator 'it' as source of chunks
     """
