@@ -63,6 +63,13 @@ class Parser(Monad):
     def __init__ (self, run, *args):
         self.run = F.partial(run, *args)
 
+    def __parser__(self):
+        """Parsable interface
+
+        Anything with this method will be treated as parser.
+        """
+        return self
+
     def __call__(self, chunk, last):
         """Execute parser
 
@@ -116,11 +123,11 @@ class Parser(Monad):
             tupe, value = result
             if tupe & ParserResult.DONE:
                 value, chunk, last = value
-                return fun(value).__monad__()(chunk, last)
+                return fun(value).__parser__()(chunk, last)
             elif tupe & ParserResult.PARTIAL:
                 if last:
                     return ParserResult.error("Partial result with last chunk")
-                return ParserResult.from_partial(value.__monad__().bind(fun))
+                return ParserResult.from_partial(value.__parser__().bind(fun))
             else:
                 return result
         return Parser(run)
@@ -147,7 +154,7 @@ class Parser(Monad):
             elif tupe & ParserResult.PARTIAL and not last:
                 return ParserResult.from_partial(Parser(run, value, (chunk, chunks)))
             else:
-                return other.__monad__()(_chunks_merge((chunk, chunks)), last)
+                return other.__parser__()(_chunks_merge((chunk, chunks)), last)
         return Parser(run, self, tuple())
 
     def __and__(self, other):
@@ -156,7 +163,7 @@ class Parser(Monad):
         (&) :: Parser a -> Parser b -> Parser (a, b)
         """
         return self.bind(
-            lambda left: other.bind(
+            lambda left: other.__parser__().bind(
                 lambda right: self.unit((left, right))))
 
     def plus(self, other):
@@ -249,7 +256,7 @@ def match(parser):
     """
     def run(parser, chunks, chunk, last):
         chunks = (chunk, chunks)
-        result = parser.__monad__()(chunk, last)
+        result = parser.__parser__()(chunk, last)
         tupe, value = result
         if tupe & ParserResult.DONE:
             value, chunk, last = value
