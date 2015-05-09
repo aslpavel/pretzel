@@ -45,8 +45,8 @@ class Stream(object):
 
     def __init__(self):
         self.state = StateMachine(self.STATE_GRAPH, self.STATE_NAMES)
-        self.reading = StateFlagScope(self.state, self.FLAG_READ)
-        self.writing = StateFlagScope(self.state, self.FLAG_WRITE)
+        self.reading = StateFlagScope(self.state, self.FLAG_READ, self.STATE_DISPOSED)
+        self.writing = StateFlagScope(self.state, self.FLAG_WRITE, self.STATE_DISPOSED)
         self.initing = StateTransScope(self.state, self.STATE_INIT,
                                        self.STATE_IDLE, self.STATE_NONE)
 
@@ -133,13 +133,16 @@ class Stream(object):
 
 
 class StateFlagScope(object):
-    __slots__ = ('state', 'flag')
+    __slots__ = ('state', 'flag', 'disp',)
 
-    def __init__(self, state, flag):
+    def __init__(self, state, flag, disp):
         self.state = state
         self.flag = flag
+        self.disp = disp
 
     def __enter__(self):
+        if self.state.state & self.disp:
+            raise BrokenPipeError('stream is disposed')
         self.state(self.state.state | self.flag)
         return self
 
