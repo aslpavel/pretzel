@@ -6,7 +6,8 @@ from .utils import call
 from .monad import Monad, do, do_return
 
 __all__ = ('Parser', 'ParserResult', 'ParserError', 'parser',
-           'at_end', 'end_of_input', 'match', 'string', 'take', 'take_while', 'struct',)
+           'at_end', 'end_of_input', 'match', 'string', 'take', 'take_while',
+           'take_rest', 'struct',)
 
 
 class ParserError(Exception):
@@ -318,6 +319,20 @@ def take_while(pred):
                 return ParserResult.from_done(_chunks_merge((chunk[:i], chunks)), chunk[i:], last)
         if last:
             return ParserResult.from_error("Not enough input")
+        else:
+            return ParserResult.from_partial(Parser(run, (chunk, chunks)))
+    return Parser(run, tuple())
+
+
+@call
+def take_rest():
+    """Take rest of the input
+
+    take_rest :: Parser String
+    """
+    def run(chunks, chunk, last):
+        if last:
+            return ParserResult.from_done(_chunks_merge((chunk, chunks)), chunk[:0], last)
         else:
             return ParserResult.from_partial(Parser(run, (chunk, chunks)))
     return Parser(run, tuple())

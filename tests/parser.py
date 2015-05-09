@@ -92,6 +92,10 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(p.parse_only("--a++"), ("--", "a++"))
         self.assertEqual(parse_from(p, "-", "--", "a++"), ("---", "a++"))
 
+    def test_take_rest(self):
+        self.assertEqual(take_rest.parse_only("a", "bcd"), ("abcd", ""))
+        self.assertEqual(take_rest.parse_only(""), ("", ""))
+
     def test_struct(self):
         for p in (struct("I"), struct(S.Struct("I"))):
             self.assertEqual(p.parse_only(S.pack("I", 42)), (42, b""))
