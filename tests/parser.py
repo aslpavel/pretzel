@@ -1,7 +1,10 @@
 import unittest
 import struct as S
 from ..monad import do_return
+from ..uniform import PY2
 from ..parser import *
+if PY2:
+    bytes = lambda v: v.__bytes__()
 
 __all__ = ('ParserTest',)
 
@@ -141,3 +144,4 @@ class ParserTest(unittest.TestCase):
         self.success(Bytes, Bytes(b'one'), b'' , bytes(Bytes(b'one')))
         self.success(Bytes, Bytes(b'one'), b'|', bytes(Bytes(b'one')) + b'|')
         self.failure(Bytes, b'')
+

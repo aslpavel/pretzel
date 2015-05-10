@@ -3,6 +3,7 @@
 import struct    as S
 import functools as F
 from .utils import call
+from .uniform import PY2
 from .monad import Monad, do, do_return
 
 __all__ = ('Parser', 'ParserResult', 'ParserError',
@@ -389,7 +390,7 @@ class Variant(int):
         """Bytes representation for Variant
         """
         value  = (abs(self) << 1) | (1 if self < 0 else 0)
-        octets = []
+        octets = bytearray()
         while True:
             octet, value = value & 0x7f, value >> 7
             if value > 0:
@@ -403,14 +404,21 @@ class Variant(int):
     def __parser__(cls):
         """Variant value parser
         """
-        def octets_to_value(octets):
+        byte = cls.__byte
+        def from_octets(octets):
             octets = octets[0] + octets[1]
-            value  = sum((o & 0x7f) << i * 7 for i, o in enumerate(octets))
+            value  = sum((byte(o) & 0x7f) << i * 7 for i, o in enumerate(octets))
             if value & 0x1:
                 return cls(-(value >> 1))
             else:
                 return cls(value >> 1)
-        return (take_while(lambda octet: octet & 0x80) & take(1)).map_val(octets_to_value)
+        return ((take_while(lambda octet: byte(octet) & 0x80) & take(1))
+                .map_val(from_octets))
+
+    if PY2:
+        __byte = staticmethod(lambda b: ord(b))
+    else:
+        __byte = staticmethod(lambda b: b)
 
     def __str__(self):
         return '{}({})'.format(type(self).__name__, int.__str__(self))
@@ -425,7 +433,7 @@ class Bytes(bytes):
     Bytes prefixed with variant indicating size of bytes
     """
     def __bytes__(self):
-        return bytes(Variant(len(self))) + self
+        return Variant(len(self)).__bytes__() + self
 
     @classmethod
     def __parser__(cls):
