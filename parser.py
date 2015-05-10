@@ -5,11 +5,19 @@ import functools as F
 from .utils import call
 from .monad import Monad, do, do_return
 
-__all__ = ('Parser', 'ParserResult', 'ParserError', 'parser',
-           'at_end', 'end_of_input', 'match', 'string', 'take', 'take_while',
-           'take_rest', 'struct',)
+__all__ = ('Parser', 'ParserResult', 'ParserError',
+           'parser',
+           'at_end', 'end_of_input',
+           'match',
+           'string',
+           'take', 'take_while', 'take_rest',
+           'struct',
+           'Variant', 'Bytes'
+)
 
-
+#-------------------------------------------------------------------------------
+# Parser
+#-------------------------------------------------------------------------------
 class ParserError(Exception):
     """Parser error
     """
@@ -207,31 +215,39 @@ class Parser(Monad):
         return self.Sequence((self,) * count)
 
 
+#-------------------------------------------------------------------------------
+# Parser block decorator
+#-------------------------------------------------------------------------------
 def parser(block):
-    """Parser do block
+    """Parser block decorator
+
+    Construct parser from generator block.
     """
-    def unwrap_result(result):
+    def unwrap(result):
         tupe, value = result
         if tupe & ParserResult.DONE:
             value, chunk, last = value
             return (ParserResult.from_done(value.value, chunk, last) if value.error is None else
                     ParserResult.from_error(value.error))
         elif tupe & ParserResult.PARTIAL:
-            return ParserResult.from_partial(Parser(lambda chunk, last: unwrap_result(value(chunk, last))))
+            return ParserResult.from_partial(Parser(lambda chunk, last: unwrap(value(chunk, last))))
         else:
             return result
     do_block = do(Parser)(block)
     return F.wraps(block)(
         lambda *args, **kwargs: Parser(
-            lambda chunk, last: unwrap_result(do_block(*args, **kwargs)(chunk, last))))
+            lambda chunk, last: unwrap(do_block(*args, **kwargs)(chunk, last))))
 
 
-"""Return indication of weither end of input has been reached
-
-at_end :: Parser Bool
-"""
+#-------------------------------------------------------------------------------
+# Parsers
+#-------------------------------------------------------------------------------
 @call
 def at_end():
+    """Return indication of weither end of input has been reached
+
+    at_end :: Parser Bool
+    """
     def run(chunk, last):
         if chunk:
             return ParserResult.from_done(False, chunk, last)
@@ -242,12 +258,15 @@ def at_end():
     return Parser(run)
 
 
-"""Matches only if all input has been consumed
+@call
+def end_of_input():
+    """Matches only if all input has been consumed
 
-end_on_input :: Parser None
-"""
-end_of_input = at_end.bind(lambda end: Parser(lambda chunk, last: ParserResult.from_error("Not end of input"))
-                           if not end else Parser.unit(None))
+    end_on_input :: Parser None
+    """
+    return at_end.bind(lambda end:
+        Parser(lambda chunk, last: ParserResult.from_error("Not end of input"))
+                              if not end else Parser.unit(None))
 
 
 def match(parser):
@@ -350,6 +369,78 @@ def struct(pattern):
     return take(struct.size).map_val(unpack)
 
 
+#-------------------------------------------------------------------------------
+# Parsable types
+#-------------------------------------------------------------------------------
+class Variant(int):
+    """Variant value
+
+    Compactly packable integer value. Most significant bit indicates whether there is
+    more octets to be parsed apart from current, lower 7 bits hold two's complement
+    representation of value, least significant group first, first bit in this series
+    indicates weither value is negative.
+    """
+    __slots__ = tuple()
+
+    def __new__(cls, value):
+        return int.__new__(cls, value)
+
+    def __bytes__(self):
+        """Bytes representation for Variant
+        """
+        value  = (abs(self) << 1) | (1 if self < 0 else 0)
+        octets = []
+        while True:
+            octet, value = value & 0x7f, value >> 7
+            if value > 0:
+                octets.append(octet | 0x80)
+            else:
+                octets.append(octet)
+                break
+        return bytes(octets)
+
+    @classmethod
+    def __parser__(cls):
+        """Variant value parser
+        """
+        def octets_to_value(octets):
+            octets = octets[0] + octets[1]
+            value  = sum((o & 0x7f) << i * 7 for i, o in enumerate(octets))
+            if value & 0x1:
+                return cls(-(value >> 1))
+            else:
+                return cls(value >> 1)
+        return (take_while(lambda octet: octet & 0x80) & take(1)).map_val(octets_to_value)
+
+    def __str__(self):
+        return '{}({})'.format(type(self).__name__, int.__str__(self))
+
+    def __repr__(self):
+        return str(self)
+
+
+class Bytes(bytes):
+    """Parsable bytes
+
+    Bytes prefixed with variant indicating size of bytes
+    """
+    def __bytes__(self):
+        return bytes(Variant(len(self))) + self
+
+    @classmethod
+    def __parser__(cls):
+        return Variant.__parser__().bind(take).map_val(cls)
+
+    def __str__(self):
+        return '{}({})'.format(type(self).__name__, bytes.__str__(self))
+
+    def __repr__(self):
+        return str(self)
+
+
+#-------------------------------------------------------------------------------
+# Helpers
+#-------------------------------------------------------------------------------
 def _chunks_merge(chunks):
     """Merge reversed linked list of chunks `cs` to single chunk.
 

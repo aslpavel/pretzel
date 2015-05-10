@@ -9,65 +9,67 @@ __all__ = ('ParserTest',)
 class ParserTest(unittest.TestCase):
     """Parser unittest
     """
+    def success(self, parser, result, left, *chunks):
+        self.assertEqual(parser.__parser__().parse_only_iter(chunks), (result, left))
+
+    def failure(self, parser, *chunks):
+        with self.assertRaises(ParserError):
+            parser.__parser__().parse_only_iter(chunks)
+
     def test_string(self):
         p = string("abc")
         for data in ("abb", "ab"):
-            with self.assertRaises(ParserError):
-                p.parse_only(data)
-        self.assertEqual(p.parse_only("abc"), ("abc", ""))
-        self.assertEqual(p.parse_only("abcd"), ("abc", "d"))
-        self.assertEqual(parse_from(p, "a","b","cd","e"), ("abc", "d"))
+            self.failure(p, data)
+        self.success(p, "abc", "" , "abc")
+        self.success(p, "abc", "d", "abcd")
+        self.success(p, "abc", "d", "a", "b", "cd", "e")
 
     def test_monad(self):
         # bind
         p = string("begin") & string(",") & string("end")
         r = (("begin", ","), "end")
         for data in ("begin|end", "begin,en"):
-            with self.assertRaises(ParserError):
-                p.parse_only(data)
-        self.assertEqual(p.parse_only("begin,end,tail"), (r, ",tail"))
-        self.assertEqual(parse_from(p, "beg", "in,", "end|"), (r, "|"))
+            self.failure(p, data)
+        self.success(p, r, ",tail", "begin,end,tail")
+        self.success(p, r, "|"    , "beg", "in,", "end|")
         # unit
-        self.assertEqual(Parser.unit(10).parse_only("abc"), (10, "abc"))
+        self.success(Parser.unit(10), 10, "abc", "abc")
 
     def test_alternative(self):
         # or
         p = string("abc") | string("abde")
-        self.assertEqual(p.parse_only("abc|"), ("abc","|"))
-        self.assertEqual(p.parse_only("abde|"), ("abde","|"))
-        self.assertEqual(parse_from(p, "a", "b", "c|"), ("abc", "|"))
-        self.assertEqual(parse_from(p, "a", "b", "d", "e|"), ("abde", "|"))
-        with self.assertRaises(ParserError):
-            p.parse_only("abb")
+        self.success(p, "abc" , "|", "abc|")
+        self.success(p, "abde", "|", "abde|")
+        self.success(p, "abc" , "|", "a", "b", "c|")
+        self.success(p, "abde", "|", "a", "b", "d", "e|")
+        self.failure(p, "abb")
         # empty
         for p in (string("abc") | Parser.zero(), Parser.zero() | string("abc")):
             for d in ("ab", "abb"):
-                with self.assertRaises(ParserError):
-                    p.parse_only(d)
-                self.assertEqual(p.parse_only("abcd"), ("abc", "d"))
-                self.assertEqual(parse_from(p, "a", "bcd"), ("abc", "d"))
+                self.failure(p, d)
+                self.success(p, "abc", "d", "abcd")
+                self.success(p, "abc", "d", "a", "bcd")
 
     def test_some(self):
         p = string("ab").some
-        self.assertEqual(p.parse_only("ababa"), (("ab","ab"), "a"))
+        self.success(p, ("ab", "ab"), "a", "ababa")
+        self.success(p, ("ab",)     , "" , "ab")
         for d in ("a", "ac"):
-            with self.assertRaises(ParserError):
-                p.parse_only(d)
+            self.failure(p, d)
 
     def test_many(self):
         p = string("ab").many
-        self.assertEqual(p.parse_only("ababc"), (("ab","ab"), "c"))
-        self.assertEqual(p.parse_only("ac"), (tuple(), "ac"))
+        self.success(p, ("ab", "ab"), "c" , "ababc")
+        self.success(p, ("ab",)     , ""  , "ab")
+        self.success(p, tuple()     , "ac", "ac")
 
     def test_shifts(self):
         p = string("ab") >> string("cd")
-        self.assertEqual(p.parse_only("abcde"), ("cd", "e"))
-        with self.assertRaises(ParserError):
-            p.parse_only("abe")
+        self.success(p, "cd", "e", "abcde")
+        self.failure(p, "abe")
         p = string("ab") << string("cd")
-        self.assertEqual(p.parse_only("abcde"), ("ab", "e"))
-        with self.assertRaises(ParserError):
-            p.parse_only("abe")
+        self.success(p, "ab", "e", "abcde")
+        self.failure(p, "abe")
 
     def test_parser(self):
         @parser
@@ -76,32 +78,32 @@ class ParserTest(unittest.TestCase):
             yield take(1)
             value = yield take_while(lambda c: c != "\n")
             do_return((name, value.strip()))
-        self.assertEqual(header().parse_only("Type: 32\n"), (("Type", "32"), "\n"))
-        self.assertEqual(parse_from(header(), "Type:", "3", "2\n"), (("Type", "32"), "\n"))
+        self.success(header(), ("Type", "32"), "\n", "Type: 32\n")
+        self.success(header(), ("Type", "32"), "\n", "Typ", "e:", "3", "2\n")
+        self.failure(header(), "Typa: 32")
+        self.failure(header(), "Type: 32")
 
     def test_take(self):
         p = take(3)
-        self.assertEqual(p.parse_only("abc"), ("abc", ""))
-        self.assertEqual(p.parse_only("abcd"), ("abc", "d"))
-        self.assertEqual(parse_from(p, "ab", "cd"), ("abc", "d"))
-        with self.assertRaises(ParserError):
-            p.parse_only("ab")
+        self.success(p, "abc", "" , "abc")
+        self.success(p, "abc", "d", "abcd")
+        self.success(p, "abc", "d", "ab", "cd")
+        self.failure(p, "ab")
 
     def test_take_while(self):
         p = take_while(lambda c: c != 'a')
-        self.assertEqual(p.parse_only("--a++"), ("--", "a++"))
-        self.assertEqual(parse_from(p, "-", "--", "a++"), ("---", "a++"))
+        self.success(p, "--" , "a++", "--a++")
+        self.success(p, "---", "a++", "-", "--", "a++")
 
     def test_take_rest(self):
-        self.assertEqual(take_rest.parse_only("a", "bcd"), ("abcd", ""))
-        self.assertEqual(take_rest.parse_only(""), ("", ""))
+        self.success(take_rest, "abcd", "",  "a", "bcd")
+        self.success(take_rest, "", "", "")
 
     def test_struct(self):
         for p in (struct("I"), struct(S.Struct("I"))):
-            self.assertEqual(p.parse_only(S.pack("I", 42)), (42, b""))
-            self.assertEqual(p.parse_only(S.pack("I", 42) + b"|"), (42, b"|"))
-            with self.assertRaises(ParserError):
-                self.assertEqual(p.parse_only(b'   '))
+            self.success(p, 42, b'' , S.pack("I", 42))
+            self.success(p, 42, b'|', S.pack("I", 42) + b'|')
+            self.failure(p, b'   ')
 
     def test_parens(self):
         @parser
@@ -109,29 +111,33 @@ class ParserTest(unittest.TestCase):
             yield string("(")
             yield parens().many
             yield string(")")
-        p = (parens() >> Parser.unit(True) | Parser.unit(False))
-        self.assertEqual(p.parse_only(")"), (False, ")"))
-        self.assertEqual(p.parse_only("()"), (True, ""))
-        self.assertEqual(p.parse_only("())"), (True, ")"))
-        self.assertEqual(p.parse_only("(()())"), (True, ""))
-        self.assertEqual(p.parse_only("(()"), (False, "(()"))
+        p = match(parens()).map_val(lambda pair: pair[0])
+        self.success(p, "()"    , ""  , "()")
+        self.success(p, "()"    , ")" , "())")
+        self.success(p, "(()())", ""  , "(()", "())")
+        self.success(p, "()"    , "()", "()()")
+        self.failure(p, ")")
+        self.failure(p, "(()")
 
     def test_end(self):
         p = string("a")
-        self.assertEqual((p >> at_end).parse_only("a"), (True, ""))
-        self.assertEqual((p >> at_end).parse_only("ab"), (False, "b"))
-        self.assertEqual((p << end_of_input).parse_only("a"), ("a", ""))
-        with self.assertRaises(ParserError):
-            (p << end_of_input).parse_only("ab")
+        self.success(p >> at_end      , True , "" , "a")
+        self.success(p >> at_end      , False, "b", "ab")
+        self.success(p << end_of_input, "a"  , "" , "a")
+        self.failure(p << end_of_input, "ab")
 
     def test_match(self):
-        self.assertEqual(match(take(5)).parse_only("ab", "cd", "efg"), (("abcde",) * 2, "fg"))
-        self.assertEqual(match(take(2).many).parse_only("a", "bcd", "e"), (("abcd", ("ab", "cd")), "e"))
-        self.assertEqual(match(take(3)).parse_only("abc"), (("abc",) * 2, ""))
+        self.success(match(take(5))     , ("abcde",) * 2        , "fg", "ab", "cd", "efg")
+        self.success(match(take(2).many), ("abcd", ("ab", "cd")), "e" , "a", "bcd", "e")
+        self.success(match(take(3))     , ("abc",) * 2          , ""  , "abc")
 
+    def test_variant(self):
+        self.success(Variant, Variant(777) , b'' , bytes(Variant(777)))
+        self.success(Variant, Variant(-777), b'' , bytes(Variant(-777)))
+        self.success(Variant, Variant(42)  , b'|', bytes(Variant(42)) + b'|')
+        self.failure(Variant, b'')
 
-def parse_from(parser, *chunks):
-    """Use iterator 'it' as source of chunks
-    """
-    return parser.parse_only_iter(chunks)
-
+    def test_bytes(self):
+        self.success(Bytes, Bytes(b'one'), b'' , bytes(Bytes(b'one')))
+        self.success(Bytes, Bytes(b'one'), b'|', bytes(Bytes(b'one')) + b'|')
+        self.failure(Bytes, b'')
