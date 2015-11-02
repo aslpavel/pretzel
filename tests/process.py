@@ -1,10 +1,12 @@
 import os
+import sys
 import time
 import errno
 import json
 import textwrap
 import unittest
 import tempfile
+import resource
 from . import async_test
 from ..monad import Cont, async_all
 from ..boot import boot_pack
@@ -18,6 +20,10 @@ __all__ = ('ProcessTest',)
 
 class ProcessTest(unittest.TestCase):
     stress_count = 128
+
+    @classmethod
+    def setUpClass(cls):
+        resource.setrlimit(resource.RLIMIT_NOFILE, (cls.stress_count*6,)*2)
 
     @async_test
     def test_pipe(self):
@@ -62,7 +68,7 @@ class ProcessTest(unittest.TestCase):
     def test_call_shell(self):
         shell_command = list(command)
         shell_command[-1] = '\'{}\''.format(command[-1])
-        shell_command += ['| wc -c']
+        shell_command += ['| {}'.format(" ".join("'{}'".format(c) for c in wc))]
         out, err, code = yield process_call(shell_command, b'10', shell=True)
         self.assertEqual(code, 0)
         self.assertEqual(out, b'5\n')
@@ -169,7 +175,7 @@ class ProcessTest(unittest.TestCase):
 
     @async_test
     def test_chain(self):
-        commands = [command, ['cat'], ['wc', '-c']]
+        commands = [command, ['cat'], wc]
 
         # data in memory data
         self.assertEqual((yield process_chain_call(commands, stdin=b'10', check=False)),
@@ -194,7 +200,7 @@ class ProcessTest(unittest.TestCase):
             yield process_chain_call(commands, stdin=b'10')
 
 
-command = ['python', '-c', textwrap.dedent("""\
+command = [sys.executable, '-c', textwrap.dedent("""\
     import sys
     for value in range(int(input())):
         if value % 2 == 1:
@@ -206,6 +212,12 @@ command = ['python', '-c', textwrap.dedent("""\
     sys.exit (117)
     """)]
 
+wc = [sys.executable, '-c', textwrap.dedent("""\
+    import sys
+    sys.stdout.write(str(sum(len(line) for line in sys.stdin)))
+    sys.stdout.write("\\n")
+    sys.stdout.flush()
+    """)]
 
 def check_fd(fd):
     """Check if descriptor is a valid one

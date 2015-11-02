@@ -3,6 +3,7 @@ language: python
 python:
     - 2.7
     - 3.4
+    - 3.5
     - pypy
     #- pypy3
 
@@ -14,8 +15,8 @@ env:
         - PRETZEL_POLLER=select
 
 install:
-    - pip install coveralls --use-mirrors
-    - pip install greenlet --use-mirrors
+    - pip install coveralls
+    - pip install greenlet
 
 before_script: |
     ssh-keygen -R localhost
