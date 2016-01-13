@@ -442,6 +442,10 @@ class Bytes(bytes):
     def __parser__(cls):
         return Varint.__parser__().bind(take).map_val(cls)
 
+    @classmethod
+    def __monad__(cls):
+        return cls.__parser__()
+
     def __str__(self):
         return '{}({})'.format(type(self).__name__, bytes.__str__(self))
 

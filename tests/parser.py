@@ -139,9 +139,20 @@ class ParserTest(unittest.TestCase):
         self.success(Varint, Varint(-777), b'' , bytes(Varint(-777)))
         self.success(Varint, Varint(42)  , b'|', bytes(Varint(42)) + b'|')
         self.failure(Varint, b'')
+        # monad behaviour
+        self.success(sum(Varint), 42, b'',
+                     b''.join(map(lambda v: bytes(Varint(v)), (39, 3))))
 
     def test_bytes(self):
         self.success(Bytes, Bytes(b'one'), b'' , bytes(Bytes(b'one')))
         self.success(Bytes, Bytes(b'one'), b'|', bytes(Bytes(b'one')) + b'|')
         self.failure(Bytes, b'')
+        # moand behaviour
+        self.success(sum(Bytes), b'ab', b'',
+                     b''.join(map(lambda v: bytes(Bytes(v)), (b'a', b'b'))))
 
+@parser
+def sum(p):
+    a = yield p
+    b = yield p
+    do_return(a + b)
