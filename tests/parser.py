@@ -135,10 +135,10 @@ class ParserTest(unittest.TestCase):
         self.success(match(take(3))     , ("abc",) * 2          , ""  , "abc")
 
     def test_variant(self):
-        self.success(Variant, Variant(777) , b'' , bytes(Variant(777)))
-        self.success(Variant, Variant(-777), b'' , bytes(Variant(-777)))
-        self.success(Variant, Variant(42)  , b'|', bytes(Variant(42)) + b'|')
-        self.failure(Variant, b'')
+        self.success(Varint, Varint(777) , b'' , bytes(Varint(777)))
+        self.success(Varint, Varint(-777), b'' , bytes(Varint(-777)))
+        self.success(Varint, Varint(42)  , b'|', bytes(Varint(42)) + b'|')
+        self.failure(Varint, b'')
 
     def test_bytes(self):
         self.success(Bytes, Bytes(b'one'), b'' , bytes(Bytes(b'one')))

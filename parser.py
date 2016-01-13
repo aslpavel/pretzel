@@ -13,7 +13,7 @@ __all__ = ('Parser', 'ParserResult', 'ParserError',
            'string',
            'take', 'take_while', 'take_rest',
            'struct',
-           'Variant', 'Bytes'
+           'Varint', 'Bytes'
 )
 
 #-------------------------------------------------------------------------------
@@ -38,8 +38,7 @@ class ParserResult(tuple):
 
     @classmethod
     def from_error(cls, error):
-        assert isinstance(error, str), "Error must be a string"
-        return cls(cls.ERROR, error)
+        return cls(cls.ERROR, str(error))
 
     @classmethod
     def from_done(cls, value, chunk, last):
@@ -373,8 +372,8 @@ def struct(pattern):
 #-------------------------------------------------------------------------------
 # Parsable types
 #-------------------------------------------------------------------------------
-class Variant(int):
-    """Variant value
+class Varint(int):
+    """Varint value
 
     Compactly packable integer value. Most significant bit indicates whether there is
     more octets to be parsed apart from current, lower 7 bits hold two's complement
@@ -387,7 +386,7 @@ class Variant(int):
         return int.__new__(cls, value)
 
     def __bytes__(self):
-        """Bytes representation for Variant
+        """Bytes representation for Varint
         """
         value  = (abs(self) << 1) | (1 if self < 0 else 0)
         octets = bytearray()
@@ -402,7 +401,7 @@ class Variant(int):
 
     @classmethod
     def __parser__(cls):
-        """Variant value parser
+        """Varint value parser
         """
         byte = cls.__byte
         def from_octets(octets):
@@ -414,6 +413,10 @@ class Variant(int):
                 return cls(value >> 1)
         return ((take_while(lambda octet: byte(octet) & 0x80) & take(1))
                 .map_val(from_octets))
+
+    @classmethod
+    def __monad__(cls):
+        return cls.__parser__()
 
     if PY2:
         __byte = staticmethod(lambda b: ord(b))
@@ -433,11 +436,11 @@ class Bytes(bytes):
     Bytes prefixed with variant indicating size of bytes
     """
     def __bytes__(self):
-        return Variant(len(self)).__bytes__() + self
+        return Varint(len(self)).__bytes__() + self
 
     @classmethod
     def __parser__(cls):
-        return Variant.__parser__().bind(take).map_val(cls)
+        return Varint.__parser__().bind(take).map_val(cls)
 
     def __str__(self):
         return '{}({})'.format(type(self).__name__, bytes.__str__(self))
