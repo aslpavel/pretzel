@@ -1,7 +1,7 @@
 """Stream connection
 """
 from .conn import Connection
-from ...monad import async
+from ...monad import do_async
 from ...uniform import CanceledError, BrokenPipeError
 
 __all__ = ('StreamConnection',)
@@ -15,13 +15,13 @@ class StreamConnection(Connection):
         self.reader = None
         self.writer = None
 
-    @async
+    @do_async
     def do_connect(self, target):
         """Connect implementation
 
         Target is tuple of input and output streams.
         """
-        @async
+        @do_async
         def recv_coro():
             try:
                 if self.reader.disposed:

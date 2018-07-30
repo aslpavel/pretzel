@@ -7,7 +7,7 @@ import errno
 
 from .file import File
 from .buffered import BufferedStream
-from ..monad import async, do_return
+from ..monad import do_async, do_return
 from ..core import POLL_READ, POLL_WRITE
 from ..uniform import BrokenPipeError, BlockingErrorSet, PipeErrorSet
 
@@ -21,7 +21,7 @@ class Socket(File):
         self.sock = sock  # used by blocking method
         File.__init__(self, sock.fileno(), closefd=False, init=bool(init), core=core)
 
-    @async
+    @do_async
     def read(self, size):
         with self.reading:
             while True:
@@ -37,7 +37,7 @@ class Socket(File):
                         raise
                 yield self.core.poll(self.fd, POLL_READ)
 
-    @async
+    @do_async
     def write(self, data):
         with self.writing:
             while True:
@@ -50,7 +50,7 @@ class Socket(File):
                         raise
                 yield self.core.poll(self.fd, POLL_WRITE)
 
-    @async
+    @do_async
     def connect(self, address):
         with self.initing:
             try:
@@ -62,7 +62,7 @@ class Socket(File):
             yield self.core.poll(self.fd, POLL_WRITE)
             do_return(self)
 
-    @async
+    @do_async
     def accept(self):
         with self.reading:
             while True:
@@ -96,7 +96,7 @@ class Socket(File):
             return True
         return False
 
-    @async
+    @do_async
     def detach(self):
         sock, self.sock = self.sock, None
         if not self.dispose():
@@ -121,7 +121,7 @@ class BufferedSocket (BufferedStream):
     def connect(self, addr):
         return self.base.connect(addr).map_val(lambda _: self)
 
-    @async
+    @do_async
     def accept(self):
         with self.reading:
             sock, addr = yield self.base.accept()

@@ -10,7 +10,7 @@ from ..expr import ExprEnv, Const, Arg
 from ...uniform import reraise
 from ...event import Event
 from ...core import Core
-from ...monad import Result, Cont, async, do_return
+from ...monad import Result, Cont, do_async, do_return
 from ...state_machine import StateMachine
 from ...dispose import CompDisp
 
@@ -100,7 +100,7 @@ class Connection(object):
     def connected(self):
         return self.state.state == self.STATE_CONND
 
-    @async
+    @do_async
     def connect(self, target=None):
         self.state(self.STATE_CONNI)
         try:
@@ -119,7 +119,7 @@ class Connection(object):
             reraise(*error)
         do_return(self)
 
-    @async
+    @do_async
     def do_connect(self, target):
         """Connect implementation
         """
@@ -133,7 +133,7 @@ class Connection(object):
         """
         raise NotImplementedError()
 
-    @async
+    @do_async
     def do_recv(self, msg_raw):
         """Handle remote packed message
         """

@@ -11,11 +11,11 @@ from .cont import Cont
 from .result import Result, callsite_banner
 from ..event import Event
 
-__all__ = ('async', 'async_green', 'async_block', 'async_any', 'async_all',
+__all__ = ('do_async', 'async_green', 'async_block', 'async_any', 'async_all',
            'async_catch', 'async_limit', 'async_single',)
 
 
-def async(block):
+def do_async(block):
     """Better "do" block for continuation monad
 
     It is also possible to run returned continuation multiple times, which
@@ -117,7 +117,7 @@ def async_all(conts):
     return all_cont
 
 
-@async
+@do_async
 def async_catch(cont, type, handler):
     """Execute asynchronous handler in case of type of exception is in type
 
@@ -142,7 +142,7 @@ def async_limit(limit):
         worker_count = [0]
         worker_queue = deque()
 
-        @async
+        @do_async
         def worker():
             try:
                 worker_count[0] += 1

@@ -6,7 +6,7 @@ import collections
 
 from ..stream import Stream
 from ..buffered import Buffer, BufferedStream
-from ...monad import Result, async, do_return
+from ...monad import Result, do_async, do_return
 from ...event import Event
 from ...uniform import BrokenPipeError
 from ... import parser as P
@@ -321,12 +321,12 @@ class DummyStream(Stream):
         self.read_complete = Event()
         self.write_complete = Event()
 
-    @async
+    @do_async
     def read(self, size):
         with self.reading:
             do_return((yield self.read_complete)[:size])
 
-    @async
+    @do_async
     def write(self, data):
         with self.writing:
             size = yield self.write_complete

@@ -13,7 +13,7 @@ import textwrap
 from .stream import StreamConnection
 from ..importer import Importer
 from ... import PRETZEL_BUFSIZE, PRETZEL_RECLIMIT
-from ...monad import async
+from ...monad import do_async
 from ...process import Process, PIPE
 from ...boot import BootImporter, boot_pack, __name__ as boot_name
 from ...core import Core
@@ -41,7 +41,7 @@ class ShellConnection(StreamConnection):
         self.environ = environ
         self.process = None
 
-    @async
+    @do_async
     def do_connect(self, target):
         """Fork connect implementation
 
@@ -120,6 +120,11 @@ def shell_conn_init(bufsize):  # pragma: no cover
         if not core.disposed:
             core()
 
+
+size_format = BufferedFile.size_struct.format
+if isinstance(size_format, bytes):
+    size_format = size_format.decode()
+
 shell_tramp = boot_pack(textwrap.dedent("""\
     import os, io, sys, struct, pickle
     size_struct = struct.Struct("{size_format}")
@@ -145,4 +150,4 @@ shell_tramp = boot_pack(textwrap.dedent("""\
         boot_data = read_bytes()
     os.environ.update(pickle.loads(env_data))
     exec(boot_data.decode("utf-8"))
-    """.format(size_format=BufferedFile.size_struct.format.decode())))
+    """.format(size_format=size_format)))

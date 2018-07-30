@@ -2,7 +2,7 @@
 """
 from collections import defaultdict
 from .. import PRETZEL_BUFSIZE
-from ..monad import async
+from ..monad import do_async
 from ..state_machine import StateMachine
 from ..uniform import BrokenPipeError
 
@@ -53,7 +53,7 @@ class Stream(object):
     def fileno(self):
         raise NotImplementedError()
 
-    @async
+    @do_async
     def read(self, size):
         """Read data
 
@@ -64,7 +64,7 @@ class Stream(object):
         with self.reading:
             raise NotImplementedError()
 
-    @async
+    @do_async
     def write(self, data):
         """Write data
 
@@ -74,21 +74,21 @@ class Stream(object):
         with self.writing:
             raise NotImplementedError()
 
-    @async
+    @do_async
     def flush(self):
         """Flush write buffers
 
         Must hook continuation to the current flush if any or start new one.
         """
 
-    @async
+    @do_async
     def flush_and_dispose(self):
         """Flush data and dispose stream
         """
         yield self.flush()
         self.dispose()
 
-    @async
+    @do_async
     def copy_to(self, stream, bufsize=None):
         """Copy content of this stream to different stream
 

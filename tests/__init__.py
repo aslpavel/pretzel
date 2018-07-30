@@ -1,8 +1,8 @@
 import functools
 from .. import PRETZEL_TEST_TIMEOUT
-from ..core import Core, sleep
+from ..core import Core
 from ..uniform import CanceledError
-from ..monad import async
+from ..monad import do_async
 from ..remoting.hub import Hub
 
 __all__ = ('async_test',)
@@ -16,12 +16,12 @@ def async_test(test):
         core_prev = Core.local()
         try:
             with Core.local(Core()) as core:
-                @async
+                @do_async
                 def timeout():
                     yield core.sleep(PRETZEL_TEST_TIMEOUT)
                     raise CanceledError('test timeout')
 
-                test_future = (async(test)(*args, **kwargs) | timeout()).future()
+                test_future = (do_async(test)(*args, **kwargs) | timeout()).future()
                 test_future(lambda _: core.dispose())
                 if not core.disposed:
                     core()

@@ -2,7 +2,7 @@ import unittest
 from ..hub import Hub
 from ..proxy import Proxy, proxify
 from ...event import Event
-from ...monad import monad, async, do_return
+from ...monad import monad, do_async, do_return
 from ...core import schedule
 from ...tests import async_test
 
@@ -67,7 +67,7 @@ class Remote (object):
             value, self.value = self.value, value
             return value
 
-    @async
+    @do_async
     def method_async(self, value=None):
         yield self.event
         do_return(self.method(value))

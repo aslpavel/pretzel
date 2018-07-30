@@ -7,7 +7,7 @@ import sys
 from .stream import StreamConnection
 from ..importer import Importer
 from ...process import Process, ProcessPipe, PIPE
-from ...monad import async
+from ...monad import do_async
 from ...stream import BufferedFile
 from ...core import Core
 from ...boot import BootImporter, __name__ as boot_name
@@ -27,7 +27,7 @@ class ForkConnection(StreamConnection):
         self.environ = environ
         self.process = None
 
-    @async
+    @do_async
     def do_connect(self, target):
         """Fork connect implementation
 

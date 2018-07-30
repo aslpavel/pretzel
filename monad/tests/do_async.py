@@ -5,8 +5,8 @@ from heapq import heappush, heappop
 from ..do import do_return
 from ..result import Result
 from ...event import Event
-from ..async import (async, async_block, async_all, async_any,
-                     async_limit, async_catch)
+from ..do_async import (do_async, async_block, async_all, async_any,
+                        async_limit, async_catch)
 
 __all__ = ('ContTest',)
 
@@ -18,7 +18,7 @@ class ContTest(unittest.TestCase):
         rets, rets_ref = [], []
         e0, e1 = Event(), Event()
 
-        @async
+        @do_async
         def test_async(result):
             rets.append((yield e0))
             rets.append('0-1')
@@ -48,7 +48,7 @@ class ContTest(unittest.TestCase):
         ev = Event()
         error = ValueError('test')
 
-        @async
+        @do_async
         def test_async():
             try:
                 rets.append((yield ev))
@@ -139,7 +139,7 @@ class ContTest(unittest.TestCase):
     def test_catch(self):
         rets = []
         e = Event()
-        w = lambda: (async_catch(e, KeyError, async(lambda _: 0))
+        w = lambda: (async_catch(e, KeyError, do_async(lambda _: 0))
                      (lambda val: rets.append(val)))
 
         w()

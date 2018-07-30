@@ -3,7 +3,7 @@
 import itertools
 from .conn import ForkConnection
 from .proxy import proxify
-from ..monad import async, async_all
+from ..monad import do_async, async_all
 from ..bench import Benchmark
 
 
@@ -14,7 +14,7 @@ class FuncBench(Benchmark):
         Benchmark.__init__(self, 'remoting.func', 1)
         self.conn = None
 
-    @async
+    @do_async
     def init(self):
         self.conn = yield ForkConnection()
         self.func = self.conn(remote)()
@@ -48,7 +48,7 @@ class MethodBench (Benchmark):
         Benchmark.__init__(self, 'remoting.method', 1)
         self.conn = None
 
-    @async
+    @do_async
     def init(self):
         self.conn = yield ForkConnection()
         self.proxy = yield proxify(self.conn(Remote)())

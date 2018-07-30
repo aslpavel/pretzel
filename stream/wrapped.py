@@ -1,7 +1,7 @@
 """Wrapped stream
 """
 from .stream import Stream
-from ..monad import async, do_return
+from ..monad import do_async, do_return
 
 __all__ = ('WrappedStream',)
 
@@ -26,12 +26,12 @@ class WrappedStream(Stream):
             raise ValueError('stream is disposed')
         return self.base.fileno()
 
-    @async
+    @do_async
     def read(self, size):
         with self.reading:
             do_return((yield self.base.read(size)))
 
-    @async
+    @do_async
     def write(self, data):
         with self.writing:
             do_return((yield self.base.write(data)))

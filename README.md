@@ -34,7 +34,7 @@ pip install pretzel
 Approach
 --------
 Usage of asynchronous functions is similar to C# async/await but instead of
-`async` attribute it uses `@async` decorator and instead of `await` keyword,
+`async` attribute it uses `@do_async` decorator and instead of `await` keyword,
 `yield` is used. Internally unit of asynchrony is implemented as continuation
 monad `Cont` with embedded `Result` monad (similar to Haskell's `Cont` and
 `Either` monads) as its value. One important difference of `Cont` monad from C#
@@ -45,10 +45,10 @@ not started. `.future()` method on instance of `Cont` can be used to create
 the monad. Simple asynchronous function would look like this.
 
 ```python
-from pretzel.monad import async
+from pretzel.monad import do_async
 from pretzel.core import sleep
 
-@async
+@do_async
 def print_after(delay, *args, **kwargs):
   """Calls print function after the lapse of `delay` sedonds.
   """
@@ -64,9 +64,9 @@ is thrown during execution of its body, it is marshaled to receiver of the
 result and can be processed correctly. For example.
 
 ```python
-@async
+@do_async
 def process_error():
-  @async
+  @do_async
   def throw_after(delay, error):
     yield sleep(delay)
     raise error
@@ -82,7 +82,7 @@ Asynchronous values (continuation monads) can be composed with two helper
 functions `async_all` and `async_any`.
 
 ```python
-@async
+@do_async
 def composition_example():
   yield async_all([sleep(1), sleep(2)])  # will be resumed in 2 seconds
   yield async_any([sleep(1), sleep(2)])  # will be resumed in 1 sedond
@@ -120,7 +120,7 @@ directly, but any object implementing `.__monad__()` method which returns `Cont`
 monad. There are many such types in this library, for example `Event`
 
 ```python
-@async
+@do_async
 def func():
   print(1)
   yield event

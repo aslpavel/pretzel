@@ -2,7 +2,7 @@ import unittest
 import operator
 import itertools
 from ..dispose import FuncDisp, CompDisp
-from ..monad import async, monad
+from ..monad import monad
 
 __all__ = ('FuncDispTest', 'CompDispTest',)
 

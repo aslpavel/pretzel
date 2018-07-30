@@ -9,7 +9,7 @@ except ImportError:
 
 from .sock import Socket
 from .buffered import BufferedStream
-from ..monad import async, do_return
+from ..monad import do_async, do_return
 from ..core import POLL_READ, POLL_WRITE
 from ..uniform import BrokenPipeError, BlockingErrorSet, PipeErrorSet
 
@@ -27,7 +27,7 @@ class SocketSSL(Socket):
         self.ssl_options = ssl_options or {}
         Socket.__init__(self, sock, init, core)
 
-    @async
+    @do_async
     def read(self, size):
         with self.reading:
             while True:
@@ -46,7 +46,7 @@ class SocketSSL(Socket):
                         raise
                 yield self.core.poll(self.fd, POLL_READ)
 
-    @async
+    @do_async
     def write(self, data):
         with self.writing:
             while True:
@@ -62,7 +62,7 @@ class SocketSSL(Socket):
                         raise
                 yield self.core.poll(self.fd, POLL_WRITE)
 
-    @async
+    @do_async
     def connect(self, address):
         yield Socket.connect(self, address)
         with self.writing, self.reading:
@@ -83,7 +83,7 @@ class SocketSSL(Socket):
                         raise
                 yield self.core.poll(self.fd, event)
 
-    @async
+    @do_async
     def accept(self):
         with self.reading:
             while True:
@@ -113,7 +113,7 @@ class BufferedSocketSSL(BufferedStream):
     def connect(self, addr):
         return self.base.connect(addr).map_val(lambda _: self)
 
-    @async
+    @do_async
     def accept(self):
         with self.reading:
             sock, addr = yield self.base.accept()

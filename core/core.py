@@ -15,7 +15,7 @@ else:  # pragma: no cover
 
 from .poll import Poller, POLL_ERROR, POLL_READ, POLL_WRITE, POLL_DISCONNECT
 from ..uniform import BrokenPipeError, ConnectionError, CanceledError, BlockingErrorSet
-from ..monad import Result, async, async_block, do_done
+from ..monad import Result, do_async, async_block, do_done
 from ..state_machine import StateMachine
 from ..dispose import CompDisp
 
@@ -107,7 +107,7 @@ class Core(object):
             cls.inst_local.inst = inst
         return inst
 
-    @async
+    @do_async
     def sleep(self, delay):
         """Sleep for delay seconds
 
@@ -117,7 +117,7 @@ class Core(object):
             raise CanceledError('core is disposed')
         do_done(self.time_queue.on(time() + delay))
 
-    @async
+    @do_async
     def sleep_until(self, when):
         """Sleep until specified unix time is reached
 
@@ -127,7 +127,7 @@ class Core(object):
             raise CanceledError('core is disposed')
         do_done(self.time_queue.on(when))
 
-    @async
+    @do_async
     def poll(self, fd, mask):
         """Poll file descriptor for events
 
@@ -144,7 +144,7 @@ class Core(object):
             self.files_queue[fd] = file
         do_done(file.on(mask))
 
-    @async
+    @do_async
     def schedule(self):
         """Schedule execution to next iteration circle
 
@@ -159,7 +159,7 @@ class Core(object):
         else:
             do_done(self.sched_queue.on())
 
-    @async
+    @do_async
     def waitpid(self, pid):
         """Wait for process with specified pid to be terminated
 
@@ -559,7 +559,7 @@ class Waker(object):
         fd_close_on_exec(self.reader, True)
         fd_close_on_exec(self.writer, True)
 
-        @async
+        @do_async
         def consumer():
             """Consumer coroutine"""
             try:

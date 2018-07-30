@@ -3,7 +3,7 @@ import socket
 import unittest
 import itertools
 from ..sock import Socket
-from ...monad import monad, async
+from ...monad import monad, do_async
 from ...uniform import BrokenPipeError
 from ...core import schedule
 from ...tests import async_test
@@ -19,7 +19,7 @@ class SockTest(unittest.TestCase):
     def test(self):
         received = io.BytesIO()
 
-        @async
+        @do_async
         def server_coro():
             with Socket(socket.socket()) as sock:
                 sock.bind(('localhost', self.PORT))

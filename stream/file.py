@@ -8,7 +8,7 @@ import fcntl
 from .stream import Stream
 from .buffered import BufferedStream
 from ..core import Core, POLL_READ, POLL_WRITE
-from ..monad import async, do_return
+from ..monad import do_async, do_return
 from ..uniform import BrokenPipeError, BlockingErrorSet, PipeErrorSet
 
 __all__ = ('File', 'BufferedFile', 'fd_close_on_exec', 'fd_blocking',)
@@ -32,7 +32,7 @@ class File(Stream):
     def fileno(self):
         return self.fd
 
-    @async
+    @do_async
     def read(self, size):
         with self.reading:
             while True:
@@ -48,7 +48,7 @@ class File(Stream):
                         raise
                 yield self.core.poll(self.fd, POLL_READ)
 
-    @async
+    @do_async
     def write(self, data):
         with self.writing:
             while True:

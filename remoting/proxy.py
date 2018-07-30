@@ -2,7 +2,7 @@
 """
 from .hub import pair
 from .expr import ExprEnv, Arg, Const, Call, GetAttr, GetItem, Bind
-from ..monad import Cont, async, do_return
+from ..monad import Cont, do_async, do_return
 
 __all__ = ('Proxy', 'proxify', 'proxify_func',)
 
@@ -118,7 +118,7 @@ class FuncProxy(object):
 def proxify_func(func, hub=None):
     """Proxify asynchronous function
     """
-    @async
+    @do_async
     def func_caller(msg):
         args, kwargs = msg
         do_return((yield func(*args, **kwargs)))

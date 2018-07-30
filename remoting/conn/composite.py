@@ -8,12 +8,12 @@ import random
 import functools
 from .fork import ForkConnection
 from .ssh import SSHConnection
-from ...monad import List, Proxy, async, async_all, do_return
+from ...monad import List, Proxy, do_async, async_all, do_return
 
 __all__ = ('composite_conn', 'composite_ssh_conn', 'composite_fork_conn',)
 
 
-@async
+@do_async
 def composite_conn(conn_facts, mesh=None):
     """Create composite connection from list of connection factories.
 
@@ -40,7 +40,7 @@ def composite_conn(conn_facts, mesh=None):
             raise ValueError('tree factor must be positive')
         tree = Tree.from_list(conn_facts, tree_factor)
 
-        @async
+        @do_async
         def connect(conn_fact, parent):
             if conn_fact is None:
                 do_return(None)
@@ -131,7 +131,7 @@ class Tree(object):
         random.shuffle(items)
         return build([root] + items)
 
-    @async
+    @do_async
     def __call__(self, func, val):
         """Apply asynchronous function and collect results
 

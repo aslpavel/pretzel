@@ -5,7 +5,7 @@ import sys
 import time
 from operator import add
 from functools import reduce
-from .monad import async, do_return
+from .monad import do_async, do_return
 from .app import app
 
 __all__ = ('Benchmark', 'TextBenchmarkRunner',)
@@ -21,12 +21,12 @@ class Benchmark(object):
         self.name = name or type(self).__name__
         self.factor = factor or 1
 
-    @async
+    @do_async
     def init(self):
         """Initialize benchmark
         """
 
-    @async
+    @do_async
     def body(self):
         raise NotImplementedError()
 

@@ -2,7 +2,7 @@
 """
 from functools import wraps
 from .core import Core
-from .monad import async, async_green, monad
+from .monad import do_async, async_green, monad
 
 __all__ = ('app', 'app_green', 'app_run',)
 
@@ -12,7 +12,7 @@ def app(main):
 
     Create application from generator function.
     """
-    return wraps(main)(lambda *a, **kw: app_run(async(main)(*a, **kw)))
+    return wraps(main)(lambda *a, **kw: app_run(do_async(main)(*a, **kw)))
 
 
 def app_green(main):

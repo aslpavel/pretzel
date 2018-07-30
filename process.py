@@ -9,7 +9,7 @@ import signal
 import atexit
 from .event import Event
 from .dispose import CompDisp
-from .monad import Result, Cont, async, async_all, do_return
+from .monad import Result, Cont, do_async, async_all, do_return
 from .core import Core
 from .stream import BufferedFile, fd_close_on_exec
 from .uniform import BrokenPipeError
@@ -119,7 +119,7 @@ class Process(object):
             self.core.dispose.add(self)
             self.dispose.add_action(lambda: self.core.dispose.remove(self))
 
-    @async
+    @do_async
     def __call__(self):
         self.state(self.STATE_FORK)
         core = self.core
@@ -190,7 +190,7 @@ class Process(object):
                     pass
                 self.state(self.STATE_RUN)
 
-                @async
+                @do_async
                 def check_status():
                     status = yield waitpid
                     if self.opts.check and status != 0:
@@ -307,7 +307,7 @@ class ProcessPipe(object):
         return str(self)
 
 
-@async
+@do_async
 def process_call(command, stdin=None, stdout=None, stderr=None,
                  preexec=None, postexec=None, shell=None, environ=None,
                  check=None, bufsize=None, kill=None, core=None):
@@ -343,7 +343,7 @@ def process_call(command, stdin=None, stdout=None, stderr=None,
         do_return((out, err, status))
 
 
-@async
+@do_async
 def process_chain_call(commands, stdin=None, stdout=None, stderr=None, **proc_opts):
     """Run pipe chained commands
 

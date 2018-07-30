@@ -11,7 +11,7 @@ import textwrap
 import functools
 from collections import deque
 from ..utils import lazy
-from ..monad import Result, async, async_any, async_green, bind_green
+from ..monad import Result, do_async, async_any, async_green, bind_green
 from ..core import Core, schedule
 from ..event import Event
 from ..stream import BufferedFile
@@ -177,7 +177,7 @@ class Shell(ShellBase):
                 raise ValueError('target is not a monad')
             return monad_getter()
 
-        @async
+        @do_async
         def attach(conn, **locals):
             """Create shell on specified connection
             """
@@ -219,7 +219,7 @@ class Shell(ShellBase):
             self.state(self.STATE_DISP)
             self.sender.try_send(None)
 
-    @async
+    @do_async
     def redirect(self, shell, locals=None):
         """Redirect input events to a different shell object
         """
@@ -265,11 +265,11 @@ class ShellStream(object):
         self.writer.dispose()
 
 
-@async
+@do_async
 def prompt(shell, stdin=None):
     """Prompt shell
     """
-    @async
+    @do_async
     def prompt_coro():
         stream = None
         cancel = cancel_ev.future()

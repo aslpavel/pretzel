@@ -3,7 +3,7 @@ import os
 import itertools
 import unittest
 from ..file import File
-from ...monad import monad, async
+from ...monad import monad, do_async
 from ...uniform import BrokenPipeError
 from ...core import schedule
 from ...tests import async_test
@@ -19,7 +19,7 @@ class FileTest(unittest.TestCase):
         received = io.BytesIO()
         reader_fd, writer_fd = os.pipe()
 
-        @async
+        @do_async
         def reader_coro():
             with File(reader_fd) as reader:
                 try:

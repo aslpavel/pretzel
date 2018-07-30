@@ -9,7 +9,7 @@ from .wrapped import WrappedStream
 from .. import PRETZEL_BUFSIZE
 from ..uniform import BrokenPipeError
 from ..parser import ParserResult, ParserError
-from ..monad import async, async_single, do_return
+from ..monad import do_async, async_single, do_return
 
 __all__ = ('BufferedStream',)
 
@@ -27,7 +27,7 @@ class BufferedStream(WrappedStream):
         self.write_buffer = Buffer()
 
         @async_single
-        @async
+        @do_async
         def flush():
             """Flush write buffers
             """
@@ -38,7 +38,7 @@ class BufferedStream(WrappedStream):
                 yield self.base.flush()
         self.flush = flush
 
-    @async
+    @do_async
     def read(self, size):
         if not size:
             do_return(b'')
@@ -47,7 +47,7 @@ class BufferedStream(WrappedStream):
                 self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(size))
 
-    @async
+    @do_async
     def parse(self, parser):
         """Parse stream with specified `parser`, parser fails it does not consume data.
 
@@ -81,7 +81,7 @@ class BufferedStream(WrappedStream):
                 for chunk in chunks:
                     self.read_buffer.enqueue(chunk)
 
-    @async
+    @do_async
     def read_until_size(self, size):
         """Read exactly size bytes
         """
@@ -92,7 +92,7 @@ class BufferedStream(WrappedStream):
                 self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(size))
 
-    @async
+    @do_async
     def read_until_eof(self):
         """Read until stream is closed
         """
@@ -104,7 +104,7 @@ class BufferedStream(WrappedStream):
                 pass
             do_return(self.read_buffer.dequeue())
 
-    @async
+    @do_async
     def read_until_sub(self, sub=None):
         """Read until substring is found
 
@@ -122,7 +122,7 @@ class BufferedStream(WrappedStream):
                 self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return(self.read_buffer.dequeue(offset + find_offset + len(sub)))
 
-    @async
+    @do_async
     def read_until_regex(self, regex):
         """Read until regular expression is matched
 
@@ -137,7 +137,7 @@ class BufferedStream(WrappedStream):
                 self.read_buffer.enqueue((yield self.base.read(self.bufsize)))
             do_return((self.read_buffer.dequeue(match.end()), match))
 
-    @async
+    @do_async
     def write(self, data):
         """Write data
 
@@ -162,7 +162,7 @@ class BufferedStream(WrappedStream):
         self.write_buffer.enqueue(data)
         return len(data)
 
-    @async
+    @do_async
     def read_bytes(self):
         """Read bytes object
         """
@@ -175,7 +175,7 @@ class BufferedStream(WrappedStream):
         self.write_schedule(self.size_struct.pack(len(bytes)))
         self.write_schedule(bytes)
 
-    @async
+    @do_async
     def read_struct_list(self, struct, complex=None):
         """Read list of structures
         """
@@ -199,7 +199,7 @@ class BufferedStream(WrappedStream):
             for struct_target in struct_list:
                 self.write_schedule(struct.pack(struct_target))
 
-    @async
+    @do_async
     def read_bytes_list(self):
         """Read array of bytes
         """

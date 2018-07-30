@@ -9,7 +9,7 @@ import operator
 from .hub import pair
 from .expr import Call, Arg, Const, GetAttr
 from ..core import Core
-from ..monad import Result, async, do_return
+from ..monad import Result, do_async, do_return
 from ..boot import BootLoader
 
 __all__ = ('Importer',)
@@ -66,7 +66,7 @@ class Importer(object):
         return Importer(send)
 
     @classmethod
-    @async
+    @do_async
     def create_remote(cls, conn, index=None):
         """Create and install importer on specified connection
         """

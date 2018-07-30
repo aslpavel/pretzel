@@ -4,7 +4,7 @@ try:
 except ImportError:
     greenlet = None
 from ..do_green import bind_green
-from ..async import async_green
+from ..do_async import async_green
 from ..result import Result
 from ...event import Event
 
